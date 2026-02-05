@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# ralph — Autonomous task executor. Loops Claude Code over beads issues.
+#
+# Deterministic outer loop. All intelligence lives in Claude Code (inner loop).
+# See PHILOSOPHY.md for why this is a bash script and not a framework.
+#
+# Usage: ralph [--dry-run] [--max-tasks N] [--max-loops N] [--timeout M]
+#              [--scope PATTERN] [--sandbox] [--remote [HOST]] [--status]
+#              [--reset] [-h|--help]
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="$SCRIPT_DIR/lib"
+
+# shellcheck source=lib/loader.sh
+source "$LIB_DIR/loader.sh"
+
+# ── Initialisation ──────────────────────────────────────────────────────────
+parse_args "$@"
+show_splash
+if [[ "$REMOTE_MODE" == "true" ]]; then run_remote; exit $?; fi
+check_prereqs
+ensure_ralph_branch
+trap cleanup EXIT
+load_state
+init_sandbox
+init_invoke
+
+# ── Main loop ───────────────────────────────────────────────────────────────
+while true; do
+    check_exit_conditions || break
+    select_task           || break
+    handle_dry_run        && break
+    claim_task "$tid"
+    build_prompt "$tid" "$task_details"
+    invoke_claude         || break
+    check_bead_status "$tid"
+    update_circuit_breaker
+    handle_task_outcome "$tid"
+    save_state
+done
+save_state
