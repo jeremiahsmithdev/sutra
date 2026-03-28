@@ -5,8 +5,8 @@
 # See PHILOSOPHY.md for why this is a bash script and not a framework.
 #
 # Usage: ralph [--dry-run] [--max-tasks N] [--max-loops N] [--timeout M]
-#              [--scope PATTERN] [--sandbox] [--remote [HOST]] [--status]
-#              [--reset] [-h|--help]
+#              [--model MODEL] [--scope PATTERN] [--sandbox] [--monitor]
+#              [--tmux] [--remote [HOST]] [--status] [--reset] [-h|--help]
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,8 +19,11 @@ source "$LIB_DIR/loader.sh"
 parse_args "$@"
 show_splash
 if [[ "$REMOTE_MODE" == "true" ]]; then run_remote; exit $?; fi
+if [[ "$TMUX_MODE" == "true" ]]; then run_tmux; exit $?; fi
 check_prereqs
+commit_beads_if_dirty
 ensure_ralph_branch
+trap 'EXIT_REASON="Interrupted (Ctrl+C)"; [[ -n "${CLAUDE_PID:-}" ]] && kill -KILL "$CLAUDE_PID" 2>/dev/null; exit 130' INT
 trap cleanup EXIT
 load_state
 init_sandbox

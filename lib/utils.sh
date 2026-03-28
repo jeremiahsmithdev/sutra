@@ -83,7 +83,7 @@ show_prompt() {
 #
 # ── Beads housekeeping ───────────────────────────────────────────────
 #
-# The beads daemon writes to .beads/issues.jsonl continuously.
+# br auto-flushes its SQLite DB to .beads/issues.jsonl on most commands.
 # If that file is git-tracked, it creates dirty working-tree state
 # that blocks `git checkout`. Auto-commit it before each invocation
 # so Claude always starts with a clean tree.
@@ -108,8 +108,15 @@ load_state() {
         total_tasks_completed=0
         total_loops=0
         current_task=""
-        save_state
     fi
+
+    # Always reset session counters — each `ralph` invocation is a new session.
+    # Use local time with RFC3339 offset to match beads' closed_at format.
+    # BSD date gives +0530; sed inserts the colon for RFC3339 (+05:30).
+    session_start=$(date +%Y-%m-%dT%H:%M:%S%z | sed 's/\(..\)$/:\1/')
+    total_loops=0
+    total_tasks_completed=0
+    save_state
 }
 
 # Write current state variables to disk.
@@ -121,5 +128,8 @@ no_progress_count=${no_progress_count:-0}
 total_tasks_completed=${total_tasks_completed:-0}
 total_loops=${total_loops:-0}
 current_task=${current_task:-}
+session_start=${session_start:-}
+model=${MODEL:-haiku}
+max_loops=${MAX_LOOPS:-50}
 EOF
 }

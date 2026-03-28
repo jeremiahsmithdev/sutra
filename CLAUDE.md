@@ -4,33 +4,138 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-This is an **early-stage research and documentation workspace** for a personal ralph framework — an autonomous AI coding system built on beads, beads_viewer, and Claude Code.
+Ralph is an autonomous AI coding system — a bash outer loop that feeds beads issues to Claude Code one at a time. ~1,300 lines of bash across 16 library files implementing the core loop, circuit breaker, monitoring dashboard, remote execution, and branch management.
 
-**Current state:** Theory, tooling options, and architectural decision drafts. No primary implementation exists yet.
+**Philosophy:** Read [[PHILOSOPHY.md]] first. The bitter lesson applies: simple deterministic orchestration + a smart model beats clever multi-agent systems. The outer loop is a for-loop with a sort. All intelligence lives in the inner loop (Claude).
 
-**Goal:** Build ralph loops (inner and outer) using beads as the foundation.
+## Running Ralph
 
-**Sub-repositories** (`beads/`, `beads_viewer/`, `ralph-claude-code/`, `gastown/`, `choo-choo-ralph/`) are **reference tools**, not active development targets. Read their docs for context but don't modify them unless explicitly instructed.
+```bash
+./ralph                          # Run the loop (picks tasks from br ready)
+./ralph --dry-run                # Show next task without executing
+./ralph --max-tasks 3            # Stop after 3 completed tasks
+./ralph --max-loops 10           # Stop after 10 Claude invocations
+./ralph --timeout 20             # 20 minutes per invocation (default: 10)
+./ralph --scope "auth"           # Only work issues matching regex
+./ralph --model sonnet           # Override model (default: haiku)
+./ralph --sandbox                # Bubblewrap isolation (Linux only)
+./ralph --monitor                # Live dashboard (run in separate terminal)
+./ralph --remote oracle          # Run on remote server via SSH+tmux
+./ralph --status                 # Print current .ralph_state
+./ralph --reset                  # Clear circuit breaker and counters
+```
 
-## Philosophy — Read [[PHILOSOPHY.md]] First
+Per-project overrides go in `.ralph.conf` (sourced by `config.sh`). CLI flags override both defaults and `.ralph.conf`.
 
-The bitter lesson applies: general methods that scale with computation beat specialised approaches. Do not build elaborate multi-agent systems. Build a loop.
+## Prerequisites
 
-### Two Loops, Two Jobs
+Ralph requires: `br` (beads_rust), `claude` (Claude Code CLI), `jq`, `timeout`/`gtimeout`. Checked by `lib/prereqs.sh`.
 
-**Outer loop** — Deterministic. Selects what to work on. Reads from beads, consults triage scores, picks the next task. It is a for-loop with a sort. It does not reason, deliberate, or improvise.
+## Architecture
 
-**Inner loop** — The agent (Claude). Takes a task, explores, implements, tests, self-corrects. All intelligence lives here. All complexity lives here.
+### The Main Loop (45 lines)
 
-**Do not move intelligence from the inner loop into the outer loop.** The inner loop gets better every time the model improves. The outer loop does not.
+`ralph` sources `lib/loader.sh` which loads all 16 library files. The entire loop is:
 
-### Key Principles
+```
+while true:
+    check_exit_conditions  →  max tasks/loops/circuit breaker
+    select_task            →  br ready --json, skip epics, apply --scope
+    claim_task             →  br update --status in_progress
+    build_prompt           →  task details + branch instructions + rules
+    invoke_claude          →  claude -p with timeout, stream-json output
+    check_bead_status      →  query br for current status
+    update_circuit_breaker →  track no-progress streaks
+    handle_task_outcome    →  closed → bump counter; epic auto-close
+    save_state             →  persist to .ralph_state
+```
 
-- **Beads are the source of truth** — All work tracked in beads. No second source of truth.
-- **Deterministic where possible** — Quality gates don't need AI. Task selection uses graph algorithms (PageRank, betweenness), not LLM judgment.
-- **Backpressure over direction** — Engineer an environment where wrong outputs get rejected automatically (tests, linters, type checkers).
-- **Store artefacts, not decisions** — Store evidence and assessments, not routing logic.
-- **Fail predictably** — Boring failures are debuggable. Clever failures are not.
+### Library Files (`lib/`)
+
+Load order matters — defined in `loader.sh`:
+
+| File | Responsibility |
+|------|---------------|
+| `config.sh` | Default globals (MAX_LOOPS=50, TIMEOUT_MINUTES=10, MODEL=haiku, etc.) |
+| `utils.sh` | `log()`, `save_state()`/`load_state()`, ANSI colors, `commit_beads_if_dirty()` |
+| `args.sh` | CLI parsing → globals. Handles --help/--status/--reset early exits |
+| `prereqs.sh` | Dependency checks, `ensure_ralph_branch()` |
+| `tasks.sh` | `pick_next_task()`, `claim_task()`, `get_task_details()`, `get_branch_context()`, `slugify()` |
+| `prompt.sh` | `build_prompt()` — constructs the Claude prompt with task + branch + rules |
+| `invoke.sh` | `invoke_claude()` — runs `claude -p` with timeout, captures exit code |
+| `circuit_breaker.sh` | 3-state machine: CLOSED →(2 no-progress)→ HALF_OPEN →(3)→ OPEN (halt) |
+| `task_outcome.sh` | `handle_task_outcome()`, `mark_needs_review()`, `maybe_close_epic()` |
+| `monitor.sh` | Live dashboard — double-buffered, 1s refresh, reads .ralph_state + br queries |
+| `remote.sh` | `run_remote()` — rsync + SSH + tmux session management |
+| `sandbox.sh` | Bubblewrap filesystem isolation wrapper |
+| `format_stream.sh` | jq filter: stream-json → human-readable (text, tool uses, cost) |
+| `splash.sh` | ASCII art |
+| `cleanup.sh` | Exit trap — session summary |
+
+### Key Global Variables
+
+State flows through globals (set in `config.sh`, modified by `args.sh`, persisted via `save_state()`):
+
+- `circuit` / `no_progress_count` — circuit breaker state
+- `total_tasks_completed` / `total_loops` — progress counters
+- `current_task` — retry tracking (non-empty = retrying same task)
+- `tid` / `task_details` — current task being worked
+- `CLAUDE_PID` — for interrupt handling
+
+### Branch Strategy
+
+`get_branch_context()` in `tasks.sh` determines where Claude works:
+- **Standalone task** → `ralph` branch
+- **Task in epic** → `ralph-<epic-slug>` branch (from `ralph`)
+- **Task in epic that depends on another epic** → `ralph-<epic-slug>` (from `ralph-<dep-epic-slug>`)
+
+### Circuit Breaker
+
+Progress = bead status changed (closed or reopened). No progress = still in_progress after Claude finishes.
+
+```
+CLOSED ──[2 no-progress]──► HALF_OPEN ──[3 no-progress]──► OPEN (halt)
+  ▲ progress                    ▲ progress
+  └─────────────────────────────┘
+```
+
+Recovery: `ralph --reset` only. No automatic recovery from OPEN.
+
+### Verification Workflow
+
+On task close, ralph adds `verified:needs-review` label. Human reviews with `bnr` (list needing review) and `bV` (mark verified). Epic auto-closes when all children are closed.
+
+## Reference Projects
+
+Under `reference-projects/` — read for context, don't modify:
+
+| Directory | What It Is |
+|-----------|-----------|
+| `beads/` | bd source — git-backed issue tracker (legacy reference) |
+| `beads_viewer/` | bv source — graph scoring (PageRank, betweenness) |
+| `ralph-claude-code/` | Reference autonomous loop implementation |
+| `gastown/` | Enterprise multi-agent orchestration |
+| `choo-choo-ralph/` | 5-phase workflow with knowledge harvesting |
+
+## Key Tool Commands
+
+**beads_rust (br):** `br ready`, `br show <id> --json`, `br update <id> --status in_progress`, `br close <id> --reason "..."`, `br dep add <child> <parent>`
+
+**beads_viewer (bv):** Always use robot flags. **Never run bare `bv`** — it launches a TUI that hangs agents.
+```bash
+bv --robot-triage    # Full triage JSON
+bv --robot-next      # Single top pick
+bv --robot-insights  # Graph analysis
+```
+
+## Not Yet Implemented
+
+From [[PLAN.md]] — designed but not coded:
+- **BV integration** for task selection (currently just `br ready`)
+- **Metrics collection** to `.ralph/metrics.db` (schema in [[metrics.md]])
+- **Scout system** — pre-execution reconnaissance (design in [[scout/]])
+- **Harvest tooling** — slash commands for morning review
+- **Quality gate injection** — auto-create review/test beads after completion
 
 ## Document Map
 
@@ -38,99 +143,11 @@ The bitter lesson applies: general methods that scale with computation beat spec
 |----------|---------|
 | [[PHILOSOPHY.md]] | Founding principles — read first |
 | [[PLAN.md]] | Build order checklist |
-| [[GUIDE.md]] | Complete operational guide for beads + bv + ralph |
-| [[TOOLS.md]] | Catalog of all ecosystem tools with recommendations |
-| [[outer-loop.md]] | Research on outer loop orchestrator options |
-| [[AI-TRIAGE.md]] | Concept: layering semantic investigation on structural scoring |
-| [[metrics.md]] | Data-driven workflow calibration (SQLite schema, bottleneck queries) |
-| [[Harvest.md]] | The morning review process |
-| [[BEADS_VERIFICATION_WORKFLOW.md]] | Human verification tracking for autonomous work |
-| [[ralph-overnight-guide.md]] | Technical setup for overnight development |
-| [[beads-analysis.md]] | Research synthesis on the beads ecosystem |
-| [[scout/]] | Reconnaissance scouts — optional pre-execution investigation |
-| [[scout/prediction.md]] | Time prediction: deterministic baseline + scout judgment |
-
-## The Stack (Target Architecture)
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    ORCHESTRATION (optional)                      │
-│  gastown, choo-choo-ralph, ralph-tui                            │
-└─────────────────────────────────────────────────────────────────┘
-                              ↑
-┌─────────────────────────────────────────────────────────────────┐
-│                    OUTER LOOP (to be built)                      │
-│  Deterministic task selection using beads + bv                  │
-└─────────────────────────────────────────────────────────────────┘
-                              ↑
-┌─────────────────────────────────────────────────────────────────┐
-│                    INNER LOOP (to be built)                      │
-│  Claude Code execution with safety gates                        │
-└─────────────────────────────────────────────────────────────────┘
-                              ↑
-┌─────────────────────────────────────────────────────────────────┐
-│                    INTELLIGENCE                                  │
-│  beads_viewer (bv) — PageRank + betweenness scoring             │
-└─────────────────────────────────────────────────────────────────┘
-                              ↑
-┌─────────────────────────────────────────────────────────────────┐
-│                    FOUNDATION                                    │
-│  beads (bd) — Git-backed issue tracking + dependencies          │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Reference Tools
-
-### beads (bd) — Foundation
-
-Git-backed issue tracking with dependencies. The killer feature is `bd ready` — find unblocked work.
-
-```bash
-bd ready                    # Find unblocked work
-bd create --title "..." --priority 2
-bd update <id> --status in_progress
-bd close <id> --reason "..."
-bd dep add <child> <parent>
-bd sync                     # Always before leaving
-```
-
-### beads_viewer (bv) — Intelligence Layer
-
-Graph-theoretic triage scoring. **Never run bare `bv`** — it launches a TUI that hangs agents.
-
-```bash
-bv --robot-triage           # Full triage JSON
-bv --robot-insights         # Graph analysis (PageRank, betweenness, cycles)
-bv --robot-next             # Single top pick
-```
-
-### ralph-claude-code — Reference Execution Layer
-
-The reference autonomous loop with circuit breakers, dual-gate exit, and rate limiting.
-
-```bash
-ralph --monitor             # Run with dashboard
-ralph --reset-circuit       # Clear circuit breaker
-```
-
-## Session Protocol
-
-End every session with:
-
-```bash
-git status              # Check for unstaged changes
-git add <files>         # Stage code changes
-bd sync                 # Commit beads state (if using beads)
-git commit -m "..."     # Commit code
-git push                # Work is NOT done until pushed
-```
-
-## The Harvest
-
-After overnight runs, review in the morning. See [[Harvest.md]] for the full routine.
-
-**Data-driven phase:** Query [[metrics.md]] to surface anomalies — where predictions diverged from actuals, where tasks failed unexpectedly, where scores didn't correlate with outcomes.
-
-**Qualitative phase:** Point AI at the flagged anomalies to identify root causes and suggest fixes to scout logic, prompts, or workflow configuration.
-
-**Code review phase:** Merge or revert (don't "fix it up"), groom backlog, update guidance.
+| [[GUIDE.md]] | Complete operational guide (756 lines) |
+| [[TOOLS.md]] | Ecosystem tool catalog |
+| [[outer-loop.md]] | Research on orchestrator options |
+| [[AI-TRIAGE.md]] | Semantic actionability scoring concept |
+| [[metrics.md]] | SQLite instrumentation schema |
+| [[Harvest.md]] | Morning review process |
+| [[BEADS_VERIFICATION_WORKFLOW.md]] | Human verification tracking |
+| [[scout/]] | Reconnaissance system design |

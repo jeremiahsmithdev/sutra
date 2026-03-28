@@ -7,6 +7,7 @@
 
 init_invoke() {
     TIMEOUT_SECS=$((TIMEOUT_MINUTES * 60))
+    CLAUDE_PID=""
 }
 
 # ── invoke_claude ───────────────────────────────────────────────────────────
@@ -40,12 +41,14 @@ invoke_claude() {
     "${prefix[@]}" command claude \
         -p "$prompt" \
         --dangerously-skip-permissions \
-        --model haiku \
+        --model "$MODEL" \
         --output-format stream-json \
         --max-turns 50 \
         --verbose \
-        > >(format_stream) \
-        || invoke_exit=$?
+        > >(format_stream) &
+    CLAUDE_PID=$!
+    wait "$CLAUDE_PID" 2>/dev/null || invoke_exit=$?
+    CLAUDE_PID=""
 
     if [[ $invoke_exit -ne 0 ]]; then
         log "ERROR: Claude invocation failed (exit code: $invoke_exit)"
@@ -68,7 +71,7 @@ invoke_claude() {
 check_bead_status() {
     local tid="$1"
 
-    bead_status=$(bd show "$tid" --json 2>/dev/null \
+    bead_status=$(br show "$tid" --json 2>/dev/null \
         | jq -r '.[0].status // "unknown"' 2>/dev/null \
         || echo "unknown")
 

@@ -18,6 +18,8 @@ source "$LIB_DIR/prereqs.sh"
 source "$LIB_DIR/sandbox.sh"
 # shellcheck source=lib/remote.sh
 source "$LIB_DIR/remote.sh"
+# shellcheck source=lib/monitor.sh
+source "$LIB_DIR/monitor.sh"
 # shellcheck source=lib/tasks.sh
 source "$LIB_DIR/tasks.sh"
 # shellcheck source=lib/prompt.sh

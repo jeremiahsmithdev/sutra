@@ -35,14 +35,14 @@ handle_task_outcome() {
 
 # ── mark_needs_review ──────────────────────────────────────────────────
 #
-# After a task is closed by Claude, mark it for human verification.
-# Done in the outer loop because Claude consistently skips bd set-state
-# when it's in the prompt.  The close --reason from Claude already
-# contains verification notes, so we just flag the state.
+# After a task is closed by Claude, label it for human verification.
+# Uses a label instead of br set-state to avoid spawning event child beads.
+# The close --reason from Claude contains verification notes;
+# the label lets the harvest workflow filter for unreviewed work.
 
 mark_needs_review() {
     local tid="$1"
-    bd set-state "$tid" verified=needs-review 2>/dev/null || true
+    br label add "$tid" verified:needs-review 2>/dev/null || true
 }
 
 # ── maybe_close_epic ────────────────────────────────────────────────────
@@ -55,25 +55,25 @@ maybe_close_epic() {
 
     # Get parent epic ID
     local parent_id
-    parent_id=$(bd show "$tid" --json 2>/dev/null \
+    parent_id=$(br show "$tid" --json 2>/dev/null \
         | jq -r '.[0].parent // empty' 2>/dev/null) || return
     [[ -z "$parent_id" ]] && return
 
     # Skip if epic is already closed
     local epic_status
-    epic_status=$(bd show "$parent_id" --json 2>/dev/null \
+    epic_status=$(br show "$parent_id" --json 2>/dev/null \
         | jq -r '.[0].status // empty' 2>/dev/null) || return
     [[ "$epic_status" == "closed" ]] && return
 
-    # Count non-closed children of this epic.
-    # --parent filters to children only; --all includes closed so we see every child.
+    # Count non-closed children of this epic via br show's dependents list.
+    # Filter to parent-child relationships only (excludes blocks dependencies).
     local open_count
-    open_count=$(bd list --parent "$parent_id" --all --json 2>/dev/null \
-        | jq '[.[] | select(.status != "closed")] | length' \
+    open_count=$(br show "$parent_id" --json 2>/dev/null \
+        | jq '[.[0].dependents // [] | .[] | select(.dependency_type == "parent-child") | select(.status != "closed")] | length' \
         2>/dev/null) || return
 
     if [[ "$open_count" -eq 0 ]]; then
-        bd close "$parent_id" 2>/dev/null
+        br close "$parent_id" 2>/dev/null
         log "Auto-closed epic ${C_BOLD_CYAN}$parent_id${C_RESET} (all children complete)"
     fi
 }

@@ -8,7 +8,7 @@ check_prereqs() {
     local missing=0
 
     # Check for required CLI tools
-    for cmd in jq bd claude; do
+    for cmd in jq br claude; do
         if ! command -v "$cmd" &>/dev/null; then
             log "ERROR: Required: $cmd"
             missing=1
@@ -44,11 +44,10 @@ check_prereqs() {
         exit 1
     fi
 
-    # Ensure "event" issue type is configured for bd set-state.
-    # set-state creates event beads for the audit trail and fails without this.
+    # Ensure "event" issue type is configured for br.
     # Only log when we actually need to add it (not every startup).
-    if ! bd config get types.custom 2>/dev/null | grep -q "event"; then
-        bd config set types.custom "event" 2>/dev/null || true
+    if ! br config get types.custom 2>/dev/null | grep -q "event"; then
+        br config set types.custom "event" 2>/dev/null || true
     fi
 }
 
@@ -59,7 +58,10 @@ check_prereqs() {
 
 ensure_ralph_branch() {
     if git rev-parse --verify ralph &>/dev/null; then
-        git checkout ralph 2>/dev/null
+        git checkout ralph 2>/dev/null || {
+            log "ERROR: Could not switch to ralph branch"
+            exit 1
+        }
         log "On branch: ${C_BOLD_CYAN}ralph${C_RESET}"
     else
         local base="${WORKING_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"

@@ -57,12 +57,12 @@ $branch_section
 3. Run tests or manual verification after implementation.
 4. Commit your changes with a conventional commit message.
 5. If you are blocked and cannot complete the task, say so clearly.
-6. Do NOT touch .beads/ files — never commit, stash, or modify them. Do NOT run \`bd sync\`. The outer loop handles beads state automatically.
+6. Do NOT touch .beads/ files — never commit, stash, or modify them. Do NOT run \`br sync\`. The outer loop handles beads state automatically.
 
 ## When Done
 Close the issue with a reason that a human reviewer can use to verify your work:
-  bd close $task_id --reason \"VERIFY: [how to test] NOTES: [what changed]\"
+  br close $task_id --reason \"VERIFY: [how to test] NOTES: [what changed]\"
 
 If you are BLOCKED and cannot complete the task, release it:
-  bd update $task_id --status open"
+  br update $task_id --status open"
 }

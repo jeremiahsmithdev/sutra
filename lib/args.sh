@@ -34,6 +34,14 @@ parse_args() {
                 SANDBOX_MODE=true
                 shift
                 ;;
+            --model)
+                MODEL="$2"
+                shift 2
+                ;;
+            --monitor)
+                MONITOR_MODE=true
+                shift
+                ;;
             --remote|-r)
                 REMOTE_MODE=true
                 if [[ $# -gt 1 && ! "$2" =~ ^- ]]; then
@@ -42,6 +50,10 @@ parse_args() {
                 else
                     shift
                 fi
+                ;;
+            --tmux|-t)
+                TMUX_MODE=true
+                shift
                 ;;
             --status)
                 ACTION="status"
@@ -76,6 +88,9 @@ Usage: ralph [OPTIONS]
   --timeout N          Minutes per Claude invocation (default: 10)
   --scope PATTERN      Only work issues matching regex pattern
   --sandbox            Wrap Claude in bubblewrap sandbox (Linux only)
+  --model MODEL        Claude model to use (default: config.sh)
+  --monitor            Live dashboard in a separate terminal
+  --tmux, -t           Wrap execution in a detachable tmux session
   --remote [HOST], -r  Run on remote server via SSH+tmux
   --status             Print current state and exit
   --reset              Clear circuit breaker and loop state
@@ -101,7 +116,13 @@ USAGE
         total_loops=0
         current_task=""
         save_state
+        rm -f .ralph_remote
         log "State reset."
         exit 0
+    fi
+
+    if [[ "$MONITOR_MODE" == "true" ]]; then
+        run_monitor
+        exit $?
     fi
 }

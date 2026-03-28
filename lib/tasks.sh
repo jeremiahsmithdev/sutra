@@ -60,7 +60,7 @@ claim_task() {
 
     # Only claim (set in_progress) if this is a fresh pick, not a retry
     if [[ -z "${current_task:-}" ]]; then
-        bd update "$tid" --status in_progress 2>/dev/null || true
+        br update "$tid" --status in_progress 2>/dev/null || true
     fi
 
     current_task="$tid"
@@ -76,7 +76,7 @@ claim_task() {
 pick_next_task() {
     local ready_json
 
-    ready_json=$(bd ready --json --limit 20 2>/dev/null) || {
+    ready_json=$(br ready --json --limit 20 2>/dev/null) || {
         echo ""
         return
     }
@@ -103,7 +103,7 @@ pick_next_task() {
 get_task_details() {
     local tj
 
-    tj=$(bd show "$1" --json 2>/dev/null) || {
+    tj=$(br show "$1" --json 2>/dev/null) || {
         echo ""
         return
     }
@@ -128,7 +128,7 @@ get_task_details() {
 # ── get_branch_context ────────────────────────────────────────────────────
 #
 # Given a task ID, determines which branch Claude should work on.
-# Uses bd show --json to check parent epic and epic dependencies.
+# Uses br show --json to check parent epic and epic dependencies.
 #
 # Output (one line):
 #   "standalone"                         — work on ralph branch
@@ -139,7 +139,7 @@ get_branch_context() {
     local task_id="$1"
     local tj
 
-    tj=$(bd show "$task_id" --json 2>/dev/null) || {
+    tj=$(br show "$task_id" --json 2>/dev/null) || {
         echo "standalone"
         return
     }
@@ -155,7 +155,7 @@ get_branch_context() {
 
     # Get the epic's title for the branch name
     local epic_json epic_title epic_slug
-    epic_json=$(bd show "$parent_id" --json 2>/dev/null) || {
+    epic_json=$(br show "$parent_id" --json 2>/dev/null) || {
         echo "standalone"
         return
     }

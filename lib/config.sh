@@ -19,12 +19,26 @@ SCOPE=""
 # When true, ralph shows the next task and exits without invoking Claude.
 DRY_RUN=false
 
+# Claude model to use for inner loop invocations.
+MODEL="haiku"
+
 # When true, wrap Claude invocation in bubblewrap for filesystem isolation.
 # Linux only — requires bwrap installed.
 SANDBOX_MODE=false
 
+# When true, show live monitoring dashboard instead of running the loop.
+MONITOR_MODE=false
+
 # When true, run ralph on a remote server via SSH+tmux.
 REMOTE_MODE=false
+
+# When true, wrap ralph execution in a detachable tmux session.
+# Used standalone (manual SSH) or triggered by --remote.
+TMUX_MODE=false
+
+# Git clone URL for the project repo. Populated by run_remote() from
+# `git remote get-url origin` and passed to the remote via env var.
+CLONE_URL=""
 
 # SSH target for remote execution (e.g. "opc@oracle").
 # Used as default when --remote is given without a host argument.
