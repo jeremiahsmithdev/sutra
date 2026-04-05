@@ -54,7 +54,7 @@ check_prereqs() {
 # ── ensure_ralph_branch ───────────────────────────────────────────────────
 #
 # Ensure the dedicated "ralph" working branch exists and is checked out.
-# Creates it from WORKING_BRANCH (set in .ralph.conf) or the current branch.
+# Creates it from WORKING_BRANCH (set in .ralph/config) or the current branch.
 
 ensure_ralph_branch() {
     if git rev-parse --verify ralph &>/dev/null; then

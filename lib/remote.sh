@@ -6,7 +6,7 @@
 #
 # The --remote flow passes CLONE_URL, REMOTE_DIR, WORKING_BRANCH as
 # env vars to the remote, avoiding the chicken-and-egg problem of
-# needing .ralph.conf before the repo is cloned.
+# needing .ralph/config before the repo is cloned.
 
 # ── sync_ralph ────────────────────────────────────────────────────────────
 #

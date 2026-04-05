@@ -5,41 +5,44 @@
 # See PHILOSOPHY.md for why this is a bash script and not a framework.
 #
 # Usage: ralph [--dry-run] [--max-tasks N] [--max-loops N] [--timeout M]
-#              [--model MODEL] [--scope PATTERN] [--sandbox] [--monitor]
-#              [--tmux] [--remote [HOST]] [--status] [--reset] [-h|--help]
+#              [--model MODEL] [--scope PATTERN] [--playlist FILE]
+#              [--sandbox] [--monitor] [--tmux] [--remote [HOST]]
+#              [--status] [--reset] [-h|--help]
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LIB_DIR="$SCRIPT_DIR/lib"
-
 # shellcheck source=lib/loader.sh
-source "$LIB_DIR/loader.sh"
-
-# ── Initialisation ──────────────────────────────────────────────────────────
-parse_args "$@"
-show_splash
-if [[ "$REMOTE_MODE" == "true" ]]; then run_remote; exit $?; fi
-if [[ "$TMUX_MODE" == "true" ]]; then run_tmux; exit $?; fi
-check_prereqs
-commit_beads_if_dirty
-ensure_ralph_branch
-trap 'EXIT_REASON="Interrupted (Ctrl+C)"; [[ -n "${CLAUDE_PID:-}" ]] && kill -KILL "$CLAUDE_PID" 2>/dev/null; exit 130' INT
-trap cleanup EXIT
-load_state
-init_sandbox
-init_invoke
+source "$SCRIPT_DIR/lib/loader.sh"
+initialize "$@"
 
 # ── Main loop ───────────────────────────────────────────────────────────────
-while true; do
-    check_exit_conditions || break
-    select_task           || break
-    handle_dry_run        && break
-    claim_task "$tid"
-    build_prompt "$tid" "$task_details"
-    invoke_claude         || break
-    check_bead_status "$tid"
-    update_circuit_breaker
-    handle_task_outcome "$tid"
-    save_state
-done
+if [[ -n "$PLAYLIST" ]]; then
+    # ── Playlist mode ──────────────────────────────────────────────────────
+    while true; do
+        check_exit_conditions    || break
+        playlist_next            || { EXIT_REASON="Playlist complete"; break; }
+        playlist_handle_dry_run  && continue
+        playlist_execute         || break
+        save_state
+    done
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        playlist_dry_run_summary
+        EXIT_REASON="Dry run complete"
+    fi
+else
+    # ── Standard br-ready mode ─────────────────────────────────────────────
+    while true; do
+        check_exit_conditions || break
+        select_task           || break
+        handle_dry_run        && break
+        claim_task "$tid"
+        build_prompt "$tid" "$task_details"
+        invoke_claude         || break
+        check_bead_status "$tid"
+        update_circuit_breaker
+        handle_task_outcome "$tid"
+        save_state
+    done
+fi
 save_state

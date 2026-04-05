@@ -1,4 +1,22 @@
-# tasks.sh — Task selection, claiming, and detail retrieval from beads.
+# tasks.sh — Task selection, claiming, detail retrieval, and skip logic.
+
+# ── bead_already_closed ────────────────────────────────────────────────────
+#
+# Check if a bead is already closed. Used by playlist mode to skip
+# completed beads on resume. Returns 0 if closed (should skip), 1 otherwise.
+
+bead_already_closed() {
+    local tid="$1"
+    local status
+    status=$(br show "$tid" --json 2>/dev/null \
+        | jq -r '.[0].status // "unknown"' 2>/dev/null) || return 1
+
+    if [[ "$status" == "closed" ]]; then
+        log "Skipping ${C_BOLD_CYAN}$tid${C_RESET} ${C_DIM}(already closed)${C_RESET}"
+        return 0
+    fi
+    return 1
+}
 
 # ── select_task ─────────────────────────────────────────────────────────────
 #

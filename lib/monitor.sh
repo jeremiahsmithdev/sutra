@@ -65,6 +65,11 @@ render_dashboard() {
         mdl="${model:-haiku}"
     fi
 
+    # Playlist state
+    local pl_file="" pl_line="0"
+    pl_file="${playlist_file:-}"
+    pl_line="${playlist_line:-0}"
+
     # Is ralph running?
     if pgrep -f "ralph.*--dangerously-skip-permissions" &>/dev/null || \
        pgrep -f "^bash.*ralph$" &>/dev/null; then
@@ -113,6 +118,12 @@ render_dashboard() {
     buf+=$'\n'
     buf+=$(printf '%s║%s  Status:     %-43b%s║%s' "$C_CYAN" "$C_RESET" "$status" "$C_CYAN" "$C_RESET")
     buf+=$'\n'
+    if [[ -n "$pl_file" ]]; then
+        local pl_basename="${pl_file##*/}"
+        buf+=$(printf '%s║%s  Playlist:   %s%-27s%s [line %s]  %s║%s' \
+            "$C_CYAN" "$C_RESET" "$C_BOLD_MAGENTA" "$pl_basename" "$C_RESET" "$pl_line" "$C_CYAN" "$C_RESET")
+        buf+=$'\n'
+    fi
     buf+=$(printf '%s║%s  Model:      %s%-35s%s   %s║%s' "$C_CYAN" "$C_RESET" "$C_BOLD" "$mdl" "$C_RESET" "$C_CYAN" "$C_RESET")
     buf+=$'\n'
     buf+=$(printf '%s║%s  Circuit:    %-43b%s║%s' "$C_CYAN" "$C_RESET" "$cb_display" "$C_CYAN" "$C_RESET")

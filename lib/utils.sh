@@ -110,6 +110,15 @@ load_state() {
         current_task=""
     fi
 
+    # Playlist resume: if state has a playlist_file that doesn't match current
+    # --playlist arg, warn and reset position.
+    if [[ -n "${PLAYLIST:-}" && -n "${playlist_file:-}" ]]; then
+        if [[ "$playlist_file" != "$PLAYLIST" ]]; then
+            log "WARNING: State file has playlist_file=$playlist_file but --playlist is $PLAYLIST. Resetting position."
+            playlist_line=0
+        fi
+    fi
+
     # Always reset session counters — each `ralph` invocation is a new session.
     # Use local time with RFC3339 offset to match beads' closed_at format.
     # BSD date gives +0530; sed inserts the colon for RFC3339 (+05:30).
@@ -132,4 +141,15 @@ session_start=${session_start:-}
 model=${MODEL:-haiku}
 max_loops=${MAX_LOOPS:-50}
 EOF
+
+    # Append playlist state when in playlist mode (skip during dry-run).
+    # playlist_advance() commits the pending line position — only called here,
+    # so a crash mid-task means playlist_line stays at the unfinished line.
+    if [[ -n "${PLAYLIST:-}" && "${DRY_RUN:-false}" != "true" ]]; then
+        playlist_advance
+        cat >> "$STATE_FILE" <<EOF
+playlist_file=${PLAYLIST}
+playlist_line=${playlist_line:-0}
+EOF
+    fi
 }

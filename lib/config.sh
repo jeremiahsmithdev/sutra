@@ -12,9 +12,21 @@ MAX_LOOPS=50
 # Minutes before a single Claude invocation is killed.
 TIMEOUT_MINUTES=10
 
+# Maximum turns per Claude invocation.
+MAX_TURNS=500
+
 # Regex pattern to filter which beads issues to work on.
 # Empty string means "work on everything ready".
 SCOPE=""
+
+# Path to a playlist file for ordered task execution.
+# When set, ralph executes tasks in file order instead of using br ready.
+# Mutually exclusive with --scope.
+PLAYLIST=""
+
+# Whether Claude should commit per-task. Default true for normal mode.
+# In playlist mode, defaults to false (commits at checkpoint prompts instead).
+AUTO_COMMIT=true
 
 # When true, ralph shows the next task and exits without invoking Claude.
 DRY_RUN=false
@@ -52,7 +64,7 @@ REMOTE_DIR=""
 STATE_FILE=".ralph_state"
 
 # Branch ralph creates its working branch from (e.g. "dev", "main").
-# Typically set per-project in .ralph.conf. If unset, uses current branch.
+# Typically set per-project in .ralph/config. If unset, uses current branch.
 # WORKING_BRANCH=""
 
 # Suppress neovim hook in non-interactive claude -p mode.
@@ -62,7 +74,7 @@ export OPEN_NVIM=false
 EXIT_REASON="unknown"
 
 # ── Per-project overrides ─────────────────────────────────────────────────
-# A .ralph.conf in the project root can override any of the above defaults.
+# A .ralph/config in the project root can override any of the above defaults.
 # CLI args (see args.sh) override both defaults and project config.
 # shellcheck source=/dev/null
-if [[ -f ".ralph.conf" ]]; then source ".ralph.conf"; fi
+if [[ -f ".ralph/config" ]]; then source ".ralph/config"; fi

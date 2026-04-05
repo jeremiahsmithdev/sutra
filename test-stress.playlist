@@ -1,0 +1,36 @@
+# ═══════════════════════════════════════════════════════════════════
+# STRESS TEST PLAYLIST — designed to break things
+# ═══════════════════════════════════════════════════════════════════
+
+# --- Edge case: task with no dependencies (should run clean) ---
+ralph-dtg.4
+
+# --- Edge case: raw prompt between beads ---
+> List all files in output/ and lib/ — just ls, no changes
+
+# --- Core chain: T1 → T2 → T3 (dependency order) ---
+ralph-dtg.1
+ralph-dtg.2
+
+# --- Edge case: raw prompt with @model override ---
+>@sonnet Verify that output/hello.txt exists and has content. Cat it. Do NOT modify anything.
+
+ralph-dtg.3
+
+# --- Edge case: duplicate bead (already closed by now — tests skip) ---
+ralph-dtg.1
+
+# --- Edge case: independent task after the chain ---
+ralph-dtg.5
+
+# --- Edge case: nonexistent bead ID ---
+ralph-FAKE-999
+
+# --- Edge case: raw prompt referencing work done above ---
+> Read output/stats.txt and output/hello.txt. Summarize what ralph accomplished. Do not modify any files.
+
+
+# --- Edge case: blank lines and trailing comments ---
+
+
+# end of playlist

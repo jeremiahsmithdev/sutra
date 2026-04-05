@@ -7,6 +7,7 @@ parse_args() {
     # ACTION tracks whether the user requested help/status/reset
     # instead of running the loop.
     ACTION=""
+    local commit_explicit=false
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -29,6 +30,20 @@ parse_args() {
             --scope)
                 SCOPE="$2"
                 shift 2
+                ;;
+            --playlist)
+                PLAYLIST="$2"
+                shift 2
+                ;;
+            --no-commit)
+                AUTO_COMMIT=false
+                commit_explicit=true
+                shift
+                ;;
+            --commit)
+                AUTO_COMMIT=true
+                commit_explicit=true
+                shift
                 ;;
             --sandbox)
                 SANDBOX_MODE=true
@@ -74,6 +89,22 @@ parse_args() {
         esac
     done
 
+    # ── Playlist validation ────────────────────────────────────────────────
+    if [[ -n "$PLAYLIST" ]]; then
+        if [[ ! -f "$PLAYLIST" ]]; then
+            log "ERROR: Playlist file not found: $PLAYLIST"
+            exit 1
+        fi
+        if [[ -n "$SCOPE" ]]; then
+            log "ERROR: Cannot use --playlist with --scope"
+            exit 1
+        fi
+        # Playlist mode defaults to no per-task commits unless user explicitly said --commit
+        if [[ "$commit_explicit" == false ]]; then
+            AUTO_COMMIT=false
+        fi
+    fi
+
     # ── Early exits ─────────────────────────────────────────────────────────
     # These actions print output and exit before the main loop starts.
 
@@ -87,6 +118,9 @@ Usage: ralph [OPTIONS]
   --max-loops N        Stop after N Claude invocations (default: 50)
   --timeout N          Minutes per Claude invocation (default: 10)
   --scope PATTERN      Only work issues matching regex pattern
+  --playlist FILE      Execute tasks from playlist file (mutually exclusive with --scope)
+  --no-commit          Tell Claude not to commit per-task (playlist default)
+  --commit             Tell Claude to commit per-task (overrides playlist default)
   --sandbox            Wrap Claude in bubblewrap sandbox (Linux only)
   --model MODEL        Claude model to use (default: config.sh)
   --monitor            Live dashboard in a separate terminal
