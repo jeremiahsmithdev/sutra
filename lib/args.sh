@@ -70,6 +70,10 @@ parse_args() {
                 TMUX_MODE=true
                 shift
                 ;;
+            --init)
+                ACTION="init"
+                shift
+                ;;
             --status)
                 ACTION="status"
                 shift
@@ -126,10 +130,16 @@ Usage: ralph [OPTIONS]
   --monitor            Live dashboard in a separate terminal
   --tmux, -t           Wrap execution in a detachable tmux session
   --remote [HOST], -r  Run on remote server via SSH+tmux
+  --init               Create .ralph/ directory with default config
   --status             Print current state and exit
   --reset              Clear circuit breaker and loop state
   -h, --help           Show this help
 USAGE
+        exit 0
+    fi
+
+    if [[ "$ACTION" == "init" ]]; then
+        init_project
         exit 0
     fi
 

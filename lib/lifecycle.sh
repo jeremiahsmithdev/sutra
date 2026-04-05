@@ -3,6 +3,43 @@
 # initialize() sets up the environment after argument parsing.
 # cleanup() is registered via `trap cleanup EXIT` and runs on any exit.
 
+init_project() {
+    if [[ -f ".ralph/config" ]]; then
+        log "WARNING: .ralph/config already exists. Skipping."
+        exit 0
+    fi
+
+    mkdir -p .ralph
+    cat > .ralph/config <<'CONFIG'
+# ralph project config — per-project overrides for config.sh defaults.
+# Uncomment and modify as needed. CLI flags override these values.
+
+# Claude model for inner loop invocations.
+# MODEL="haiku"
+
+# Minutes before a single Claude invocation is killed.
+# TIMEOUT_MINUTES=10
+
+# Maximum number of Claude invocations (outer loop) before stopping.
+# MAX_LOOPS=50
+
+# Maximum tool-use turns per Claude invocation (inner loop).
+# MAX_TURNS=500
+
+# Branch ralph creates its working branch from.
+# If unset, uses the current branch when ralph first runs.
+# WORKING_BRANCH="main"
+
+# SSH target for --remote execution.
+# REMOTE_HOST="opc@oracle"
+
+# Working directory on the remote server.
+# REMOTE_DIR=""
+CONFIG
+
+    log "Created .ralph/config"
+}
+
 initialize() {
     parse_args "$@"
     show_splash
