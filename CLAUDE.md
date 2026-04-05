@@ -4,9 +4,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Ralph is an autonomous AI coding system — a bash outer loop that feeds beads issues to Claude Code one at a time. ~1,300 lines of bash across 16 library files implementing the core loop, circuit breaker, monitoring dashboard, remote execution, and branch management.
+Ralph is an autonomous AI coding system — a bash outer loop that feeds beads issues to Claude Code one at a time. ~1,800 lines of bash across 17 library files implementing the core loop, playlist execution, circuit breaker, monitoring dashboard, remote execution, and branch management.
 
 **Philosophy:** Read [[PHILOSOPHY.md]] first. The bitter lesson applies: simple deterministic orchestration + a smart model beats clever multi-agent systems. The outer loop is a for-loop with a sort. All intelligence lives in the inner loop (Claude).
+
+## Coding Style: Functional Decomposition
+
+**Prefer linear sequences of descriptive function calls over nested logic, inline code, or deep conditionals.**
+
+Every function should do one thing, named so the caller reads like prose. The main loop is the model — each line is a verb phrase describing what happens next:
+
+```bash
+# GOOD — linear, self-documenting
+validate_environment
+load_configuration
+select_next_task
+claim_task "$tid"
+build_prompt "$task_details"
+invoke_claude "$prompt"
+evaluate_outcome "$tid"
+update_circuit_breaker
+save_state
+
+# BAD — inline logic, nested conditionals, unclear intent
+if [[ -n "$tid" ]]; then
+  result=$(br show "$tid" --json)
+  if [[ $? -eq 0 ]]; then
+    status=$(echo "$result" | jq -r '.status')
+    if [[ "$status" == "closed" ]]; then
+      # ... 20 more lines of nested logic
+```
+
+### Rules
+
+1. **Name functions as verb phrases** — `pick_next_task()`, `ensure_ralph_branch()`, `commit_beads_if_dirty()`. The name IS the documentation.
+2. **Keep callers linear** — a function body should read top-to-bottom as a sequence of function calls, not a tree of conditionals. Extract branches into named functions.
+3. **One level of abstraction per function** — don't mix high-level orchestration (`run_main_loop`) with low-level details (`jq -r '.status'`). Push details down into well-named helpers.
+4. **Avoid deep nesting** — if you're 3+ levels deep in `if/for/while`, extract the inner block into a function with a descriptive name.
+5. **Guard clauses over nesting** — return/exit early for error cases at the top, keep the happy path unindented.
+6. **Functions over comments** — if you need a comment to explain a block, extract it into a function whose name provides that explanation.
+7. **Regenerate ctags after adding/renaming functions** — run `ctags -R .` from the project root. Neovim's `gd` uses the `tags` file for cross-file navigation (bashls can't do this). The `.ctags.d/ralph.ctags` config excludes non-source directories.
 
 ## Running Ralph
 
@@ -15,8 +52,11 @@ Ralph is an autonomous AI coding system — a bash outer loop that feeds beads i
 ./ralph --dry-run                # Show next task without executing
 ./ralph --max-tasks 3            # Stop after 3 completed tasks
 ./ralph --max-loops 10           # Stop after 10 Claude invocations
+./ralph --max-turns 200          # Max turns per Claude invocation (default: 500)
 ./ralph --timeout 20             # 20 minutes per invocation (default: 10)
 ./ralph --scope "auth"           # Only work issues matching regex
+./ralph --playlist plan.playlist # Execute tasks in file order (see Playlist Mode)
+./ralph --auto-commit false      # Disable per-task commits (playlist default)
 ./ralph --model sonnet           # Override model (default: haiku)
 ./ralph --sandbox                # Bubblewrap isolation (Linux only)
 ./ralph --monitor                # Live dashboard (run in separate terminal)
@@ -25,7 +65,11 @@ Ralph is an autonomous AI coding system — a bash outer loop that feeds beads i
 ./ralph --reset                  # Clear circuit breaker and counters
 ```
 
-Per-project overrides go in `.ralph.conf` (sourced by `config.sh`). CLI flags override both defaults and `.ralph.conf`.
+Per-project overrides go in `.ralph/config` (sourced by `config.sh`). CLI flags override both defaults and `.ralph/config`.
+
+### Navigation
+
+`ctags -R .` regenerates the `tags` file for cross-file function navigation in Neovim (`gd`). The `.ctags.d/ralph.ctags` config scopes to Sh files and excludes `.git`, `.beads`, `.history`, `reference-projects`, and `output`. `.shellcheckrc` doubles as a root marker for bash-language-server.
 
 ## Prerequisites
 
@@ -35,8 +79,9 @@ Ralph requires: `br` (beads_rust), `claude` (Claude Code CLI), `jq`, `timeout`/`
 
 ### The Main Loop (45 lines)
 
-`ralph` sources `lib/loader.sh` which loads all 16 library files. The entire loop is:
+`ralph` sources `lib/loader.sh` which loads all 17 library files. The main script has two execution modes:
 
+**Standard mode** (`br ready`):
 ```
 while true:
     check_exit_conditions  →  max tasks/loops/circuit breaker
@@ -49,6 +94,17 @@ while true:
     handle_task_outcome    →  closed → bump counter; epic auto-close
     save_state             →  persist to .ralph_state
 ```
+
+**Playlist mode** (`--playlist FILE`):
+```
+while true:
+    check_exit_conditions  →  same as standard
+    playlist_next          →  advance to next actionable line
+    playlist_execute       →  dispatch: bead task or raw prompt
+    save_state             →  persist + advance playlist position
+```
+
+On exit, playlist mode generates a completion report via one final Claude invocation.
 
 ### Library Files (`lib/`)
 
@@ -70,7 +126,8 @@ Load order matters — defined in `loader.sh`:
 | `sandbox.sh` | Bubblewrap filesystem isolation wrapper |
 | `format_stream.sh` | jq filter: stream-json → human-readable (text, tool uses, cost) |
 | `splash.sh` | ASCII art |
-| `cleanup.sh` | Exit trap — session summary |
+| `playlist.sh` | Playlist parsing, line classification, dry-run validation, execution dispatch |
+| `lifecycle.sh` | Session lifecycle — `initialize()`, exit `cleanup()`, playlist completion reports |
 
 ### Key Global Variables
 
@@ -81,6 +138,35 @@ State flows through globals (set in `config.sh`, modified by `args.sh`, persiste
 - `current_task` — retry tracking (non-empty = retrying same task)
 - `tid` / `task_details` — current task being worked
 - `CLAUDE_PID` — for interrupt handling
+
+### Playlist Mode
+
+A playlist is a text file where each line is one of:
+- `<bead-id>` — executed as a normal bead task (claim → build prompt → invoke → close)
+- `> <prompt>` — executed as a free-form Claude prompt (no bead to claim/close)
+- `>@opus <prompt>` — free-form prompt with per-line model override
+- `# comment` or blank — skipped
+
+```bash
+# Example playlist
+abc123
+def456
+> Review the changes so far and fix any test failures
+>@opus Refactor the auth module for clarity
+ghi789
+```
+
+Playlist state is crash-safe: `playlist_line` in `.ralph_state` only advances after successful execution, so a crash mid-task resumes at the same line. Dry-run (`--dry-run --playlist`) validates all bead IDs, checks statuses, and warns about dependency ordering.
+
+### Invocation Retry Logic
+
+`invoke_claude()` retries up to 3 times on failure (configurable via `MAX_RETRIES` in `invoke.sh`). Each retry augments the prompt with failure context — the exit code diagnosis and the last 10 lines of stream-json output — so Claude can adapt its approach. Exit codes are mapped to human-readable diagnoses (124=timeout, 137=OOM/kill, etc.).
+
+### Logging
+
+All output is captured to `.ralph/logs/`:
+- **Session logs** (`sessions/<project>-<branch>-<timestamp>.log`) — full stdout+stderr via `tee`
+- **Stream logs** (`stream/<session>-<NNN>.jsonl`) — raw `stream-json` output per invocation, useful for diagnosis and replay
 
 ### Branch Strategy
 
