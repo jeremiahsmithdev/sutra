@@ -1,0 +1,7 @@
+# .shellcheckrc — Project-wide shellcheck configuration.
+#
+# Doubles as a root marker for bash-language-server, enabling
+# cross-file go-to-definition in Neovim without per-file annotations.
+
+# Follow sourced files relative to project root
+source-path=SCRIPTDIR

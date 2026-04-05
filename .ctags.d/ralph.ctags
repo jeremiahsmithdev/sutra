@@ -1,0 +1,7 @@
+--recurse
+--languages=Sh
+--exclude=.git
+--exclude=.beads
+--exclude=.history
+--exclude=reference-projects
+--exclude=output
