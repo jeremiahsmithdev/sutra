@@ -116,85 +116,8 @@ _invoke_claude_once() {
     return 0
 }
 
-# ── augment_prompt_with_failure_context ────────────────────────────────────
-#
-# Append failure context to $prompt so the next attempt can adapt its approach.
-# Maps exit codes to human-readable diagnoses with actionable guidance.
-
-augment_prompt_with_failure_context() {
-    local exit_code="$1"
-    local attempt="$2"
-    local diagnosis last_output
-
-    diagnosis=$(diagnose_exit_code "$exit_code")
-    last_output=$(extract_failure_tail)
-
-    prompt="$prompt
-
-## RETRY CONTEXT (attempt $((attempt + 1))/$MAX_RETRIES)
-The previous attempt FAILED. Here is what happened:
-* Exit code: $exit_code
-* Diagnosis: $diagnosis
-
-### Last output before failure
-$last_output
-
-IMPORTANT — adapt your approach:
-* If the issue was a timeout: work in smaller steps, do less per invocation.
-* If the issue was context overflow: produce shorter output, avoid large file reads.
-* If the issue was an API error: this may be transient, try the same approach.
-* If the issue was a tool error: try an alternative approach to achieve the same goal.
-* Do NOT repeat the exact same sequence of actions that failed."
-}
-
-# ── extract_failure_tail ───────────────────────────────────────────────────
-#
-# Extract the last meaningful content from the raw stream-json log.
-# Pulls the last few assistant text blocks and any error messages,
-# giving the retry prompt concrete context about what happened.
-
-extract_failure_tail() {
-    if [[ ! -f "${INVOKE_LOG:-}" ]]; then
-        echo "(no log available)"
-        return
-    fi
-
-    # Extract the last assistant text blocks + any error/result events
-    local tail_content
-    tail_content=$(tail -50 "$INVOKE_LOG" | jq -r '
-        if .type == "assistant" then
-            (.message.content[]? |
-                if .type == "text" then "TEXT: " + (.text | .[0:200])
-                elif .type == "tool_use" then "TOOL: " + .name + " " + (.input | to_entries | map(.key + "=" + (.value | tostring | .[0:80])) | join(", "))
-                else empty end)
-        elif .type == "result" then
-            "RESULT: " + (.result // "no result") + " (turns: " + (.num_turns | tostring) + ")"
-        elif .type == "error" then
-            "ERROR: " + (.error.message // .error // "unknown error")
-        else empty end
-    ' 2>/dev/null | tail -10)
-
-    if [[ -z "$tail_content" ]]; then
-        echo "(log exists but no parseable content — raw log: $INVOKE_LOG)"
-    else
-        echo "$tail_content"
-    fi
-}
-
-# ── diagnose_exit_code ─────────────────────────────────────────────────────
-#
-# Map Claude CLI exit codes to human-readable failure reasons.
-
-diagnose_exit_code() {
-    local code="$1"
-    case "$code" in
-        124) echo "Timeout — invocation exceeded ${TIMEOUT_MINUTES}m limit" ;;
-        137) echo "Killed (SIGKILL) — likely OOM or external signal" ;;
-        1)   echo "General error — possibly API failure, auth issue, or tool crash" ;;
-        2)   echo "Misuse — bad arguments or configuration" ;;
-        *)   echo "Unknown failure (exit code $code)" ;;
-    esac
-}
+# Retry context injection, failure tail extraction, and exit code diagnosis
+# live in invoke_retry.sh — sourced by loader.sh immediately after this file.
 
 # ── check_bead_status ───────────────────────────────────────────────────────
 #

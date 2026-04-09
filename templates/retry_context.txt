@@ -1,0 +1,16 @@
+
+
+## RETRY CONTEXT (attempt {{ATTEMPT}}/{{MAX_RETRIES}})
+The previous attempt FAILED. Here is what happened:
+* Exit code: {{EXIT_CODE}}
+* Diagnosis: {{DIAGNOSIS}}
+
+### Last output before failure
+{{LAST_OUTPUT}}
+
+IMPORTANT — adapt your approach:
+* If the issue was a timeout: work in smaller steps, do less per invocation.
+* If the issue was context overflow: produce shorter output, avoid large file reads.
+* If the issue was an API error: this may be transient, try the same approach.
+* If the issue was a tool error: try an alternative approach to achieve the same goal.
+* Do NOT repeat the exact same sequence of actions that failed.
