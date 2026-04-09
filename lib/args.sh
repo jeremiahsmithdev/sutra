@@ -1,90 +1,48 @@
-# args.sh — Command-line argument parsing and early-exit handlers.
+# args.sh — Command-line argument parsing and early-exit dispatch.
 #
-# Defines parse_args() which processes CLI flags into global config variables.
-# Handles --help, --status, and --reset directly (these exit immediately).
+# parse_args() sets globals from CLI flags, validates playlist options,
+# and dispatches early-exit actions (help, init, status, reset, monitor).
 
 parse_args() {
-    # ACTION tracks whether the user requested help/status/reset
-    # instead of running the loop.
     ACTION=""
     local commit_explicit=false
+    parse_arg_flags "$@"
+    validate_playlist_args "$commit_explicit"
+    dispatch_early_exit_action
+}
 
+# ── parse_arg_flags ────────────────────────────────────────────────────────
+#
+# Walk the argv and set global config vars. Single-use variable
+# commit_explicit is set in the enclosing scope so validate_playlist_args
+# can see whether --commit/--no-commit was passed.
+
+parse_arg_flags() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --dry-run)
-                DRY_RUN=true
-                shift
-                ;;
-            --max-tasks)
-                MAX_TASKS="$2"
-                shift 2
-                ;;
-            --max-loops)
-                MAX_LOOPS="$2"
-                shift 2
-                ;;
-            --timeout)
-                TIMEOUT_MINUTES="$2"
-                shift 2
-                ;;
-            --scope)
-                SCOPE="$2"
-                shift 2
-                ;;
-            --playlist)
-                PLAYLIST="$2"
-                shift 2
-                ;;
-            --no-commit)
-                AUTO_COMMIT=false
-                commit_explicit=true
-                shift
-                ;;
-            --commit)
-                AUTO_COMMIT=true
-                commit_explicit=true
-                shift
-                ;;
-            --sandbox)
-                SANDBOX_MODE=true
-                shift
-                ;;
-            --model)
-                MODEL="$2"
-                shift 2
-                ;;
-            --monitor)
-                MONITOR_MODE=true
-                shift
-                ;;
+            --dry-run)     DRY_RUN=true; shift ;;
+            --max-tasks)   MAX_TASKS="$2"; shift 2 ;;
+            --max-loops)   MAX_LOOPS="$2"; shift 2 ;;
+            --timeout)     TIMEOUT_MINUTES="$2"; shift 2 ;;
+            --scope)       SCOPE="$2"; shift 2 ;;
+            --playlist)    PLAYLIST="$2"; shift 2 ;;
+            --no-commit)   AUTO_COMMIT=false; commit_explicit=true; shift ;;
+            --commit)      AUTO_COMMIT=true; commit_explicit=true; shift ;;
+            --sandbox)     SANDBOX_MODE=true; shift ;;
+            --model)       MODEL="$2"; shift 2 ;;
+            --monitor)     MONITOR_MODE=true; shift ;;
+            --tmux|-t)     TMUX_MODE=true; shift ;;
+            --init)        ACTION="init"; shift ;;
+            --status)      ACTION="status"; shift ;;
+            --reset)       ACTION="reset"; shift ;;
+            -h|--help)     ACTION="help"; shift ;;
             --remote|-r)
                 REMOTE_MODE=true
                 if [[ $# -gt 1 && ! "$2" =~ ^- ]]; then
-                    REMOTE_HOST="$2"
-                    shift 2
+                    REMOTE_HOST="$2"; shift 2
                 else
                     shift
                 fi
-                ;;
-            --tmux|-t)
-                TMUX_MODE=true
-                shift
-                ;;
-            --init)
-                ACTION="init"
-                shift
-                ;;
-            --status)
-                ACTION="status"
-                shift
-                ;;
-            --reset)
-                ACTION="reset"
-                shift
-                ;;
-            -h|--help)
-                ACTION="help"
-                shift
                 ;;
             *)
                 log "ERROR: Unknown option: $1"
@@ -92,28 +50,53 @@ parse_args() {
                 ;;
         esac
     done
+}
 
-    # ── Playlist validation ────────────────────────────────────────────────
-    if [[ -n "$PLAYLIST" ]]; then
-        if [[ ! -f "$PLAYLIST" ]]; then
-            log "ERROR: Playlist file not found: $PLAYLIST"
-            exit 1
-        fi
-        if [[ -n "$SCOPE" ]]; then
-            log "ERROR: Cannot use --playlist with --scope"
-            exit 1
-        fi
-        # Playlist mode defaults to no per-task commits unless user explicitly said --commit
-        if [[ "$commit_explicit" == false ]]; then
-            AUTO_COMMIT=false
-        fi
+# ── validate_playlist_args ─────────────────────────────────────────────────
+#
+# Check --playlist file exists, reject --playlist + --scope combo, and
+# default to no per-task commits in playlist mode unless explicitly overridden.
+
+validate_playlist_args() {
+    local commit_explicit="$1"
+    [[ -z "$PLAYLIST" ]] && return
+
+    if [[ ! -f "$PLAYLIST" ]]; then
+        log "ERROR: Playlist file not found: $PLAYLIST"
+        exit 1
     fi
+    if [[ -n "$SCOPE" ]]; then
+        log "ERROR: Cannot use --playlist with --scope"
+        exit 1
+    fi
+    if [[ "$commit_explicit" == false ]]; then
+        AUTO_COMMIT=false
+    fi
+}
 
-    # ── Early exits ─────────────────────────────────────────────────────────
-    # These actions print output and exit before the main loop starts.
+# ── dispatch_early_exit_action ─────────────────────────────────────────────
+#
+# Route the ACTION set by parse_arg_flags to its handler, then exit.
+# Each handler prints output and terminates without entering the main loop.
 
-    if [[ "$ACTION" == "help" ]]; then
-        cat <<'USAGE'
+dispatch_early_exit_action() {
+    case "$ACTION" in
+        help)   show_help; exit 0 ;;
+        init)   init_project; exit 0 ;;
+        status) show_status; exit 0 ;;
+        reset)  reset_state; exit 0 ;;
+    esac
+
+    if [[ "$MONITOR_MODE" == "true" ]]; then
+        run_monitor
+        exit $?
+    fi
+}
+
+# ── show_help ──────────────────────────────────────────────────────────────
+
+show_help() {
+    cat <<'USAGE'
 ralph — Autonomous task executor. Loops Claude Code over beads issues.
 
 Usage: ralph [OPTIONS]
@@ -135,38 +118,28 @@ Usage: ralph [OPTIONS]
   --reset              Clear circuit breaker and loop state
   -h, --help           Show this help
 USAGE
-        exit 0
-    fi
+}
 
-    if [[ "$ACTION" == "init" ]]; then
-        init_project
-        exit 0
-    fi
+# ── show_status ────────────────────────────────────────────────────────────
 
-    if [[ "$ACTION" == "status" ]]; then
-        if [[ -f "$STATE_FILE" ]]; then
-            log "Current state:"
-            cat "$STATE_FILE"
-        else
-            log "No state file. Ralph has not run here."
-        fi
-        exit 0
+show_status() {
+    if [[ -f "$STATE_FILE" ]]; then
+        log "Current state:"
+        cat "$STATE_FILE"
+    else
+        log "No state file. Ralph has not run here."
     fi
+}
 
-    if [[ "$ACTION" == "reset" ]]; then
-        circuit="CLOSED"
-        no_progress_count=0
-        total_tasks_completed=0
-        total_loops=0
-        current_task=""
-        save_state
-        rm -f .ralph_remote
-        log "State reset."
-        exit 0
-    fi
+# ── reset_state ────────────────────────────────────────────────────────────
 
-    if [[ "$MONITOR_MODE" == "true" ]]; then
-        run_monitor
-        exit $?
-    fi
+reset_state() {
+    circuit="CLOSED"
+    no_progress_count=0
+    total_tasks_completed=0
+    total_loops=0
+    current_task=""
+    save_state
+    rm -f .ralph_remote
+    log "State reset."
 }
