@@ -31,6 +31,8 @@ source "$LIB_DIR/monitor_render.sh"
 source "$LIB_DIR/tasks.sh"
 # shellcheck source=lib/playlist.sh
 source "$LIB_DIR/playlist.sh"
+# shellcheck source=lib/playlist_validate.sh
+source "$LIB_DIR/playlist_validate.sh"
 # shellcheck source=lib/prompt.sh
 source "$LIB_DIR/prompt.sh"
 # shellcheck source=lib/format_stream.sh
