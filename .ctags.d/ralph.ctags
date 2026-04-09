@@ -5,3 +5,5 @@
 --exclude=.history
 --exclude=reference-projects
 --exclude=output
+--exclude=templates
+--exclude=.ralph
