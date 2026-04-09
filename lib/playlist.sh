@@ -106,10 +106,16 @@ playlist_advance() {
 # If --dry-run is set, log the current playlist line and return 0 (skip).
 # If not dry-run, return 1 (continue to execution).
 # Mirrors handle_dry_run() from tasks.sh.
+#
+# Must call playlist_advance directly: the main loop skips save_state in
+# dry-run via `&& continue`, and save_state itself guards playlist_advance
+# behind DRY_RUN != true (no on-disk side effects during dry-run). Without
+# this advance, playlist_next() would re-scan the same line forever.
 
 playlist_handle_dry_run() {
     [[ "$DRY_RUN" != "true" ]] && return 1
     playlist_dry_run
+    playlist_advance
     return 0
 }
 
