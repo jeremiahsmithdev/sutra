@@ -11,7 +11,18 @@ Thumbs.db
 .vscode/
 .idea/
 tags
+.history/
 
 # Environment
 .env
 .env.*
+
+# Ralph runtime state (session-local, not source of truth)
+.ralph/logs/
+.ralph/state
+.ralph_state
+.ralph_remote
+
+# Generated artifacts
+output/
+handoff.md
