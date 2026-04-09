@@ -320,9 +320,8 @@ playlist_report_data() {
             prompt_text="${prompt_text#"${prompt_text%%[![:space:]]*}"}"
             printf '%d. [prompt] %s (processed: %s)\n' "$item_num" "${prompt_text:0:80}" "$was_processed"
         else
-            local bead_status="unknown"
-            bead_status=$(br show "$trimmed" --json 2>/dev/null \
-                | jq -r '.[0].status // "unknown"' 2>/dev/null) || true
+            local bead_status
+            bead_status=$(get_bead_status "$trimmed")
             printf '%d. [bead] %s (status: %s, processed: %s)\n' "$item_num" "$trimmed" "$bead_status" "$was_processed"
         fi
     done

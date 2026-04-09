@@ -53,24 +53,14 @@ mark_needs_review() {
 maybe_close_epic() {
     local tid="$1"
 
-    # Get parent epic ID
     local parent_id
-    parent_id=$(br show "$tid" --json 2>/dev/null \
-        | jq -r '.[0].parent // empty' 2>/dev/null) || return
+    parent_id=$(get_bead_field "$tid" parent)
     [[ -z "$parent_id" ]] && return
 
-    # Skip if epic is already closed
-    local epic_status
-    epic_status=$(br show "$parent_id" --json 2>/dev/null \
-        | jq -r '.[0].status // empty' 2>/dev/null) || return
-    [[ "$epic_status" == "closed" ]] && return
+    [[ "$(get_bead_status "$parent_id")" == "closed" ]] && return
 
-    # Count non-closed children of this epic via br show's dependents list.
-    # Filter to parent-child relationships only (excludes blocks dependencies).
     local open_count
-    open_count=$(br show "$parent_id" --json 2>/dev/null \
-        | jq '[.[0].dependents // [] | .[] | select(.dependency_type == "parent-child") | select(.status != "closed")] | length' \
-        2>/dev/null) || return
+    open_count=$(count_open_epic_children "$parent_id") || return
 
     if [[ "$open_count" -eq 0 ]]; then
         br close "$parent_id" 2>/dev/null

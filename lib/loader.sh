@@ -12,6 +12,8 @@ source "$LIB_DIR/splash.sh"
 source "$LIB_DIR/config.sh"
 # shellcheck source=lib/utils.sh
 source "$LIB_DIR/utils.sh"
+# shellcheck source=lib/utils_beads.sh
+source "$LIB_DIR/utils_beads.sh"
 # shellcheck source=lib/args.sh
 source "$LIB_DIR/args.sh"
 # shellcheck source=lib/prereqs.sh

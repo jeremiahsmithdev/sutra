@@ -83,16 +83,15 @@ render_dashboard() {
     # ── Current task details ────────────────────────────────────────────
     local cur_title="—" cur_branch="—"
     if [[ -n "$cur" ]]; then
-        cur_title=$(br show "$cur" --json 2>/dev/null \
-            | jq -r '.[0].title // "—"' 2>/dev/null) || cur_title="—"
+        cur_title=$(get_bead_field "$cur" title)
+        [[ -z "$cur_title" ]] && cur_title="—"
         cur_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || cur_branch="—"
     fi
 
     # ── Completed tasks this session ────────────────────────────────────
     local completed_json="[]"
     if [[ -n "$start" ]]; then
-        completed_json=$(br list --status=closed --all --json 2>/dev/null \
-            | jq --arg s "$start" '[.issues[] | select(.closed_at >= $s)]' 2>/dev/null) || completed_json="[]"
+        completed_json=$(get_closed_tasks_since "$start") || completed_json="[]"
     fi
     local completed_count
     completed_count=$(echo "$completed_json" | jq 'length' 2>/dev/null) || completed_count=0

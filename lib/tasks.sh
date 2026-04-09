@@ -7,11 +7,7 @@
 
 bead_already_closed() {
     local tid="$1"
-    local status
-    status=$(br show "$tid" --json 2>/dev/null \
-        | jq -r '.[0].status // "unknown"' 2>/dev/null) || return 1
-
-    if [[ "$status" == "closed" ]]; then
+    if [[ "$(get_bead_status "$tid")" == "closed" ]]; then
         log "Skipping ${C_BOLD_CYAN}$tid${C_RESET} ${C_DIM}(already closed)${C_RESET}"
         return 0
     fi
@@ -182,18 +178,12 @@ get_branch_context() {
 
     # Check if the epic depends on another epic (blocks dependency, not parent-child)
     local dep_epic_id dep_epic_title dep_epic_slug
-    dep_epic_id=$(echo "$epic_json" | jq -r '
-        [.[0].dependencies // [] | .[] | select(.dependency_type == "blocks") | select(.issue_type == "epic")]
-        | .[0].id // empty
-    ' 2>/dev/null)
+    dep_epic_id=$(extract_epic_blocker "$epic_json")
 
     if [[ -z "$dep_epic_id" ]]; then
         echo "epic:ralph-$epic_slug:ralph"
     else
-        dep_epic_title=$(echo "$epic_json" | jq -r "
-            [.[0].dependencies // [] | .[] | select(.id == \"$dep_epic_id\")]
-            | .[0].title // empty
-        " 2>/dev/null)
+        dep_epic_title=$(get_epic_dependency_title "$epic_json" "$dep_epic_id")
         dep_epic_slug=$(slugify "$dep_epic_title")
         echo "epic:ralph-$epic_slug:ralph-$dep_epic_slug"
     fi

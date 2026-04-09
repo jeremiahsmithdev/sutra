@@ -207,9 +207,7 @@ diagnose_exit_code() {
 check_bead_status() {
     local tid="$1"
 
-    bead_status=$(br show "$tid" --json 2>/dev/null \
-        | jq -r '.[0].status // "unknown"' 2>/dev/null \
-        || echo "unknown")
+    bead_status=$(get_bead_status "$tid")
 
     local status_color="$C_RESET"
     case "$bead_status" in
