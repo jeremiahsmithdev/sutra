@@ -1,0 +1,7 @@
+This task belongs to an epic that depends on a prior epic.
+Work on branch `{{EPIC_BRANCH}}`.
+If the branch does not exist, create it from `{{DEP_BRANCH}}` (the dependency):
+  git checkout {{DEP_BRANCH}} && git checkout -b {{EPIC_BRANCH}}
+If it already exists:
+  git checkout {{EPIC_BRANCH}}
+Commit all work to `{{EPIC_BRANCH}}`. Do NOT merge — merging happens at harvest.

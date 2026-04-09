@@ -162,3 +162,20 @@ playlist_line=${playlist_line:-0}
 EOF
     fi
 }
+
+# ── render_template ───────────────────────────────────────────────────────
+#
+# Read a template file and substitute {{KEY}} placeholders with values.
+# Usage: render_template <template_file> [KEY=value ...]
+# Pure bash — no external deps. Handles multi-line values correctly.
+render_template() {
+    local template_file="$1"; shift
+    local content pair key value
+    content=$(<"$template_file")
+    for pair in "$@"; do
+        key="${pair%%=*}"
+        value="${pair#*=}"
+        content="${content//\{\{$key\}\}/$value}"
+    done
+    printf '%s' "$content"
+}

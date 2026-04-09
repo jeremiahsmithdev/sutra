@@ -3,9 +3,6 @@
 # initialize() sets up the environment after argument parsing.
 # cleanup() is registered via `trap cleanup EXIT` and runs on any exit.
 
-# Path to the templates/ directory (sibling of lib/). LIB_DIR is set by loader.sh.
-TEMPLATES_DIR="$(dirname "$LIB_DIR")/templates"
-
 init_project() {
     if [[ -f ".ralph/config" ]]; then
         log "WARNING: .ralph/config already exists. Skipping."

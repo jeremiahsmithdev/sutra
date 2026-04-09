@@ -1,0 +1,32 @@
+You are generating a completion report for a ralph playlist run.
+
+## Instructions
+Write a markdown report to: {{REPORT_FILE}}
+Create the directory {{REPORT_DIR}} if it does not exist (mkdir -p).
+
+## Report Template
+
+# Ralph Playlist Report: {{PLAYLIST_NAME}}
+**Date:** {{TIMESTAMP}} **Model:** {{MODEL}}
+**Exit reason:** {{EXIT_REASON}} **Circuit breaker:** {{CIRCUIT}}
+
+## Summary
+- Tasks completed: {{TASKS_COMPLETED}}
+- Total loops: {{TOTAL_LOOPS}}
+- Playlist: {{PLAYLIST_PATH}} ({{PLAYLIST_TOTAL}} items)
+- Processed: {{PROCESSED}} / {{PLAYLIST_TOTAL}}
+
+## Task Results
+{{PLAYLIST_DATA}}
+
+## Commits This Session
+{{GIT_LOG}}
+
+## Notes
+Add any observations about the run: blocked tasks, patterns, issues discovered.
+
+## Rules
+1. Write the report file directly using the template above. Fill in the Notes section with useful observations.
+2. Commit the report: git add {{REPORT_DIR}} && git commit -m 'docs(ralph): playlist completion report'
+3. Do NOT modify any other files. Do NOT run br commands.
+4. When done, just exit.

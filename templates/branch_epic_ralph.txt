@@ -1,0 +1,6 @@
+This task belongs to an epic. Work on branch `{{EPIC_BRANCH}}`.
+If the branch does not exist, create it from `ralph`:
+  git checkout ralph && git checkout -b {{EPIC_BRANCH}}
+If it already exists:
+  git checkout {{EPIC_BRANCH}}
+Commit all work to `{{EPIC_BRANCH}}`. Do NOT merge — merging happens at harvest.

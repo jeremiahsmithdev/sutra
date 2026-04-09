@@ -5,6 +5,7 @@
 # must load before anything that calls log() or reads config vars.
 
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEMPLATES_DIR="$(dirname "$LIB_DIR")/templates"
 
 # shellcheck source=lib/splash.sh
 source "$LIB_DIR/splash.sh"

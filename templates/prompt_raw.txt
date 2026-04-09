@@ -1,0 +1,19 @@
+You are performing a maintenance task between automated bead implementations
+in the ralph autonomous loop.
+
+## Task
+{{PROMPT_TEXT}}
+
+## Context
+* Working directory: {{WORKING_DIR}}
+* Branch: {{CURRENT_BRANCH}}
+* Recent commits:
+{{RECENT_COMMITS}}
+
+## Rules
+1. Search the codebase before assuming anything about structure.
+2. Make targeted fixes and commit with conventional commit messages.
+3. You may update beads using br update/br create/br close as needed.
+4. Do NOT touch .beads/ files directly — use br commands only.
+5. Do NOT run br sync — the outer loop handles that.
+6. When done, just exit. There is no bead to close for this task.
