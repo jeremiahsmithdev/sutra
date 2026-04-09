@@ -20,7 +20,7 @@ sync_ralph() {
         "$SCRIPT_DIR/" \
         "$REMOTE_HOST:~/.ralph/" \
         --exclude '.git' \
-        --exclude '.ralph_state'
+        --exclude '.ralph/state'
 }
 
 # ── build_forward_args ────────────────────────────────────────────────────

@@ -77,9 +77,9 @@ show_prompt() {
 
 # ── State persistence ─────────────────────────────────────────────────────
 #
-# Ralph tracks its progress in a plain-text key=value file (.ralph_state)
-# in the project root. This lets it survive restarts and lets --status
-# and --reset inspect or clear state without running the loop.
+# Ralph tracks its progress in a plain-text key=value file (.ralph/state).
+# This lets it survive restarts and lets --status and --reset inspect or
+# clear state without running the loop.
 #
 # ── Beads housekeeping ───────────────────────────────────────────────
 #
@@ -87,6 +87,14 @@ show_prompt() {
 # If that file is git-tracked, it creates dirty working-tree state
 # that blocks `git checkout`. Auto-commit it before each invocation
 # so Claude always starts with a clean tree.
+
+migrate_state_file() {
+    if [[ -f ".ralph_state" && ! -f ".ralph/state" ]]; then
+        mkdir -p .ralph
+        mv .ralph_state .ralph/state
+        log "Migrated .ralph_state → .ralph/state"
+    fi
+}
 
 commit_beads_if_dirty() {
     if git diff --quiet .beads/ 2>/dev/null && git diff --cached --quiet .beads/ 2>/dev/null; then
@@ -98,6 +106,7 @@ commit_beads_if_dirty() {
 
 # Read state from disk, or initialise defaults if no state file exists.
 load_state() {
+    mkdir -p "$(dirname "$STATE_FILE")"
     if [[ -f "$STATE_FILE" ]]; then
         # shellcheck source=/dev/null
         source "$STATE_FILE"

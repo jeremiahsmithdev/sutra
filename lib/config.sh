@@ -61,7 +61,7 @@ REMOTE_HOST=""
 REMOTE_DIR=""
 
 # File in the project root that persists loop state between runs.
-STATE_FILE=".ralph_state"
+STATE_FILE=".ralph/state"
 
 # Branch ralph creates its working branch from (e.g. "dev", "main").
 # Typically set per-project in .ralph/config. If unset, uses current branch.

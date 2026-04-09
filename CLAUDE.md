@@ -45,6 +45,74 @@ if [[ -n "$tid" ]]; then
 6. **Functions over comments** — if you need a comment to explain a block, extract it into a function whose name provides that explanation.
 7. **Regenerate ctags after adding/renaming functions** — run `ctags -R .` from the project root. Neovim's `gd` uses the `tags` file for cross-file navigation (bashls can't do this). The `.ctags.d/ralph.ctags` config excludes non-source directories.
 
+### Size Limits
+
+Hard limits. No exceptions without explicit approval.
+
+| Unit | Max Lines | Action When Exceeded |
+|------|-----------|---------------------|
+| **File** | 200 | Split into focused files. A file does one thing. |
+| **Function** | 50 | Extract sub-functions with descriptive names. |
+| **Case branch** | 10 | Extract the branch body into a named function. |
+| **Inline string** | 5 | Extract to a variable, or a file under `templates/`. |
+
+### String & Template Extraction
+
+Long inline strings destroy readability. Extract them.
+
+1. **Multi-line heredocs >5 lines** → move to a file under `templates/` and `cat` it in. Prompt templates, config scaffolds, help text — none of these belong inline.
+2. **Complex jq expressions >3 lines** → extract to a named function (e.g., `extract_epic_blocker()` instead of inline `jq -r '[.[0].dependencies // ...`). The function name documents what the query does.
+3. **printf chains for display** → extract each logical section into a `render_*()` or `build_*()` function. A dashboard frame builder should read as a sequence of section calls, not 60 lines of printf.
+4. **Prompt construction** → assemble from named variables, not one giant string. Each section (task details, branch instructions, rules, closure protocol) should be its own variable or function return.
+5. **Repeated string patterns** → if the same `br show ... | jq ...` pattern appears in multiple files, extract to a shared helper in `utils.sh`.
+
+```bash
+# BAD — 20-line heredoc inline
+prompt="You are executing a single task...
+## Your Task
+ID: $task_id
+$details
+## Branch
+$branch_section
+## Rules
+1. Implement this ONE task completely...
+..."
+
+# GOOD — assembled from named parts
+local task_section branch_section rules_section closing_section
+task_section=$(format_task_section "$task_id" "$details")
+branch_section=$(format_branch_instructions "$branch_ctx")
+rules_section=$(format_execution_rules)
+closing_section=$(format_closure_protocol "$task_id")
+prompt="${task_section}
+
+${branch_section}
+
+${rules_section}
+
+${closing_section}"
+```
+
+```bash
+# BAD — complex jq inline
+dep_epic_id=$(echo "$epic_json" | jq -r '
+    [.[0].dependencies // [] | .[] | select(.dependency_type == "blocks")
+     | select(.issue_type == "epic")] | .[0].id // empty
+' 2>/dev/null)
+
+# GOOD — named function
+dep_epic_id=$(extract_epic_blocker "$epic_json")
+```
+
+### File Splitting Guidelines
+
+When a file exceeds 200 lines, split by responsibility:
+
+- **One concern per file** — parsing, rendering, validation, and execution are separate concerns even if they operate on the same data.
+- **Name the new file for its verb** — `validate_playlist.sh` not `playlist_helpers.sh`. The filename should tell you what the functions inside do.
+- **Update `loader.sh`** — new files must be added to the load order.
+- **Keep the original file as the orchestrator** — it calls into the extracted files, reading like a table of contents.
+
 ## Running Ralph
 
 ```bash
@@ -61,7 +129,7 @@ if [[ -n "$tid" ]]; then
 ./ralph --sandbox                # Bubblewrap isolation (Linux only)
 ./ralph --monitor                # Live dashboard (run in separate terminal)
 ./ralph --remote oracle          # Run on remote server via SSH+tmux
-./ralph --status                 # Print current .ralph_state
+./ralph --status                 # Print current .ralph/state
 ./ralph --reset                  # Clear circuit breaker and counters
 ```
 
@@ -92,7 +160,7 @@ while true:
     check_bead_status      →  query br for current status
     update_circuit_breaker →  track no-progress streaks
     handle_task_outcome    →  closed → bump counter; epic auto-close
-    save_state             →  persist to .ralph_state
+    save_state             →  persist to .ralph/state
 ```
 
 **Playlist mode** (`--playlist FILE`):
@@ -121,7 +189,7 @@ Load order matters — defined in `loader.sh`:
 | `invoke.sh` | `invoke_claude()` — runs `claude -p` with timeout, captures exit code |
 | `circuit_breaker.sh` | 3-state machine: CLOSED →(2 no-progress)→ HALF_OPEN →(3)→ OPEN (halt) |
 | `task_outcome.sh` | `handle_task_outcome()`, `mark_needs_review()`, `maybe_close_epic()` |
-| `monitor.sh` | Live dashboard — double-buffered, 1s refresh, reads .ralph_state + br queries |
+| `monitor.sh` | Live dashboard — double-buffered, 1s refresh, reads .ralph/state + br queries |
 | `remote.sh` | `run_remote()` — rsync + SSH + tmux session management |
 | `sandbox.sh` | Bubblewrap filesystem isolation wrapper |
 | `format_stream.sh` | jq filter: stream-json → human-readable (text, tool uses, cost) |
@@ -156,7 +224,7 @@ def456
 ghi789
 ```
 
-Playlist state is crash-safe: `playlist_line` in `.ralph_state` only advances after successful execution, so a crash mid-task resumes at the same line. Dry-run (`--dry-run --playlist`) validates all bead IDs, checks statuses, and warns about dependency ordering.
+Playlist state is crash-safe: `playlist_line` in `.ralph/state` only advances after successful execution, so a crash mid-task resumes at the same line. Dry-run (`--dry-run --playlist`) validates all bead IDs, checks statuses, and warns about dependency ordering.
 
 ### Invocation Retry Logic
 

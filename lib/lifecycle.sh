@@ -46,6 +46,7 @@ initialize() {
     if [[ "$REMOTE_MODE" == "true" ]]; then run_remote; exit $?; fi
     if [[ "$TMUX_MODE" == "true" ]]; then run_tmux; exit $?; fi
     check_prereqs
+    migrate_state_file
     commit_beads_if_dirty
     ensure_ralph_branch
     trap 'EXIT_REASON="Interrupted (Ctrl+C)"; [[ -n "${CLAUDE_PID:-}" ]] && kill -KILL "$CLAUDE_PID" 2>/dev/null; exit 130' INT

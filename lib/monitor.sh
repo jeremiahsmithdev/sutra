@@ -1,6 +1,6 @@
 # monitor.sh — Live dashboard that runs alongside a ralph session.
 #
-# Polls .ralph_state and beads every second, renders a colored
+# Polls .ralph/state and beads every second, renders a colored
 # status display. Launched via `ralph --monitor` in a separate terminal.
 #
 # Uses double-buffered rendering: the entire frame is built into a
@@ -47,7 +47,7 @@ run_monitor() {
 }
 
 render_dashboard() {
-    local state_file="${STATE_FILE:-.ralph_state}"
+    local state_file="${STATE_FILE:-.ralph/state}"
     local buf=""
     local W=56   # inner width of the box
 
