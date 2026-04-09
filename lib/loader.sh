@@ -25,6 +25,8 @@ source "$LIB_DIR/sandbox.sh"
 source "$LIB_DIR/remote.sh"
 # shellcheck source=lib/monitor.sh
 source "$LIB_DIR/monitor.sh"
+# shellcheck source=lib/monitor_render.sh
+source "$LIB_DIR/monitor_render.sh"
 # shellcheck source=lib/tasks.sh
 source "$LIB_DIR/tasks.sh"
 # shellcheck source=lib/playlist.sh
