@@ -3,40 +3,16 @@
 # initialize() sets up the environment after argument parsing.
 # cleanup() is registered via `trap cleanup EXIT` and runs on any exit.
 
+# Path to the templates/ directory (sibling of lib/). LIB_DIR is set by loader.sh.
+TEMPLATES_DIR="$(dirname "$LIB_DIR")/templates"
+
 init_project() {
     if [[ -f ".ralph/config" ]]; then
         log "WARNING: .ralph/config already exists. Skipping."
         exit 0
     fi
-
     mkdir -p .ralph
-    cat > .ralph/config <<'CONFIG'
-# ralph project config — per-project overrides for config.sh defaults.
-# Uncomment and modify as needed. CLI flags override these values.
-
-# Claude model for inner loop invocations.
-# MODEL="haiku"
-
-# Minutes before a single Claude invocation is killed.
-# TIMEOUT_MINUTES=10
-
-# Maximum number of Claude invocations (outer loop) before stopping.
-# MAX_LOOPS=50
-
-# Maximum tool-use turns per Claude invocation (inner loop).
-# MAX_TURNS=500
-
-# Branch ralph creates its working branch from.
-# If unset, uses the current branch when ralph first runs.
-# WORKING_BRANCH="main"
-
-# SSH target for --remote execution.
-# REMOTE_HOST="opc@oracle"
-
-# Working directory on the remote server.
-# REMOTE_DIR=""
-CONFIG
-
+    cat "$TEMPLATES_DIR/config.template" > .ralph/config
     log "Created .ralph/config"
 }
 
@@ -49,7 +25,7 @@ initialize() {
     migrate_state_file
     commit_beads_if_dirty
     ensure_ralph_branch
-    trap 'EXIT_REASON="Interrupted (Ctrl+C)"; [[ -n "${CLAUDE_PID:-}" ]] && kill -KILL "$CLAUDE_PID" 2>/dev/null; exit 130' INT
+    trap handle_interrupt INT
     trap cleanup EXIT
     load_state
     init_sandbox
@@ -57,33 +33,56 @@ initialize() {
     if [[ -n "$PLAYLIST" ]]; then playlist_init; fi
 }
 
+# ── handle_interrupt ───────────────────────────────────────────────────────
+#
+# SIGINT handler. Kills any live Claude child and exits with 130.
+
+handle_interrupt() {
+    EXIT_REASON="Interrupted (Ctrl+C)"
+    [[ -n "${CLAUDE_PID:-}" ]] && kill -KILL "$CLAUDE_PID" 2>/dev/null
+    exit 130
+}
+
 cleanup() {
     local tasks="${total_tasks_completed:-0}"
     local loops="${total_loops:-0}"
     local cb="${circuit:-CLOSED}"
 
-    # Generate playlist completion report if in playlist mode with work done
     if [[ -n "${PLAYLIST:-}" && "$tasks" -gt 0 && "$DRY_RUN" != "true" ]]; then
         generate_playlist_report
     fi
 
     log "=== Session Complete ==="
+    render_session_summary "$tasks" "$loops" "$cb"
+}
+
+# ── render_session_summary ─────────────────────────────────────────────────
+#
+# Print the boxed end-of-session summary. Takes the values as args so the
+# function is testable and doesn't reach into cleanup()'s locals.
+
+render_session_summary() {
+    local tasks="$1" loops="$2" cb="$3"
+    local cb_color
+    cb_color=$(circuit_color "$cb")
+
     printf '%s\n' "${C_DIM}┌─── Summary ───────────────────────────────────────────┐${C_RESET}"
     printf '%s│%s  Tasks completed:  %s%-4s%s\n' "$C_DIM" "$C_RESET" "$C_BOLD_GREEN" "$tasks" "$C_RESET"
     printf '%s│%s  Total loops:      %s%-4s%s\n' "$C_DIM" "$C_RESET" "$C_BOLD" "$loops" "$C_RESET"
-
-    if [[ "$cb" == "OPEN" ]]; then
-        printf '%s│%s  Circuit breaker:  %s%s%s\n' "$C_DIM" "$C_RESET" "$C_BOLD_RED" "$cb" "$C_RESET"
-    elif [[ "$cb" == "HALF_OPEN" ]]; then
-        printf '%s│%s  Circuit breaker:  %s%s%s\n' "$C_DIM" "$C_RESET" "$C_BOLD_YELLOW" "$cb" "$C_RESET"
-    else
-        printf '%s│%s  Circuit breaker:  %s%s%s\n' "$C_DIM" "$C_RESET" "$C_GREEN" "$cb" "$C_RESET"
-    fi
-
+    printf '%s│%s  Circuit breaker:  %s%s%s\n' "$C_DIM" "$C_RESET" "$cb_color" "$cb" "$C_RESET"
     printf '%s│%s  Exit reason:      %s\n' "$C_DIM" "$C_RESET" "$EXIT_REASON"
     printf '%s│%s  Session log:      %s%s%s\n' "$C_DIM" "$C_RESET" "$C_DIM" "${SESSION_LOG:-unknown}" "$C_RESET"
     printf '%s└───────────────────────────────────────────────────────┘%s\n' "$C_DIM" "$C_RESET"
     printf '%s\n' "${C_DIM}Run \`bnr\` to review completed work.${C_RESET}"
+}
+
+# Map a circuit breaker state to its display color.
+circuit_color() {
+    case "$1" in
+        OPEN)      echo "$C_BOLD_RED" ;;
+        HALF_OPEN) echo "$C_BOLD_YELLOW" ;;
+        *)         echo "$C_GREEN" ;;
+    esac
 }
 
 # ── generate_playlist_report ──────────────────────────────────────────────
