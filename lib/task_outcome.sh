@@ -4,6 +4,11 @@
 #   open        → Claude released it (blocked), pick next
 #   in_progress → not done, re-invoke on same task
 
+# Cross-bead context handoff globals — populated when a bead closes,
+# consumed and cleared when the next bead's prompt is built.
+LAST_TASK_SUMMARY=""
+LAST_TASK_ID=""
+
 handle_task_outcome() {
     local tid="$1"
 
@@ -12,6 +17,7 @@ handle_task_outcome() {
         closed)
             total_tasks_completed=$((total_tasks_completed + 1))
             log "Task ${C_BOLD_CYAN}$tid${C_RESET} ${C_BOLD_GREEN}complete${C_RESET}"
+            capture_task_handoff "$tid"
             mark_needs_review "$tid"
             maybe_close_epic "$tid"
             current_task=""
@@ -31,6 +37,57 @@ handle_task_outcome() {
             current_task=""
             ;;
     esac
+}
+
+# ── capture_task_handoff ──────────────────────────────────────────────────
+#
+# After a bead closes, capture the last assistant text block from the
+# just-finished invocation's stream log into LAST_TASK_SUMMARY / LAST_TASK_ID.
+# The next prompt build renders a "## Prior Task Context" section from these,
+# so the next agent sees what the previous one claimed it did.
+
+capture_task_handoff() {
+    local tid="$1"
+    LAST_TASK_ID="$tid"
+    LAST_TASK_SUMMARY=$(extract_last_assistant_text "${INVOKE_LOG:-}")
+}
+
+# ── extract_last_assistant_text ───────────────────────────────────────────
+#
+# Read a stream-json log and return the last assistant text block,
+# whitespace-collapsed and truncated to ~200 words. Returns empty string
+# if the log is missing, empty, or has no text blocks. Never fails loudly —
+# the handoff is a best-effort feature, not a correctness requirement.
+
+extract_last_assistant_text() {
+    local log_path="$1"
+    [[ -f "$log_path" ]] || { echo ""; return; }
+
+    local text
+    text=$(jq -rs -f "$TEMPLATES_DIR/last_assistant_text.jq" < "$log_path" 2>/dev/null)
+    [[ -z "$text" || "$text" == "null" ]] && { echo ""; return; }
+
+    truncate_to_word_limit "$text" 200
+}
+
+# ── truncate_to_word_limit ────────────────────────────────────────────────
+#
+# Collapse whitespace and truncate a string to the given word count,
+# appending "..." if truncation occurred.
+
+truncate_to_word_limit() {
+    local text="$1"
+    local max_words="$2"
+    local collapsed
+    collapsed=$(printf '%s' "$text" | tr '\n\r\t' '   ' | tr -s ' ')
+
+    # shellcheck disable=SC2206  # intentional word split
+    local -a words=($collapsed)
+    if [[ ${#words[@]} -gt $max_words ]]; then
+        echo "${words[*]:0:max_words}..."
+    else
+        echo "$collapsed"
+    fi
 }
 
 # ── mark_needs_review ──────────────────────────────────────────────────

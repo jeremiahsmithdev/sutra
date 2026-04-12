@@ -12,17 +12,21 @@
 build_prompt() {
     local task_id="$1"
     local details="$2"
-    local branch_ctx branch_section commit_rule
+    local branch_ctx branch_section commit_rule prior_task_context
 
     branch_ctx=$(get_branch_context "$task_id")
     branch_section=$(format_branch_instructions "$branch_ctx")
     commit_rule=$(format_commit_rule)
+    prior_task_context=$(format_prior_task_context)
 
     prompt=$(render_template "$TEMPLATES_DIR/prompt_bead.txt" \
         "TASK_ID=$task_id" \
         "DETAILS=$details" \
+        "PRIOR_TASK_CONTEXT=$prior_task_context" \
         "BRANCH_SECTION=$branch_section" \
         "COMMIT_RULE=$commit_rule")
+
+    clear_task_handoff
 }
 
 # ── build_raw_prompt ──────────────────────────────────────────────────────
@@ -32,16 +36,20 @@ build_prompt() {
 
 build_raw_prompt() {
     local prompt_text="$1"
-    local current_branch recent_commits
+    local current_branch recent_commits prior_task_context
 
     current_branch=$(git branch --show-current 2>/dev/null || echo "unknown")
     recent_commits=$(git log --oneline -5 2>/dev/null || echo "(no commits)")
+    prior_task_context=$(format_prior_task_context)
 
     prompt=$(render_template "$TEMPLATES_DIR/prompt_raw.txt" \
         "PROMPT_TEXT=$prompt_text" \
+        "PRIOR_TASK_CONTEXT=$prior_task_context" \
         "WORKING_DIR=$(pwd)" \
         "CURRENT_BRANCH=$current_branch" \
         "RECENT_COMMITS=$recent_commits")
+
+    clear_task_handoff
 }
 
 # ── build_report_prompt ───────────────────────────────────────────────────
@@ -70,6 +78,30 @@ build_report_prompt() {
         "PROCESSED=$(playlist_processed)" \
         "PLAYLIST_DATA=$playlist_data" \
         "GIT_LOG=$git_log")
+}
+
+# ── format_prior_task_context ─────────────────────────────────────────────
+#
+# Render the "## Prior Task Context" section from the globals set by
+# capture_task_handoff(). Returns empty string if no prior task info —
+# that's the first-task-in-session case, and the placeholder collapses
+# to nothing in the rendered prompt.
+
+format_prior_task_context() {
+    [[ -z "${LAST_TASK_SUMMARY:-}" ]] && return
+    render_template "$TEMPLATES_DIR/prior_task_context.txt" \
+        "LAST_TASK_ID=${LAST_TASK_ID:-unknown}" \
+        "LAST_TASK_SUMMARY=$LAST_TASK_SUMMARY"
+}
+
+# ── clear_task_handoff ────────────────────────────────────────────────────
+#
+# Called after the prior-task context has been rendered into a prompt.
+# Ensures a retry of the same task doesn't re-inject stale handoff data.
+
+clear_task_handoff() {
+    LAST_TASK_SUMMARY=""
+    LAST_TASK_ID=""
 }
 
 # ── format_branch_instructions ────────────────────────────────────────────

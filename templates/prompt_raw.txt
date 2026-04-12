@@ -3,7 +3,7 @@ in the ralph autonomous loop.
 
 ## Task
 {{PROMPT_TEXT}}
-
+{{PRIOR_TASK_CONTEXT}}
 ## Context
 * Working directory: {{WORKING_DIR}}
 * Branch: {{CURRENT_BRANCH}}

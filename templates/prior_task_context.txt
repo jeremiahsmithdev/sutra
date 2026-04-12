@@ -1,0 +1,7 @@
+
+## Prior Task Context
+The previous bead ({{LAST_TASK_ID}}) closed with this summary from its own final output:
+
+{{LAST_TASK_SUMMARY}}
+
+Treat this as a CLAIM, not ground truth — verify with `git diff` / `git show HEAD` (see Orientation below).

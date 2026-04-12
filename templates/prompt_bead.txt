@@ -3,6 +3,15 @@ You are executing a single task from a beads issue tracker as part of an automat
 ## Your Task
 ID: {{TASK_ID}}
 {{DETAILS}}
+{{PRIOR_TASK_CONTEXT}}
+## Orientation
+Before implementing, orient yourself to what the previous bead left behind:
+
+1. Run `git status` to see if the working tree is dirty.
+   * If dirty: run `git diff` — this is the previous bead's uncommitted work in playlist mode (AUTO_COMMIT=false by default). Read it before making changes so you understand what's in flight.
+   * If clean: run `git log --oneline -5` and `git show HEAD` — the previous bead's work is in the most recent commit(s). Read the diff to see what changed.
+2. If a `## Prior Task Context` section appears above, treat it as the previous agent's CLAIM about what it did. Use `git diff` / `git show HEAD` to verify that claim against ground truth before trusting it.
+3. Do not re-explore files that the orientation already showed you changed. Start from the established state.
 
 ## Branch
 {{BRANCH_SECTION}}
