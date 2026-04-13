@@ -17,4 +17,5 @@ in the ralph autonomous loop.
 4. Do NOT touch .beads/ files directly — use br commands only.
 5. Do NOT run br sync — the outer loop handles that.
 6. When done, just exit. There is no bead to close for this task.
+7. Prefer Read, Grep, and Glob tools for file operations. Only spawn Agent sub-tasks when exploring unfamiliar parts of the codebase that are not described in this task or the project context. Direct tool use is faster and cheaper.
 {{FILE_MAP}}
