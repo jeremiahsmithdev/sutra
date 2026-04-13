@@ -60,6 +60,11 @@ REMOTE_HOST=""
 # Empty means use the remote user's home directory.
 REMOTE_DIR=""
 
+# Comma-separated list of project files to include as a manifest in prompts.
+# Each file's first comment/docstring line is extracted as a purpose summary.
+# Set per-project in .ralph/config. Override with --context-files.
+CONTEXT_FILES=""
+
 # File in the project root that persists loop state between runs.
 STATE_FILE=".ralph/state"
 

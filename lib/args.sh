@@ -30,6 +30,7 @@ parse_arg_flags() {
             --commit)      AUTO_COMMIT=true; commit_explicit=true; shift ;;
             --sandbox)     SANDBOX_MODE=true; shift ;;
             --model)       MODEL="$2"; shift 2 ;;
+            --context-files) CONTEXT_FILES="$2"; shift 2 ;;
             --monitor)     MONITOR_MODE=true; shift ;;
             --tmux|-t)     TMUX_MODE=true; shift ;;
             --init)        ACTION="init"; shift ;;

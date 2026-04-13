@@ -22,3 +22,7 @@
 
 # Working directory on the remote server.
 # REMOTE_DIR=""
+
+# Comma-separated project files to include as a path+purpose manifest
+# in every prompt. Helps Claude navigate without re-reading key files.
+# CONTEXT_FILES="pubspec.yaml,lib/main.dart,lib/core/routing/app_router.dart"

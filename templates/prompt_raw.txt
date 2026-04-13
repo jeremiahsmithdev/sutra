@@ -17,3 +17,4 @@ in the ralph autonomous loop.
 4. Do NOT touch .beads/ files directly — use br commands only.
 5. Do NOT run br sync — the outer loop handles that.
 6. When done, just exit. There is no bead to close for this task.
+{{FILE_MAP}}

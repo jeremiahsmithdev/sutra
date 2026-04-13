@@ -19,12 +19,16 @@ build_prompt() {
     commit_rule=$(format_commit_rule)
     prior_task_context=$(format_prior_task_context)
 
+    local file_map
+    file_map=$(format_file_map)
+
     prompt=$(render_template "$TEMPLATES_DIR/prompt_bead.txt" \
         "TASK_ID=$task_id" \
         "DETAILS=$details" \
         "PRIOR_TASK_CONTEXT=$prior_task_context" \
         "BRANCH_SECTION=$branch_section" \
-        "COMMIT_RULE=$commit_rule")
+        "COMMIT_RULE=$commit_rule" \
+        "FILE_MAP=$file_map")
 
     clear_task_handoff
 }
@@ -42,12 +46,16 @@ build_raw_prompt() {
     recent_commits=$(git log --oneline -5 2>/dev/null || echo "(no commits)")
     prior_task_context=$(format_prior_task_context)
 
+    local file_map
+    file_map=$(format_file_map)
+
     prompt=$(render_template "$TEMPLATES_DIR/prompt_raw.txt" \
         "PROMPT_TEXT=$prompt_text" \
         "PRIOR_TASK_CONTEXT=$prior_task_context" \
         "WORKING_DIR=$(pwd)" \
         "CURRENT_BRANCH=$current_branch" \
-        "RECENT_COMMITS=$recent_commits")
+        "RECENT_COMMITS=$recent_commits" \
+        "FILE_MAP=$file_map")
 
     clear_task_handoff
 }
@@ -78,30 +86,6 @@ build_report_prompt() {
         "PROCESSED=$(playlist_processed)" \
         "PLAYLIST_DATA=$playlist_data" \
         "GIT_LOG=$git_log")
-}
-
-# ── format_prior_task_context ─────────────────────────────────────────────
-#
-# Render the "## Prior Task Context" section from the globals set by
-# capture_task_handoff(). Returns empty string if no prior task info —
-# that's the first-task-in-session case, and the placeholder collapses
-# to nothing in the rendered prompt.
-
-format_prior_task_context() {
-    [[ -z "${LAST_TASK_SUMMARY:-}" ]] && return
-    render_template "$TEMPLATES_DIR/prior_task_context.txt" \
-        "LAST_TASK_ID=${LAST_TASK_ID:-unknown}" \
-        "LAST_TASK_SUMMARY=$LAST_TASK_SUMMARY"
-}
-
-# ── clear_task_handoff ────────────────────────────────────────────────────
-#
-# Called after the prior-task context has been rendered into a prompt.
-# Ensures a retry of the same task doesn't re-inject stale handoff data.
-
-clear_task_handoff() {
-    LAST_TASK_SUMMARY=""
-    LAST_TASK_ID=""
 }
 
 # ── format_branch_instructions ────────────────────────────────────────────

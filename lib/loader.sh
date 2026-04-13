@@ -33,6 +33,8 @@ source "$LIB_DIR/tasks.sh"
 source "$LIB_DIR/playlist.sh"
 # shellcheck source=lib/playlist_validate.sh
 source "$LIB_DIR/playlist_validate.sh"
+# shellcheck source=lib/prompt_context.sh
+source "$LIB_DIR/prompt_context.sh"
 # shellcheck source=lib/prompt.sh
 source "$LIB_DIR/prompt.sh"
 # shellcheck source=lib/format_stream.sh
