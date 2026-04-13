@@ -16,6 +16,7 @@ playlist_init() {
     recount_playlist_total
     init_playlist_checksum
     init_injection_limit
+    check_validation_marker
 
     # Resume position from state, or start at 0
     playlist_line="${playlist_line:-0}"
@@ -140,6 +141,11 @@ playlist_execute() {
 
 playlist_execute_bead() {
     tid="$playlist_current_line"
+    log ""
+    log "═══════════════════════════════════════════════════════"
+    log "  LOOP $((total_loops + 1))/$MAX_LOOPS  │  Task: $tid  │  Model: $MODEL"
+    log "═══════════════════════════════════════════════════════"
+    log ""
     claim_task "$tid"
     build_prompt "$tid" "$task_details"
     invoke_claude            || return 1
@@ -162,10 +168,11 @@ playlist_execute_prompt() {
         MODEL="$playlist_line_model"
     fi
 
-    local model_note=""
-    [[ -n "$saved_model" ]] && model_note=" ${C_DIM}(model: $MODEL)${C_RESET}"
-
-    log "=== Loop $((total_loops + 1))/$MAX_LOOPS === ${C_MAGENTA}[prompt]${C_RESET}${model_note}"
+    log ""
+    log "═══════════════════════════════════════════════════════"
+    log "  LOOP $((total_loops + 1))/$MAX_LOOPS  │  Prompt  │  Model: $MODEL"
+    log "═══════════════════════════════════════════════════════"
+    log ""
     log "Prompt: ${C_BOLD}${playlist_current_line:0:80}${C_RESET}"
 
     local prompt_text="$playlist_current_line"
