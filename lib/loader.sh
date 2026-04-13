@@ -31,6 +31,8 @@ source "$LIB_DIR/monitor_render.sh"
 source "$LIB_DIR/tasks.sh"
 # shellcheck source=lib/gates.sh
 source "$LIB_DIR/gates.sh"
+# shellcheck source=lib/playlist_branch.sh
+source "$LIB_DIR/playlist_branch.sh"
 # shellcheck source=lib/playlist.sh
 source "$LIB_DIR/playlist.sh"
 # shellcheck source=lib/playlist_reload.sh

@@ -74,6 +74,12 @@ MAX_INJECTED_BEADS=0
 # If MAX_INJECTED_BEADS=0, limit = max(5, floor(total_beads * ratio)).
 INJECTION_RATIO=0.25
 
+# Resolved playlist branch name. Empty = non-playlist mode.
+PLAYLIST_BRANCH=""
+
+# CLI input for --playlist-branch (feeds into resolution, not used directly).
+PLAYLIST_BRANCH_CLI=""
+
 # File in the project root that persists loop state between runs.
 STATE_FILE=".ralph/state"
 

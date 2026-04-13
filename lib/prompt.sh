@@ -96,6 +96,11 @@ build_report_prompt() {
 format_branch_instructions() {
     local branch_ctx="$1"
     case "$branch_ctx" in
+        playlist:*)
+            local branch="${branch_ctx#playlist:}"
+            render_template "$TEMPLATES_DIR/branch_playlist.txt" \
+                "BRANCH=$branch"
+            ;;
         standalone)
             cat "$TEMPLATES_DIR/branch_standalone.txt"
             ;;

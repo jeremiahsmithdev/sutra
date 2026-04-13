@@ -9,6 +9,7 @@ Usage: ralph [OPTIONS]
   --playlist FILE      Execute tasks from playlist file (mutually exclusive with --scope)
   --no-commit          Tell Claude not to commit per-task (playlist default)
   --commit             Tell Claude to commit per-task (overrides playlist default)
+  --playlist-branch N  Override playlist branch name (default: from file or filename)
   --sandbox            Wrap Claude in bubblewrap sandbox (Linux only)
   --model MODEL        Claude model to use (default: config.sh)
   --context-files LIST Comma-separated project files for prompt manifest

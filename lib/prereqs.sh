@@ -56,20 +56,36 @@ check_prereqs() {
 # Ensure the dedicated "ralph" working branch exists and is checked out.
 # Creates it from WORKING_BRANCH (set in .ralph/config) or the current branch.
 
+ensure_correct_branch() {
+    if [[ -n "$PLAYLIST_BRANCH" ]]; then
+        ensure_playlist_branch
+    else
+        ensure_ralph_branch
+    fi
+}
+
 ensure_ralph_branch() {
-    if git rev-parse --verify ralph &>/dev/null; then
-        git checkout ralph 2>/dev/null || {
-            log "ERROR: Could not switch to ralph branch"
+    checkout_or_create_branch "ralph"
+}
+
+ensure_playlist_branch() {
+    checkout_or_create_branch "$PLAYLIST_BRANCH"
+}
+
+checkout_or_create_branch() {
+    local branch="$1"
+    if git rev-parse --verify "$branch" &>/dev/null; then
+        git checkout "$branch" 2>/dev/null || {
+            log "ERROR: Could not switch to $branch branch"
             exit 1
         }
-        log "On branch: ${C_BOLD_CYAN}ralph${C_RESET}"
+        log "On branch: ${C_BOLD_CYAN}$branch${C_RESET}"
     else
         local base="${WORKING_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
-        log "Creating branch ${C_BOLD_CYAN}ralph${C_RESET} from ${C_CYAN}$base${C_RESET}..."
-        git checkout -b ralph "$base" 2>/dev/null || {
-            log "ERROR: Could not create ralph branch from $base"
+        log "Creating branch ${C_BOLD_CYAN}$branch${C_RESET} from ${C_CYAN}$base${C_RESET}..."
+        git checkout -b "$branch" "$base" 2>/dev/null || {
+            log "ERROR: Could not create $branch branch from $base"
             exit 1
         }
-        log "Created and switched to branch: ${C_BOLD_CYAN}ralph${C_RESET}"
     fi
 }

@@ -31,6 +31,7 @@ parse_arg_flags() {
             --sandbox)     SANDBOX_MODE=true; shift ;;
             --model)       MODEL="$2"; shift 2 ;;
             --context-files) CONTEXT_FILES="$2"; shift 2 ;;
+            --playlist-branch) PLAYLIST_BRANCH_CLI="$2"; shift 2 ;;
             --monitor)     MONITOR_MODE=true; shift ;;
             --tmux|-t)     TMUX_MODE=true; shift ;;
             --init)        ACTION="init"; shift ;;
@@ -72,6 +73,10 @@ validate_playlist_args() {
     fi
     if [[ "$commit_explicit" == false ]]; then
         AUTO_COMMIT=false
+    fi
+    if [[ -n "$PLAYLIST_BRANCH_CLI" && -z "$PLAYLIST" ]]; then
+        log "ERROR: --playlist-branch requires --playlist"
+        exit 1
     fi
 }
 

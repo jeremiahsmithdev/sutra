@@ -151,8 +151,14 @@ get_task_details() {
 
 get_branch_context() {
     local task_id="$1"
-    local tj
 
+    # Playlist mode: single branch, skip epic walk entirely
+    if [[ -n "${PLAYLIST_BRANCH:-}" ]]; then
+        echo "playlist:$PLAYLIST_BRANCH"
+        return
+    fi
+
+    local tj
     tj=$(br show "$task_id" --json 2>/dev/null) || {
         echo "standalone"
         return

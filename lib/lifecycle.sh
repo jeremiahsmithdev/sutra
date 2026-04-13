@@ -21,7 +21,8 @@ initialize() {
     check_prereqs
     migrate_state_file
     commit_beads_if_dirty
-    ensure_ralph_branch
+    if [[ -n "$PLAYLIST" ]]; then playlist_resolve_branch; fi
+    ensure_correct_branch
     trap handle_interrupt INT
     trap cleanup EXIT
     load_state
