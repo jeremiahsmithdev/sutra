@@ -65,6 +65,10 @@ REMOTE_DIR=""
 # Set per-project in .ralph/config. Override with --context-files.
 CONTEXT_FILES=""
 
+# Minimum bead-to-gate ratio for playlist density warnings.
+# 1 gate per N beads. Configurable in .ralph/config.
+GATE_DENSITY_RATIO=7
+
 # File in the project root that persists loop state between runs.
 STATE_FILE=".ralph/state"
 

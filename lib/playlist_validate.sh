@@ -182,3 +182,19 @@ playlist_report_data() {
         fi
     done
 }
+
+# ── playlist_processed ─────────────────────────────────────────────────────
+#
+# Return the number of actionable lines processed so far.
+
+playlist_processed() {
+    local count=0
+    local i=0
+    while [[ $i -lt $playlist_line ]]; do
+        local raw="${PLAYLIST_LINES[$i]}"
+        local trimmed="${raw#"${raw%%[![:space:]]*}"}"
+        [[ -n "$trimmed" && "$trimmed" != \#* ]] && count=$((count + 1))
+        i=$((i + 1))
+    done
+    echo "$count"
+}

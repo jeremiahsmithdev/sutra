@@ -57,9 +57,12 @@ playlist_next() {
         [[ -z "$trimmed" || "$trimmed" == \#* ]] && continue
 
         playlist_line_model=""
+        playlist_line_gate_tag=""
+        playlist_line_gate_context=""
         if [[ "$trimmed" == ">"* ]]; then
             playlist_line_type="prompt"
             parse_playlist_prompt_line "$trimmed"
+            parse_playlist_gate_tag || return 1
         else
             playlist_line_type="bead"
             playlist_current_line="$trimmed"
@@ -163,7 +166,12 @@ playlist_execute_prompt() {
 
     log "=== Loop $((total_loops + 1))/$MAX_LOOPS === ${C_MAGENTA}[prompt]${C_RESET}${model_note}"
     log "Prompt: ${C_BOLD}${playlist_current_line:0:80}${C_RESET}"
-    build_raw_prompt "$playlist_current_line"
+
+    local prompt_text="$playlist_current_line"
+    if [[ -n "$playlist_line_gate_tag" ]]; then
+        prompt_text=$(gate_expand_tag "$playlist_line_gate_tag" "$playlist_line_gate_context")
+    fi
+    build_raw_prompt "$prompt_text"
 
     if ! invoke_claude; then
         [[ -n "$saved_model" ]] && MODEL="$saved_model"
@@ -179,20 +187,4 @@ playlist_execute_prompt() {
         log "Circuit recovered → CLOSED"
     fi
     current_task=""
-}
-
-# ── playlist_processed ─────────────────────────────────────────────────────
-#
-# Return the number of actionable lines processed so far.
-
-playlist_processed() {
-    local count=0
-    local i=0
-    while [[ $i -lt $playlist_line ]]; do
-        local raw="${PLAYLIST_LINES[$i]}"
-        local trimmed="${raw#"${raw%%[![:space:]]*}"}"
-        [[ -n "$trimmed" && "$trimmed" != \#* ]] && count=$((count + 1))
-        i=$((i + 1))
-    done
-    echo "$count"
 }
