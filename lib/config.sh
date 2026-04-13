@@ -66,8 +66,13 @@ REMOTE_DIR=""
 CONTEXT_FILES=""
 
 # Minimum bead-to-gate ratio for playlist density warnings.
-# 1 gate per N beads. Configurable in .ralph/config.
 GATE_DENSITY_RATIO=7
+
+# Hard cap on injected beads per run. 0 = use ratio-based default.
+MAX_INJECTED_BEADS=0
+
+# If MAX_INJECTED_BEADS=0, limit = max(5, floor(total_beads * ratio)).
+INJECTION_RATIO=0.25
 
 # File in the project root that persists loop state between runs.
 STATE_FILE=".ralph/state"

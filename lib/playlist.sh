@@ -15,6 +15,7 @@ playlist_init() {
 
     recount_playlist_total
     init_playlist_checksum
+    init_injection_limit
 
     # Resume position from state, or start at 0
     playlist_line="${playlist_line:-0}"

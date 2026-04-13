@@ -6,11 +6,21 @@
 
 declare -A GATE_TEMPLATES
 
+# Full templates include self-healing instructions (create beads, inject).
 GATE_TEMPLATES[SMOKE_TEST]="Test API endpoints against live backend. curl each endpoint implemented in the last batch of beads. Verify responses match expected schemas. If issues found: create beads (type=bug only) with br create, insert IDs into the playlist file after this line."
 
 GATE_TEMPLATES[COMPLETENESS_SCAN]="Scan for incomplete work: grep -rn 'TODO|FIXME|HACK|STUB|placeholder|not yet|not implemented' in the project source. For each match in code written during this playlist, implement it fully or remove it with justification. If issues require separate tasks: create beads (type=bug only) and inject into playlist."
 
 GATE_TEMPLATES[REVIEW]="Review the work completed in the last epic. Check architecture, patterns, test coverage. Flag issues. If significant work needed: create beads (type=bug only) and inject into playlist."
+
+# Capped variants: observation-only (no bead creation, no playlist modification).
+declare -A GATE_TEMPLATES_CAPPED
+
+GATE_TEMPLATES_CAPPED[SMOKE_TEST]="Test API endpoints against live backend. curl each endpoint implemented in the last batch of beads. Verify responses match expected schemas. Report any issues found."
+
+GATE_TEMPLATES_CAPPED[COMPLETENESS_SCAN]="Scan for incomplete work: grep -rn 'TODO|FIXME|HACK|STUB|placeholder|not yet|not implemented' in the project source. For each match in code written during this playlist, report what needs attention."
+
+GATE_TEMPLATES_CAPPED[REVIEW]="Review the work completed in the last epic. Check architecture, patterns, test coverage. Report any issues found."
 
 # ── gate_expand_tag ───────────────────────────────────────────────────────
 #
@@ -21,7 +31,13 @@ GATE_TEMPLATES[REVIEW]="Review the work completed in the last epic. Check archit
 gate_expand_tag() {
     local tag="$1"
     local context="${2:-}"
-    local base="${GATE_TEMPLATES[$tag]}"
+    local base
+
+    if [[ "${INJECTION_CAPPED:-false}" == "true" ]]; then
+        base="${GATE_TEMPLATES_CAPPED[$tag]}"
+    else
+        base="${GATE_TEMPLATES[$tag]}"
+    fi
 
     if [[ -n "$context" ]]; then
         printf '%s\n%s' "$base" "$context"

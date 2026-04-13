@@ -12,12 +12,16 @@
 
 playlist_reload() {
     [[ ! -f "$PLAYLIST" ]] && return
+    [[ "${INJECTION_CAPPED:-false}" == "true" ]] && return
 
     local new_checksum
     new_checksum=$(cksum < "$PLAYLIST")
     if [[ "$new_checksum" == "${_playlist_checksum:-}" ]]; then
         return
     fi
+
+    local old_bead_count
+    old_bead_count=$(count_bead_lines)
 
     backup_playlist
     local expected_content
@@ -27,6 +31,7 @@ playlist_reload() {
     recount_playlist_total
     verify_playlist_position "$expected_content"
     warn_if_branch_directive_changed
+    check_injection_limit "$old_bead_count"
 
     _playlist_checksum="$new_checksum"
 }
@@ -120,5 +125,58 @@ warn_if_branch_directive_changed() {
     new_directive=$(head -5 "$PLAYLIST" | sed -n 's/^#[[:space:]]*branch:[[:space:]]*//p' | head -1)
     if [[ -n "$new_directive" && "$new_directive" != "$PLAYLIST_BRANCH" ]]; then
         log "WARNING: Playlist reload: # branch: directive changed to '$new_directive', ignoring — branch is fixed for the session"
+    fi
+}
+
+# ── init_injection_limit ──────────────────────────────────────────────────
+#
+# Compute the injection cap from config. If MAX_INJECTED_BEADS is set,
+# use it directly. Otherwise derive from bead count and INJECTION_RATIO.
+
+init_injection_limit() {
+    injected_bead_count="${injected_bead_count:-0}"
+    INJECTION_CAPPED="${INJECTION_CAPPED:-false}"
+
+    if [[ "$MAX_INJECTED_BEADS" -gt 0 ]]; then
+        injection_limit=$MAX_INJECTED_BEADS
+    else
+        local bead_count
+        bead_count=$(count_bead_lines)
+        # floor(beads * ratio), minimum 5
+        injection_limit=$(awk "BEGIN{v=int($bead_count * $INJECTION_RATIO); print (v<5)?5:v}")
+    fi
+}
+
+# ── count_bead_lines ──────────────────────────────────────────────────────
+#
+# Count non-prompt actionable lines (bead IDs) in PLAYLIST_LINES.
+
+count_bead_lines() {
+    local count=0
+    for line in "${PLAYLIST_LINES[@]}"; do
+        local trimmed="${line#"${line%%[![:space:]]*}"}"
+        [[ -z "$trimmed" || "$trimmed" == \#* || "$trimmed" == ">"* ]] && continue
+        count=$((count + 1))
+    done
+    echo "$count"
+}
+
+# ── check_injection_limit ─────────────────────────────────────────────────
+#
+# After reload, count new bead lines and check against the cap.
+
+check_injection_limit() {
+    local old_bead_count="$1"
+    local new_bead_count
+    new_bead_count=$(count_bead_lines)
+    local delta=$((new_bead_count - old_bead_count))
+
+    [[ $delta -le 0 ]] && return
+
+    injected_bead_count=$((injected_bead_count + delta))
+
+    if [[ $injected_bead_count -ge $injection_limit ]]; then
+        INJECTION_CAPPED=true
+        log "Injection limit reached (${C_BOLD_YELLOW}$injected_bead_count/$injection_limit${C_RESET}). Self-healing disabled for remainder of run."
     fi
 }

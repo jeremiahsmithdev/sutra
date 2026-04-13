@@ -159,6 +159,8 @@ EOF
         cat >> "$STATE_FILE" <<EOF
 playlist_file=${PLAYLIST}
 playlist_line=${playlist_line:-0}
+injected_bead_count=${injected_bead_count:-0}
+INJECTION_CAPPED=${INJECTION_CAPPED:-false}
 EOF
     fi
 }
