@@ -13,18 +13,27 @@ playlist_init() {
         PLAYLIST_LINES+=("$line")
     done < "$PLAYLIST"
 
-    # Count actionable lines (not blank, not comments)
+    recount_playlist_total
+    init_playlist_checksum
+
+    # Resume position from state, or start at 0
+    playlist_line="${playlist_line:-0}"
+
+    log "Playlist: ${C_BOLD}$PLAYLIST${C_RESET} ($playlist_total actionable lines, starting at line $playlist_line)"
+}
+
+# ── recount_playlist_total ────────────────────────────────────────────────
+#
+# Count actionable lines in PLAYLIST_LINES (not blank, not comments).
+# Used by playlist_init and playlist_reload.
+
+recount_playlist_total() {
     playlist_total=0
     for line in "${PLAYLIST_LINES[@]}"; do
         local trimmed="${line#"${line%%[![:space:]]*}"}"
         [[ -z "$trimmed" || "$trimmed" == \#* ]] && continue
         playlist_total=$((playlist_total + 1))
     done
-
-    # Resume position from state, or start at 0
-    playlist_line="${playlist_line:-0}"
-
-    log "Playlist: ${C_BOLD}$PLAYLIST${C_RESET} ($playlist_total actionable lines, starting at line $playlist_line)"
 }
 
 # ── playlist_next ──────────────────────────────────────────────────────────
@@ -162,6 +171,7 @@ playlist_execute_prompt() {
     fi
 
     [[ -n "$saved_model" ]] && MODEL="$saved_model"
+    playlist_reload
     total_tasks_completed=$((total_tasks_completed + 1))
     no_progress_count=0
     if [[ "$circuit" == "HALF_OPEN" ]]; then
