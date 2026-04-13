@@ -39,6 +39,8 @@ source "$LIB_DIR/playlist.sh"
 source "$LIB_DIR/playlist_reload.sh"
 # shellcheck source=lib/playlist_validate.sh
 source "$LIB_DIR/playlist_validate.sh"
+# shellcheck source=lib/playlist_init.sh
+source "$LIB_DIR/playlist_init.sh"
 # shellcheck source=lib/prompt_context.sh
 source "$LIB_DIR/prompt_context.sh"
 # shellcheck source=lib/prompt.sh

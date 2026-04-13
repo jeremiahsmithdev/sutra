@@ -46,6 +46,16 @@ parse_arg_flags() {
                     shift
                 fi
                 ;;
+            playlist)
+                if [[ "${2:-}" == "init" && -n "${3:-}" ]]; then
+                    ACTION="playlist_init"
+                    PLAYLIST="$3"
+                    shift 3
+                else
+                    log "ERROR: Usage: ralph playlist init <file>"
+                    exit 1
+                fi
+                ;;
             *)
                 log "ERROR: Unknown option: $1"
                 exit 1
@@ -87,10 +97,11 @@ validate_playlist_args() {
 
 dispatch_early_exit_action() {
     case "$ACTION" in
-        help)   show_help; exit 0 ;;
-        init)   init_project; exit 0 ;;
-        status) show_status; exit 0 ;;
-        reset)  reset_state; exit 0 ;;
+        help)           show_help; exit 0 ;;
+        init)           init_project; exit 0 ;;
+        status)         show_status; exit 0 ;;
+        reset)          reset_state; exit 0 ;;
+        playlist_init)  run_playlist_init; exit $? ;;
     esac
 
     if [[ "$MONITOR_MODE" == "true" ]]; then
