@@ -65,11 +65,12 @@ handle_dry_run() {
 claim_task() {
     local tid="$1"
 
-    log "=== Loop $((total_loops + 1))/$MAX_LOOPS ==="
+    local loop_ceiling="${playlist_total:-$MAX_LOOPS}"
+    log "=== Loop $((total_loops + 1))/$loop_ceiling ==="
 
     task_details=$(get_task_details "$tid")
     local task_title
-    task_title=$(echo "$task_details" | head -1 | sed 's/^Title: //')
+    task_title=$(echo "$task_details" | grep '^Title: ' | head -1 | sed 's/^Title: //')
     log "Task: ${C_BOLD_CYAN}$tid${C_RESET} — ${C_BOLD}$task_title${C_RESET}"
 
     # Only claim (set in_progress) if this is a fresh pick, not a retry
