@@ -154,7 +154,7 @@ playlist_execute_bead() {
     ann=$(format_annotation_display)
     log ""
     log "═══════════════════════════════════════════════════════"
-    log "  LOOP $((total_loops + 1))/$MAX_LOOPS  │  Task: $tid  │  Model: $MODEL${ann}"
+    log "  LOOP $((total_loops + 1))/$playlist_total  │  Task: $tid  │  Model: $MODEL${ann}"
     log "═══════════════════════════════════════════════════════"
     log ""
     claim_task "$tid"
@@ -182,7 +182,7 @@ playlist_execute_prompt() {
     ann=$(format_annotation_display)
     log ""
     log "═══════════════════════════════════════════════════════"
-    log "  LOOP $((total_loops + 1))/$MAX_LOOPS  │  Prompt  │  Model: $MODEL${ann}"
+    log "  LOOP $((total_loops + 1))/$playlist_total  │  Prompt  │  Model: $MODEL${ann}"
     log "═══════════════════════════════════════════════════════"
     log ""
     log "Prompt: ${C_BOLD}${playlist_current_line:0:80}${C_RESET}"
