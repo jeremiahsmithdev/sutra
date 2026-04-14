@@ -1,0 +1,9 @@
+circuit={{CIRCUIT}}
+no_progress_count={{NO_PROGRESS_COUNT}}
+total_tasks_completed={{TOTAL_TASKS_COMPLETED}}
+total_loops={{TOTAL_LOOPS}}
+current_task={{CURRENT_TASK}}
+session_start={{SESSION_START}}
+model={{MODEL}}
+max_loops={{MAX_LOOPS}}
+total_cost_usd={{TOTAL_COST_USD}}

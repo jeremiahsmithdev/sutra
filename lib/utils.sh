@@ -139,29 +139,36 @@ load_state() {
 
 # Write current state variables to disk.
 # Called after every meaningful state change so a crash doesn't lose progress.
+# Uses templates/state.txt and templates/state_playlist.txt for persistence.
+# No-op during --dry-run to preserve read-only guarantee.
 save_state() {
-    cat > "$STATE_FILE" <<EOF
-circuit=${circuit:-CLOSED}
-no_progress_count=${no_progress_count:-0}
-total_tasks_completed=${total_tasks_completed:-0}
-total_loops=${total_loops:-0}
-current_task=${current_task:-}
-session_start=${session_start:-}
-model=${MODEL:-haiku}
-max_loops=${MAX_LOOPS:-50}
-EOF
+    [[ "${DRY_RUN:-false}" == "true" ]] && return
+    local state_content
+    state_content=$(render_template "$TEMPLATES_DIR/state.txt" \
+        "CIRCUIT=${circuit:-CLOSED}" \
+        "NO_PROGRESS_COUNT=${no_progress_count:-0}" \
+        "TOTAL_TASKS_COMPLETED=${total_tasks_completed:-0}" \
+        "TOTAL_LOOPS=${total_loops:-0}" \
+        "CURRENT_TASK=${current_task:-}" \
+        "SESSION_START=${session_start:-}" \
+        "MODEL=${MODEL:-haiku}" \
+        "MAX_LOOPS=${MAX_LOOPS:-50}" \
+        "TOTAL_COST_USD=${total_cost_usd:-0.00}")
+    printf '%s\n' "$state_content" > "$STATE_FILE"
 
     # Append playlist state when in playlist mode (skip during dry-run).
     # playlist_advance() commits the pending line position — only called here,
     # so a crash mid-task means playlist_line stays at the unfinished line.
     if [[ -n "${PLAYLIST:-}" && "${DRY_RUN:-false}" != "true" ]]; then
         playlist_advance
-        cat >> "$STATE_FILE" <<EOF
-playlist_file=${PLAYLIST}
-playlist_line=${playlist_line:-0}
-injected_bead_count=${injected_bead_count:-0}
-INJECTION_CAPPED=${INJECTION_CAPPED:-false}
-EOF
+        local playlist_state
+        playlist_state=$(render_template "$TEMPLATES_DIR/state_playlist.txt" \
+            "PLAYLIST_FILE=${PLAYLIST}" \
+            "PLAYLIST_LINE=${playlist_line:-0}" \
+            "INJECTED_BEAD_COUNT=${injected_bead_count:-0}" \
+            "INJECTION_CAPPED=${INJECTION_CAPPED:-false}")
+        printf '%s\n' "$playlist_state" >> "$STATE_FILE"
+        playlist_write_progress
     fi
 }
 

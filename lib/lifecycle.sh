@@ -3,6 +3,21 @@
 # initialize() sets up the environment after argument parsing.
 # cleanup() is registered via `trap cleanup EXIT` and runs on any exit.
 
+# ── init_for_early_claude ─────────────────────────────────────────────
+#
+# Minimal bootstrap for early-exit commands that invoke Claude
+# (playlist init, playlist create). These dispatch before the full
+# initialize() runs, so they need prereqs, state, and invoke setup.
+
+init_for_early_claude() {
+    check_prereqs
+    load_state
+    # Clear task-execution state — early-exit commands don't run the main loop,
+    # so stale current_task from a previous interrupted run must not persist.
+    current_task=""
+    init_invoke
+}
+
 init_project() {
     if [[ -f ".ralph/config" ]]; then
         log "WARNING: .ralph/config already exists. Skipping."
@@ -19,15 +34,24 @@ initialize() {
     if [[ "$REMOTE_MODE" == "true" ]]; then run_remote; exit $?; fi
     if [[ "$TMUX_MODE" == "true" ]]; then run_tmux; exit $?; fi
     check_prereqs
-    migrate_state_file
-    commit_beads_if_dirty
+    # Setup GLM environment if using GLM model
+    if [[ -n "$GLOBAL_GLM_VERSION" ]]; then
+        setup_glm_env "$GLOBAL_GLM_VERSION"
+    fi
+    if [[ "$DRY_RUN" != "true" ]]; then
+        migrate_state_file
+        commit_beads_if_dirty
+    fi
     if [[ -n "$PLAYLIST" ]]; then playlist_resolve_branch; fi
-    ensure_correct_branch
+    if [[ "$DRY_RUN" != "true" ]]; then
+        ensure_correct_branch
+    fi
     trap handle_interrupt INT
     trap cleanup EXIT
     load_state
     init_sandbox
     init_invoke
+    if [[ "$DRY_RUN" != "true" ]]; then ensure_project_summary; fi
     if [[ -n "$PLAYLIST" ]]; then playlist_init; fi
 }
 
@@ -52,6 +76,9 @@ cleanup() {
 
     log "=== Session Complete ==="
     render_session_summary "$tasks" "$loops" "$cb"
+
+    # Teardown GLM environment after all cleanup is complete
+    teardown_glm_env
 }
 
 # ── render_session_summary ─────────────────────────────────────────────────
@@ -67,6 +94,7 @@ render_session_summary() {
     printf '%s\n' "${C_DIM}┌─── Summary ───────────────────────────────────────────┐${C_RESET}"
     printf '%s│%s  Tasks completed:  %s%-4s%s\n' "$C_DIM" "$C_RESET" "$C_BOLD_GREEN" "$tasks" "$C_RESET"
     printf '%s│%s  Total loops:      %s%-4s%s\n' "$C_DIM" "$C_RESET" "$C_BOLD" "$loops" "$C_RESET"
+    printf '%s│%s  Total cost:       %s$%s%s\n' "$C_DIM" "$C_RESET" "$C_BOLD" "${total_cost_usd:-0.00}" "$C_RESET"
     printf '%s│%s  Circuit breaker:  %s%s%s\n' "$C_DIM" "$C_RESET" "$cb_color" "$cb" "$C_RESET"
     printf '%s│%s  Exit reason:      %s\n' "$C_DIM" "$C_RESET" "$EXIT_REASON"
     printf '%s│%s  Session log:      %s%s%s\n' "$C_DIM" "$C_RESET" "$C_DIM" "${SESSION_LOG:-unknown}" "$C_RESET"

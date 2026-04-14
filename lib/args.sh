@@ -7,6 +7,7 @@ parse_args() {
     ACTION=""
     local commit_explicit=false
     parse_arg_flags "$@"
+    validate_model_args
     validate_playlist_args "$commit_explicit"
     dispatch_early_exit_action
 }
@@ -31,6 +32,7 @@ parse_arg_flags() {
             --sandbox)     SANDBOX_MODE=true; shift ;;
             --model)       MODEL="$2"; shift 2 ;;
             --context-files) CONTEXT_FILES="$2"; shift 2 ;;
+            --max-cost)    MAX_COST_USD="$2"; shift 2 ;;
             --playlist-branch) PLAYLIST_BRANCH_CLI="$2"; shift 2 ;;
             --monitor)     MONITOR_MODE=true; shift ;;
             --tmux|-t)     TMUX_MODE=true; shift ;;
@@ -47,14 +49,28 @@ parse_arg_flags() {
                 fi
                 ;;
             playlist)
-                if [[ "${2:-}" == "init" && -n "${3:-}" ]]; then
-                    ACTION="playlist_init"
-                    PLAYLIST="$3"
-                    shift 3
-                else
-                    log "ERROR: Usage: ralph playlist init <file>"
-                    exit 1
-                fi
+                case "${2:-}" in
+                    init)
+                        if [[ -n "${3:-}" ]]; then
+                            ACTION="playlist_init"
+                            PLAYLIST="$3"
+                            shift 3
+                        else
+                            log "ERROR: Usage: ralph playlist init <file>"
+                            exit 1
+                        fi
+                        ;;
+                    create)
+                        ACTION="playlist_create"
+                        shift 2
+                        parse_playlist_create_args "$@"
+                        return
+                        ;;
+                    *)
+                        log "ERROR: Usage: ralph playlist {init|create}"
+                        exit 1
+                        ;;
+                esac
                 ;;
             *)
                 log "ERROR: Unknown option: $1"
@@ -62,6 +78,82 @@ parse_arg_flags() {
                 ;;
         esac
     done
+}
+
+# ── parse_playlist_create_args ─────────────────────────────────────────────
+#
+# Parse arguments for "ralph playlist create <ids...> --epic <epic-id> -o <file>".
+# Sets globals: PLAYLIST_CREATE_BEADS[], PLAYLIST_CREATE_EPICS[], OUTPUT_FILE
+
+parse_playlist_create_args() {
+    PLAYLIST_CREATE_BEADS=()
+    PLAYLIST_CREATE_EPICS=()
+    OUTPUT_FILE=""
+
+    local collecting_ids=true
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --epic)
+                if [[ -z "${2:-}" ]]; then
+                    log "ERROR: --epic requires an argument"
+                    exit 1
+                fi
+                collecting_ids=false
+                PLAYLIST_CREATE_EPICS+=("$2")
+                shift 2
+                ;;
+            -o)
+                if [[ -z "${2:-}" ]]; then
+                    log "ERROR: -o requires an output file"
+                    exit 1
+                fi
+                OUTPUT_FILE="$2"
+                shift 2
+                ;;
+            -*)
+                log "ERROR: Unknown option: $1"
+                exit 1
+                ;;
+            *)
+                if [[ "$collecting_ids" == true ]]; then
+                    PLAYLIST_CREATE_BEADS+=("$1")
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    if [[ -z "$OUTPUT_FILE" ]]; then
+        log "ERROR: -o <output-file> is required"
+        exit 1
+    fi
+
+    if [[ ${#PLAYLIST_CREATE_BEADS[@]} -eq 0 && ${#PLAYLIST_CREATE_EPICS[@]} -eq 0 ]]; then
+        log "ERROR: Provide either bead IDs or --epic flags"
+        exit 1
+    fi
+}
+
+# ── validate_model_args ──────────────────────────────────────────────────────
+#
+# Validate model argument. If it's a GLM model, extract and validate
+# the version number. Stores the result in GLOBAL_GLM_VERSION for use
+# during initialization.
+
+GLOBAL_GLM_VERSION=""
+
+validate_model_args() {
+    [[ -z "$MODEL" ]] && return
+
+    if detect_invalid_glm_pattern "$MODEL"; then
+        log "ERROR: Invalid GLM model format: $MODEL"
+        log "  Expected format: glm-X or glm-X.Y (e.g., glm-4.7, glm-5)"
+        exit 1
+    fi
+
+    if is_glm_model "$MODEL"; then
+        GLOBAL_GLM_VERSION=$(extract_glm_version "$MODEL")
+    fi
 }
 
 # ── validate_playlist_args ─────────────────────────────────────────────────
@@ -101,7 +193,8 @@ dispatch_early_exit_action() {
         init)           init_project; exit 0 ;;
         status)         show_status; exit 0 ;;
         reset)          reset_state; exit 0 ;;
-        playlist_init)  run_playlist_init; exit $? ;;
+        playlist_init)  init_for_early_claude; run_playlist_init; exit $? ;;
+        playlist_create) init_for_early_claude; run_playlist_create; exit $? ;;
     esac
 
     if [[ "$MONITOR_MODE" == "true" ]]; then

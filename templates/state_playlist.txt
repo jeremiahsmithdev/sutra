@@ -1,0 +1,4 @@
+playlist_file={{PLAYLIST_FILE}}
+playlist_line={{PLAYLIST_LINE}}
+injected_bead_count={{INJECTED_BEAD_COUNT}}
+INJECTION_CAPPED={{INJECTION_CAPPED}}

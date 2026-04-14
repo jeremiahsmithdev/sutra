@@ -15,6 +15,8 @@ source "$LIB_DIR/config.sh"
 source "$LIB_DIR/utils.sh"
 # shellcheck source=lib/utils_beads.sh
 source "$LIB_DIR/utils_beads.sh"
+# shellcheck source=lib/glm.sh
+source "$LIB_DIR/glm.sh"
 # shellcheck source=lib/args.sh
 source "$LIB_DIR/args.sh"
 # shellcheck source=lib/prereqs.sh
@@ -31,6 +33,10 @@ source "$LIB_DIR/monitor_render.sh"
 source "$LIB_DIR/tasks.sh"
 # shellcheck source=lib/gates.sh
 source "$LIB_DIR/gates.sh"
+# shellcheck source=lib/gates_inject.sh
+source "$LIB_DIR/gates_inject.sh"
+# shellcheck source=lib/playlist_annotations.sh
+source "$LIB_DIR/playlist_annotations.sh"
 # shellcheck source=lib/playlist_branch.sh
 source "$LIB_DIR/playlist_branch.sh"
 # shellcheck source=lib/playlist.sh
@@ -41,8 +47,16 @@ source "$LIB_DIR/playlist_reload.sh"
 source "$LIB_DIR/playlist_validate.sh"
 # shellcheck source=lib/playlist_init.sh
 source "$LIB_DIR/playlist_init.sh"
+# shellcheck source=lib/playlist_semantic.sh
+source "$LIB_DIR/playlist_semantic.sh"
+# shellcheck source=lib/playlist_create.sh
+source "$LIB_DIR/playlist_create.sh"
 # shellcheck source=lib/playlist_marker.sh
 source "$LIB_DIR/playlist_marker.sh"
+# shellcheck source=lib/playlist_progress.sh
+source "$LIB_DIR/playlist_progress.sh"
+# shellcheck source=lib/project_summary.sh
+source "$LIB_DIR/project_summary.sh"
 # shellcheck source=lib/prompt_context.sh
 source "$LIB_DIR/prompt_context.sh"
 # shellcheck source=lib/prompt.sh
