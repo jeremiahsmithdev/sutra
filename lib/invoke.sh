@@ -34,11 +34,13 @@ init_invoke() {
     STREAM_LOG_DIR=".ralph/logs/stream"
     mkdir -p "$STREAM_LOG_DIR"
 
-    # Session log: full stdout+stderr capture
+    # Session log: full stdout+stderr capture (ANSI codes stripped for plain text)
     SESSION_LOG_DIR=".ralph/logs/sessions"
     mkdir -p "$SESSION_LOG_DIR"
     SESSION_LOG="$SESSION_LOG_DIR/${SESSION_NAME}.log"
-    exec > >(tee -a "$SESSION_LOG") 2>&1
+    # Output to terminal with colors, log file with ANSI codes stripped
+    # tee writes to both the terminal (colored) and a pipe that strips codes for the log
+    exec > >(tee >(sed 's/\x1b\[[0-9;]*m//g' >> "$SESSION_LOG")) 2>&1
 }
 
 # ── invoke_claude ───────────────────────────────────────────────────────────
