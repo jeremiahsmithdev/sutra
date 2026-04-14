@@ -1,0 +1,7 @@
+# ✓ VALIDATED: 2026-04-14 04:30:18 by ralph playlist init
+# branch: test-epic-self-test-infrastructure.playlist
+ralph-yys.1
+ralph-yys.2
+ralph-yys.3
+ralph-yys.4
+>@opus #SMOKE_TEST Run all test suites together via the self-test harness: verify state roundtrip, template rendering with globals, arg parsing, and circuit breaker behavior all pass with no test interactions or regressions.
