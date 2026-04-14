@@ -65,6 +65,8 @@ source "$LIB_DIR/format_stream.sh"
 source "$LIB_DIR/invoke.sh"
 # shellcheck source=lib/invoke_retry.sh
 source "$LIB_DIR/invoke_retry.sh"
+# shellcheck source=lib/invoke_quota.sh
+source "$LIB_DIR/invoke_quota.sh"
 # shellcheck source=lib/circuit_breaker.sh
 source "$LIB_DIR/circuit_breaker.sh"
 # shellcheck source=lib/task_outcome.sh

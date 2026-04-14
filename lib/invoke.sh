@@ -63,6 +63,9 @@ invoke_claude() {
             return 1
         fi
 
+        # Check if usage limit is hit and wait for reset
+        wait_for_quota
+
         log "WARNING: Attempt $attempt/$MAX_RETRIES failed (exit $invoke_exit). Retrying in ${RETRY_DELAY}s..."
         escalate_model "$original_model"
         sleep "$RETRY_DELAY"
