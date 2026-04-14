@@ -13,9 +13,13 @@ playlist_write_progress() {
     [[ -z "${playlist_total:-}" ]] && return
 
     local total=${#PLAYLIST_LINES[@]}
-    local completed=0 remaining=0 next_line=""
+    local completed=0 remaining=0
+    local in_progress_line=""
     local -a completed_items=() remaining_items=()
-    local idx=0 past_current=false
+    local idx=0
+    # _playlist_pending_line is set by playlist_next() and not yet committed —
+    # it identifies the task currently being executed.
+    local pending="${_playlist_pending_line:-0}"
 
     while [[ $idx -lt $total ]]; do
         local raw="${PLAYLIST_LINES[$idx]}"
@@ -30,37 +34,31 @@ playlist_write_progress() {
         if [[ $idx -le ${playlist_line:-0} ]]; then
             completed=$((completed + 1))
             completed_items+=("$item")
-        elif [[ "$past_current" != true ]]; then
-            next_line="$item"
-            past_current=true
+        elif [[ $pending -gt 0 && $idx -eq $pending ]]; then
+            in_progress_line="$item"
         else
             remaining=$((remaining + 1))
             remaining_items+=("$item")
         fi
     done
 
-    local done_count=$completed
-    local next_count=0
-    [[ -n "$next_line" ]] && next_count=1
-    local total_actionable=$((completed + next_count + remaining))
-
     {
         printf '# Playlist Progress: %s\n' "$(basename "$PLAYLIST")"
         printf 'Updated: %s\n\n' "$(date '+%Y-%m-%d %H:%M:%S')"
-        printf '## Status: %d/%d items\n\n' "$done_count" "$playlist_total"
+        printf '## Status: %d/%d items completed\n\n' "$completed" "$playlist_total"
 
-        printf '## Completed\n'
+        printf '## In Progress\n'
+        if [[ -n "$in_progress_line" ]]; then
+            printf '* %s\n' "$in_progress_line"
+        else
+            printf '(none)\n'
+        fi
+
+        printf '\n## Completed\n'
         if [[ ${#completed_items[@]} -gt 0 ]]; then
             for item in "${completed_items[@]}"; do printf '* %s\n' "$item"; done
         else
             printf '(none yet)\n'
-        fi
-
-        printf '\n## Next Up\n'
-        if [[ -n "$next_line" ]]; then
-            printf '* %s\n' "$next_line"
-        else
-            printf '(playlist complete)\n'
         fi
 
         printf '\n## Remaining\n'

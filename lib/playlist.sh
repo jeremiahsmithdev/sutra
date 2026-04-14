@@ -29,6 +29,10 @@ playlist_init() {
     # Resume position from state, or start at 0
     playlist_line="${playlist_line:-0}"
 
+    # Write progress file now so it reflects the actual starting position,
+    # overwriting any stale file from a previous session.
+    playlist_write_progress
+
     log "Playlist: ${C_BOLD}$PLAYLIST${C_RESET} ($playlist_total actionable lines, starting at line $playlist_line)"
 }
 
@@ -158,6 +162,7 @@ playlist_execute_bead() {
     log "═══════════════════════════════════════════════════════"
     log ""
     claim_task "$tid"
+    playlist_write_progress
     build_prompt "$tid" "$task_details"
     if ! invoke_claude; then
         restore_line_overrides
@@ -191,6 +196,7 @@ playlist_execute_prompt() {
     if [[ -n "$playlist_line_gate_tag" ]]; then
         prompt_text=$(gate_expand_tag "$playlist_line_gate_tag" "$playlist_line_gate_context")
     fi
+    playlist_write_progress
     build_raw_prompt "$prompt_text"
 
     if ! invoke_claude; then
