@@ -2,56 +2,12 @@
 #
 # Entry point: run_playlist_create(), dispatched from args.sh when
 # `ralph playlist create` is invoked. Gathers beads, invokes Claude
-# to generate the playlist, then pipes through run_playlist_init.
-
-# ── extract_playlist_from_log ─────────────────────────────────────────────
-#
-# Extract the playlist content from Claude's stream-json output.
-# Looks for text inside ``` code blocks first. Falls back to lines
-# that look like bead IDs or > prompt lines.
-
-extract_playlist_from_log() {
-    local log_file="$1"
-    local raw_text
-    raw_text=$(jq -rs '[.[] | select(.type=="assistant") | .message.content[]? | select(.type=="text") | .text] | join("\n")' "$log_file")
-
-    # Try code block extraction first
-    local code_block
-    code_block=$(echo "$raw_text" | sed -n '/^```/,/^```/{/^```/d;p;}')
-
-    if [[ -n "$code_block" ]]; then
-        echo "$code_block"
-        return
-    fi
-
-    # Fallback: grab lines that look like playlist entries
-    echo "$raw_text" | grep -E '^(>|[a-z]+-[a-z0-9]+\.[0-9]+)' || true
-}
-
-# ── inject_epic_branch_directive ──────────────────────────────────────────
-#
-# For a single-epic playlist, generate and set the branch directive.
-# Sets global _injected_branch with "# branch: <epic-slug>.playlist"
-
-inject_epic_branch_directive() {
-    local epic_id="$1"
-    local epic_json
-    epic_json=$(br show "$epic_id" --json 2>/dev/null)
-    if [[ -n "$epic_json" ]]; then
-        local epic_title
-        epic_title=$(echo "$epic_json" | jq -r '.[0].title // ""')
-        if [[ -n "$epic_title" ]]; then
-            local epic_slug
-            epic_slug=$(slugify "$epic_title")
-            _injected_branch="# branch: ${epic_slug}.playlist"
-        fi
-    fi
-}
+# to generate and write the playlist file, then pipes through run_playlist_init.
 
 # ── run_playlist_create ────────────────────────────────────────────────────
 #
 # Entry point for `ralph playlist create [ids...] [--epic epic-id] -o file`.
-# Gathers beads, invokes Claude to generate playlist with ordering + gates,
+# Gathers beads, invokes Claude to generate and write the playlist,
 # then pipes through init for verification.
 
 run_playlist_create() {
@@ -70,7 +26,6 @@ run_playlist_create() {
         done
     fi
 
-    # Add raw bead IDs
     bead_list+=("${PLAYLIST_CREATE_BEADS[@]}")
 
     if [[ ${#bead_list[@]} -eq 0 ]]; then
@@ -84,37 +39,22 @@ run_playlist_create() {
     log "Building creation prompt..."
     build_playlist_create_prompt "${bead_list[@]}" "$epic_count"
 
-    # Step 3: Invoke Claude
+    # Step 3: Invoke Claude — writes OUTPUT_FILE directly
     log "Invoking Claude to generate playlist..."
     if ! invoke_claude; then
         log "ERROR: Claude invocation failed"
         return 1
     fi
 
-    # Step 4: Inject branch directive if single epic
-    if [[ $epic_count -eq 1 ]]; then
-        inject_epic_branch_directive "${PLAYLIST_CREATE_EPICS[0]}"
-    fi
-
-    # Step 5: Extract Claude's output and write playlist file
-    local claude_output
-    claude_output=$(extract_playlist_from_log "$INVOKE_LOG")
-    if [[ -z "$claude_output" ]]; then
-        log "ERROR: No playlist content in Claude's output"
+    if [[ ! -f "$OUTPUT_FILE" ]]; then
+        log "ERROR: Claude did not write $OUTPUT_FILE"
         return 1
     fi
 
-    log "Writing playlist to: $OUTPUT_FILE"
-    {
-        [[ -n "${_injected_branch:-}" ]] && echo "$_injected_branch"
-        echo "$claude_output"
-    } > "$OUTPUT_FILE"
-
-    # Step 6: Pipe through init for verification
+    # Step 4: Pipe through init for verification
     log "Running validation pipeline..."
     PLAYLIST="$OUTPUT_FILE"
     read_playlist_file
-
     run_playlist_init || return 1
 
     log ""
@@ -124,8 +64,8 @@ run_playlist_create() {
 
 # ── build_playlist_create_prompt ───────────────────────────────────────────
 #
-# Build Claude prompt for playlist generation. Focuses on ordering, gate
-# placement, and structure. Verification happens in init pipeline.
+# Build Claude prompt for playlist generation. Passes OUTPUT_FILE so
+# Claude writes the file directly. Verification happens in init pipeline.
 
 build_playlist_create_prompt() {
     local -a beads=("${@:1:$#-1}")
@@ -153,5 +93,6 @@ build_playlist_create_prompt() {
 
     prompt=$(render_template "$TEMPLATES_DIR/prompt_playlist_create.txt" \
         "BEAD_DETAILS=$bead_details" \
-        "EPIC_NOTES=$epic_notes")
+        "EPIC_NOTES=$epic_notes" \
+        "OUTPUT_FILE=$OUTPUT_FILE")
 }
