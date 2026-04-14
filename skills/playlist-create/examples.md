@@ -234,4 +234,4 @@ ralph-046.11
 - [ ] REVIEW appears before REFACTOR/DOCUMENT if used as a final review
 - [ ] Branch directive is at the top (line 1) for single-epic playlists
 - [ ] No blank lines inside the playlist body
-- [ ] Output is a triple-backtick code block
+- [ ] File is written with the Write tool to the specified output path

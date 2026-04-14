@@ -109,29 +109,28 @@ The context should name the endpoints, files, modules, or concepts that
 the surrounding beads introduced. Read the bead titles to infer this —
 don't guess generically.
 
-### Step 4 — Format and output
+### Step 4 — Write the file
 
-Build the playlist in order. No blank lines. No comments unless a branch
-directive is needed. Then output as a triple-backtick code block.
-
-If the playlist is for a single epic, a branch directive is recommended
-at the top:
+If the playlist is for a single epic, add a branch directive as the
+first line:
 ```
 # branch: <epic-slug>.playlist
 ```
 where `<epic-slug>` is the epic title lowercased with spaces replaced by
 hyphens.
 
+Build the playlist in order. No blank lines. No comments unless a branch
+directive is needed.
+
 ## Output format
 
-Always output a triple-backtick code block. This is what ralph's
-`extract_playlist_from_log()` looks for.
+In both modes, write the playlist to a file using the Write tool.
 
-In assisted mode (Mode A): the code block is your entire output.
-
-In self-service mode (Mode B): output the code block in your response,
-and if an output file was requested, also write it with the Write tool
-(content without the backtick fences — just the raw playlist lines).
+- **Mode A (assisted):** write to the path specified in `OUTPUT_FILE`.
+  No other output — just write the file and stop.
+- **Mode B (self-service):** write to the path given by the user (`-o`
+  argument or stated in the request). Also show the content in your
+  response so the user can review it inline.
 
 ## Validation reminder
 
