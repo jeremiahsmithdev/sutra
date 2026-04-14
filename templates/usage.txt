@@ -12,6 +12,7 @@ Usage: ralph [OPTIONS]
   --playlist-branch N  Override playlist branch name (default: from file or filename)
   --sandbox            Wrap Claude in bubblewrap sandbox (Linux only)
   --model MODEL        Claude model to use (default: config.sh)
+                       GLM models supported: glm-4.5, glm-4.7, glm-5, etc.
   --context-files LIST Comma-separated project files for prompt manifest
   --monitor            Live dashboard in a separate terminal
   --tmux, -t           Wrap execution in a detachable tmux session
