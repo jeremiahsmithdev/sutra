@@ -25,7 +25,6 @@ Before implementing, orient yourself to what the previous bead left behind:
 6. Do NOT touch .beads/ files — never commit, stash, or modify them. Do NOT run `br sync`. The outer loop handles beads state automatically.
 7. Prefer Read, Grep, and Glob tools for file operations. Only spawn Agent sub-tasks when exploring unfamiliar parts of the codebase that are not described in this task or the project context. Direct tool use is faster and cheaper.
 {{FILE_MAP}}
-{{PROJECT_SUMMARY}}
 ## When Done
 Close the issue with a reason that a human reviewer can use to verify your work:
   br close {{TASK_ID}} --reason "VERIFY: [how to test] NOTES: [what changed]"

@@ -51,7 +51,6 @@ initialize() {
     load_state
     init_sandbox
     init_invoke
-    if [[ "$DRY_RUN" != "true" ]]; then ensure_project_summary; fi
     if [[ -n "$PLAYLIST" ]]; then playlist_init; fi
 }
 
