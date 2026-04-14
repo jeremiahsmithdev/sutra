@@ -1,0 +1,14 @@
+# Playlist with gate tags
+ralph-3sc.1
+
+# Gate tags for validation
+>@opus #SMOKE_TEST
+
+ralph-0h1.19
+
+>@sonnet #INTEGRATION_TEST
+
+ralph-0h1.16
+ralph-0h1.17
+
+> Final verification phase

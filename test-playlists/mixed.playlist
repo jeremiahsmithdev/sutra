@@ -1,0 +1,16 @@
+# Mixed beads and prompts
+ralph-3sc.1
+
+# Check the current state
+> Review what was just implemented and note any issues
+
+ralph-0h1.19
+
+# Run tests to verify everything works
+>@haiku Run the test suite and report failures
+
+# Another bead
+ralph-0h1.16
+
+# Final review
+> Summarize the changes made and any remaining work

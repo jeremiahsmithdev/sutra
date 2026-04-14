@@ -1,0 +1,38 @@
+# Large playlist - stress test with many items
+# This tests playlist parsing and navigation
+
+ralph-3sc.1
+ralph-0h1.19
+ralph-0h1.16
+ralph-0h1.17
+ralph-0h1.21
+
+# Prompts interspersed
+> Check phase 1 results
+>@haiku Verify implementation
+> Double-check edge cases
+
+ralph-3sc.1
+ralph-0h1.19
+
+# More validation
+>@opus Run comprehensive tests
+> Review performance metrics
+
+ralph-0h1.16
+ralph-0h1.17
+
+# Comments in the middle
+# This is a test comment
+# Multiple lines of comments
+
+ralph-0h1.21
+
+> Final quality check
+>@sonnet Security review
+> Document findings
+
+# End with repeating beads
+ralph-3sc.1
+ralph-0h1.19
+ralph-0h1.16

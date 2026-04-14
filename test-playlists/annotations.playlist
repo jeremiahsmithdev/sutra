@@ -1,0 +1,22 @@
+# Playlist with various annotations and model overrides
+ralph-3sc.1
+
+# Prompt with model annotation
+>@opus This is an Opus-level task requiring detailed analysis
+
+ralph-0h1.19
+
+# Multiple annotations
+>@sonnet @verbose This request includes extra context flags
+
+>@haiku Quick assessment needed
+
+ralph-0h1.16
+
+# Mixed annotations with prompts
+> Standard prompt without annotation
+>@opus Professional-grade analysis
+>@haiku Lightweight quick check
+
+ralph-0h1.17
+ralph-0h1.21
