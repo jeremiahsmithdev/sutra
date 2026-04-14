@@ -6,21 +6,23 @@
 
 declare -A GATE_TEMPLATES
 
-# Full templates include self-healing instructions (create beads, inject).
-GATE_TEMPLATES[SMOKE_TEST]="Test API endpoints against live backend. curl each endpoint implemented in the last batch of beads. Verify responses match expected schemas. If issues found: create beads (type=bug only) with br create, insert IDs into the playlist file after this line."
+# All templates loaded from templates/gate_*.txt files.
+# Each contains the full check instructions plus a self-healing line
+# ("create beads (type=bug only)...") that strip_injection_instructions
+# removes at runtime when injection is capped.
 
-GATE_TEMPLATES[COMPLETENESS_SCAN]="Scan for incomplete work: grep -rn 'TODO|FIXME|HACK|STUB|placeholder|not yet|not implemented' in the project source. For each match in code written during this playlist, implement it fully or remove it with justification. If issues require separate tasks: create beads (type=bug only) and inject into playlist."
-
-GATE_TEMPLATES[REVIEW]="Review the work completed in the last epic. Check architecture, patterns, test coverage. Flag issues. If significant work needed: create beads (type=bug only) and inject into playlist."
-
-# Capped variants: observation-only (no bead creation, no playlist modification).
-declare -A GATE_TEMPLATES_CAPPED
-
-GATE_TEMPLATES_CAPPED[SMOKE_TEST]="Test API endpoints against live backend. curl each endpoint implemented in the last batch of beads. Verify responses match expected schemas. Report any issues found."
-
-GATE_TEMPLATES_CAPPED[COMPLETENESS_SCAN]="Scan for incomplete work: grep -rn 'TODO|FIXME|HACK|STUB|placeholder|not yet|not implemented' in the project source. For each match in code written during this playlist, report what needs attention."
-
-GATE_TEMPLATES_CAPPED[REVIEW]="Review the work completed in the last epic. Check architecture, patterns, test coverage. Report any issues found."
+load_gate_templates() {
+    local tdir="${TEMPLATES_DIR:-templates}"
+    local name file
+    for file in "$tdir"/gate_*.txt; do
+        [[ -f "$file" ]] || continue
+        name=$(basename "$file" .txt)
+        name="${name#gate_}"
+        name=$(echo "$name" | tr '[:lower:]' '[:upper:]')
+        GATE_TEMPLATES[$name]=$(<"$file")
+    done
+}
+load_gate_templates
 
 # ── gate_expand_tag ───────────────────────────────────────────────────────
 #
@@ -31,12 +33,10 @@ GATE_TEMPLATES_CAPPED[REVIEW]="Review the work completed in the last epic. Check
 gate_expand_tag() {
     local tag="$1"
     local context="${2:-}"
-    local base
+    local base="${GATE_TEMPLATES[$tag]}"
 
     if [[ "${INJECTION_CAPPED:-false}" == "true" ]]; then
-        base="${GATE_TEMPLATES_CAPPED[$tag]}"
-    else
-        base="${GATE_TEMPLATES[$tag]}"
+        base=$(strip_injection_instructions "$base")
     fi
 
     if [[ -n "$context" ]]; then
@@ -44,6 +44,16 @@ gate_expand_tag() {
     else
         printf '%s' "$base"
     fi
+}
+
+# ── strip_injection_instructions ──────────────────────────────────────────
+#
+# Remove self-healing lines from a gate template. When injection is capped,
+# Claude still runs the quality check but is not told to create beads or
+# modify the playlist. Strips lines containing the injection marker.
+
+strip_injection_instructions() {
+    printf '%s\n' "$1" | grep -v "create beads (type=bug only)" | grep -v "inject into playlist"
 }
 
 # ── gate_is_valid_tag ─────────────────────────────────────────────────────
@@ -94,6 +104,25 @@ parse_playlist_gate_tag() {
         playlist_line_gate_context="$after"
     fi
     playlist_current_line="$rest"
+}
+
+# ── parse_gate_report ─────────────────────────────────────────────────────
+#
+# Parse the structured report from gate_check_playlist into caller-local
+# variables via namerefs. Report format: "beads=N gates=M TAG=C ..."
+
+parse_gate_report() {
+    local _report="$1"
+    local -n _beads=$2 _gates=$3 _tags=$4
+    _beads=0; _gates=0; _tags=()
+    local word
+    for word in $_report; do
+        case "$word" in
+            beads=*) _beads="${word#beads=}" ;;
+            gates=*) _gates="${word#gates=}" ;;
+            *)       _tags+=("$word") ;;
+        esac
+    done
 }
 
 # ── gate_check_playlist ──────────────────────────────────────────────────
@@ -174,6 +203,14 @@ gate_minimum_rules() {
 
     if [[ $bead_count -gt 10 && ${tag_counts[REVIEW]:-0} -eq 0 ]]; then
         echo "WARNING: No #REVIEW in playlist with $bead_count beads"
+    fi
+
+    if [[ $bead_count -gt 5 && ${tag_counts[REFACTOR]:-0} -eq 0 ]]; then
+        echo "WARNING: No #REFACTOR at playlist tail (recommended for post-epic cleanup)"
+    fi
+
+    if [[ $bead_count -gt 5 && ${tag_counts[DOCUMENT]:-0} -eq 0 ]]; then
+        echo "WARNING: No #DOCUMENT at playlist tail (recommended for documentation update)"
     fi
 
     [[ "$has_error" == true ]] && return 1

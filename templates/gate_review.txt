@@ -1,0 +1,2 @@
+Review the work completed in the last epic. Check architecture, patterns, test coverage. Flag issues.
+If significant work needed: create beads (type=bug only) and inject into playlist.

@@ -1,0 +1,78 @@
+You are performing a systematic refactor of code developed during this playlist session. The features work but need cleanup before the playlist continues.
+
+## Review Mindset
+Adopt the perspective of a skeptical senior developer reviewing code from a junior developer.
+- Assume the code has problems until proven otherwise
+- Question every decision: "Why was it done this way? Is there a better way?"
+- Look for what's missing, not just what's wrong
+- Be suspicious of complexity — simpler is almost always better
+- Ask: "Does this already exist somewhere in the codebase?"
+
+## Refactoring Process
+
+### Phase 1: Analysis
+1. Identify scope from git (session changes, not just uncommitted):
+   - Run `git diff --stat` from the session branch point to see all modified/added files
+   - Run `git diff` from the session branch point to review actual code changes
+2. Read all modified files in full to understand current state
+3. Check test coverage: note which areas have tests vs gaps
+4. Map dependencies: understand how files relate to each other
+5. Search for existing patterns — look beyond the changed files:
+   - Search codebase for similar functionality that already exists
+   - Check for utilities, helpers, or base classes that could have been extended
+   - Look for established patterns the new code should follow but doesn't
+   - Identify if a new module should have been an extension of an existing one
+6. Identify structural violations:
+   - Files > 200 lines (candidates for splitting)
+   - Functions > 50 lines (candidates for extraction)
+   - Mixed responsibilities (SRP violations)
+   - Business logic in infrastructure layers
+   - Duplicated code (DRY violations - Rule of Three)
+   - Dead code from iteration pivots
+   - Unclear naming from rapid development
+7. Critical code review — scrutinize for real issues:
+   - Reinventing the wheel: new code duplicating existing codebase functionality
+   - Logic errors: off-by-one, wrong conditions, incorrect operators
+   - Edge cases: null/empty handling, boundary conditions, error paths
+   - Security: input validation, injection risks, exposed secrets, auth gaps
+   - Error handling: swallowed exceptions, missing try/catch, unclear error messages
+   - Performance: N+1 queries, unnecessary loops, missing indexes, memory leaks
+   - Type safety: implicit any, unsafe casts, missing null checks
+   - Incomplete implementations: TODOs, FIXMEs, placeholder code, stubbed functions
+
+### Phase 2: Plan
+Write a detailed plan to SCRATCHPAD.md with:
+- **Must Fix**: security vulnerabilities, logic errors, broken error handling
+- **Should Fix**: performance problems, type safety, edge cases
+- **Consider**: minor improvements, naming, style
+- **Reuse Opportunities**: new code duplicating existing codebase functionality
+- **Structural Changes**: in order of execution with rationale
+- **Deletions**: dead code to remove
+- **Risk Assessment**: test coverage, estimated scope
+
+### Phase 3: Execute
+For each change:
+1. Make one logical refactoring at a time
+2. Run relevant tests to verify no regressions
+3. Checkpoint after each logical unit
+
+### Refactoring Priorities (in order)
+1. Fix critical issues — security vulnerabilities, logic errors, broken error handling
+2. Fix secondary issues — performance problems, type safety, edge cases
+3. Replace reinvented code — swap custom implementations for existing codebase utilities/patterns
+4. Delete dead code — remove unused functions, commented code, abandoned approaches
+5. Extract duplicates — apply DRY where Rule of Three is met
+6. Split monoliths — break large files by responsibility
+7. Rename for clarity — improve naming from iteration artifacts
+8. Align architecture — ensure clean architecture layer compliance
+9. Simplify — remove over-engineering, unnecessary abstractions
+
+## Rules
+- Preserve intended functionality: bug fixes improve correctness, structural changes don't alter behavior
+- No new features: only cleanup, no "while we're here" additions
+- No premature abstraction: don't add patterns "for flexibility"
+- Keep it boring: simple working code over clever patterns
+- Note test gaps: if no tests exist for an area, flag the risk
+- Prefer existing over new: if functionality exists in the codebase, use it
+- If issues require separate work: create beads (type=bug only) with br create, insert IDs into the playlist file after this line
+- Delete SCRATCHPAD.md when done

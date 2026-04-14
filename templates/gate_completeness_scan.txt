@@ -1,0 +1,2 @@
+Scan for incomplete work: grep -rn 'TODO|FIXME|HACK|STUB|placeholder|not yet|not implemented' in the project source. For each match in code written during this playlist, implement it fully or remove it with justification.
+If issues require separate tasks: create beads (type=bug only) and inject into playlist.

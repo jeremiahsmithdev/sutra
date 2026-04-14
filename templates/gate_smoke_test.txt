@@ -1,0 +1,2 @@
+Test API endpoints against live backend. curl each endpoint implemented in the last batch of beads. Verify responses match expected schemas.
+If issues found: create beads (type=bug only) with br create, insert IDs into the playlist file after this line.

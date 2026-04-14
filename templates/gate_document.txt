@@ -1,0 +1,101 @@
+You are documenting completed features from this playlist session. Create or update documentation in the docs/ directory, maintaining docs/INDEX.md as the central navigation file.
+
+## Documentation Process
+
+### Phase 1: Analyze Current State
+1. Identify scope from git (session changes):
+   - Run `git diff --stat` from the session branch point to see all modified/added files
+   - Run `git diff` from the session branch point to review actual code changes
+2. Check docs/INDEX.md (if exists) — understand current doc structure
+3. Scan docs/*.md — detect orphaned files not in INDEX.md
+4. Read the implementation files identified from git to understand each feature
+
+### Phase 2: Plan Documentation
+Write a plan to SCRATCHPAD.md with:
+- Current state: INDEX.md exists? Existing docs? Orphaned files?
+- Actions: which docs to create, update, or consolidate
+- ADR candidates: significant design decisions worth capturing
+- Sections to write for each doc
+- Implementation files to reference
+
+### Phase 3: Write Documentation
+Execute in order:
+1. Create/update feature documentation files
+2. Update docs/INDEX.md
+3. Create architecture decision records (if significant decisions were made)
+
+## INDEX.md Structure
+
+The docs/INDEX.md is the central directory. Create if missing, always update.
+
+### Quick Reference Table
+| Feature | Doc | Last Updated | Status |
+|---------|-----|--------------|--------|
+| Feature Name | [feature.md](./feature.md) | YYYY-MM-DD | current |
+
+### Categories
+Organize by: Core Features, Integrations, Utilities, Architecture, Decisions
+
+### Maintenance Log
+Record each documentation change with date and description.
+
+### Status Values
+- current — up-to-date, maintained documentation
+- needs-review — implementation may have changed
+- outdated — known to be out of sync
+- deprecated — feature removed/replaced, kept for reference
+
+## Feature Documentation Template
+
+Each feature doc (docs/<feature-name>.md) must include:
+
+### Frontmatter
+```
+---
+last_updated: YYYY-MM-DD
+status: current
+tracks:
+  - path/to/primary_file
+  - path/to/related_file
+---
+```
+
+### Required Sections
+- **Overview**: purpose, behavior, key concepts
+- **How It Works**: high-level explanation, diagrams for complex flows
+- **Implementation**:
+  - Architecture: layers/modules involved, data flow
+  - Key Components table: file path + purpose
+  - Key Functions: function_name() — what it does
+- **Configuration**: settings, environment variables, options
+- **Usage Examples**: code examples
+- **Related Docs**: links to related features, ADRs
+- **Edge Cases & Limitations**: known limitations, assumptions
+
+## Architecture Decision Records
+
+Create ADRs (docs/decisions/NNN-<title>.md) when:
+- Chose between multiple valid approaches
+- Made tradeoffs future developers should understand
+- Deviated from common patterns for a reason
+- Decision affects multiple features or system architecture
+
+ADR structure: Status, Context, Decision, Alternatives Considered, Consequences (positive/negative/neutral)
+
+## Orphan Detection
+
+Scan for .md files in docs/ not listed in INDEX.md. For each orphan, recommend:
+- Index: add to INDEX.md (valid, just unlisted)
+- Consolidate: merge into existing doc (duplicate content)
+- Delete: remove (outdated, superseded)
+
+## Rules
+- INDEX.md is mandatory — create if missing, always update
+- Consolidate over create — update existing docs rather than making duplicates
+- Practical focus — document what developers need to know
+- Code references — include file paths and key function names
+- No filler — every sentence should add value
+- Bidirectional links — feature docs link to INDEX.md, INDEX.md links to docs
+- ADRs for decisions — capture why not just what for significant choices
+- If issues require separate work: create beads (type=bug only) with br create, insert IDs into the playlist file after this line
+- Delete SCRATCHPAD.md when done
