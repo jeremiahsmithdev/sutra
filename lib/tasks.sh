@@ -122,12 +122,22 @@ get_task_details() {
         return
     }
 
-    local title desc notes ac design
+    local title desc notes ac design parent
     title=$(echo "$tj" | jq -r '.[0].title // empty')
     desc=$(echo "$tj" | jq -r '.[0].description // empty')
     notes=$(echo "$tj" | jq -r '.[0].notes // empty')
     ac=$(echo "$tj" | jq -r '.[0].acceptance_criteria // empty')
     design=$(echo "$tj" | jq -r '.[0].design // empty')
+    parent=$(echo "$tj" | jq -r '.[0].parent // empty')
+
+    if [[ -n "$parent" ]]; then
+        local epic_json epic_title epic_desc
+        epic_json=$(br show "$parent" --json 2>/dev/null)
+        epic_title=$(echo "$epic_json" | jq -r '.[0].title // empty')
+        epic_desc=$(echo "$epic_json" | jq -r '.[0].description // empty')
+        [[ -n "$epic_title" ]] && printf 'Epic: %s — %s\n' "$parent" "$epic_title"
+        [[ -n "$epic_desc" ]]  && printf 'Epic Description: %s\n' "$epic_desc"
+    fi
 
     printf 'Title: %s\n' "$title"
     [[ -n "$desc" ]]   && printf 'Description: %s\n' "$desc"
