@@ -49,15 +49,32 @@ In this mode:
 The user asks you to create a playlist without providing bead data.
 
 In this mode:
-1. If an epic ID is given, run:
-   `br ready --parent=<epic-id> -r --json`
-   Then for each bead ID, run `br show <id> --json` to get title and deps.
-   If `br ready` returns nothing, run `br list --parent=<epic-id> --json`.
+1. If an epic ID is given, gather its children in order:
+
+   **Step 1 — try ready tasks first:**
+   ```bash
+   br ready --parent=<epic-id> -r --json
+   ```
+   Returns open, unblocked tasks. May return `[]` if all tasks are
+   already claimed (in_progress) or if the epic has no open children.
+
+   **Step 2 — if empty, fetch all non-closed tasks:**
+   ```bash
+   br list --status open --status in_progress --json \
+     | jq '[.issues[] | select(.parent == "<epic-id>")]'
+   ```
+   Note: `br list` returns `{"issues": [...], ...}` — use `.issues[]`,
+   not `.[]`. There is no `--parent` flag on `br list`.
+
+   **Step 3 — for each bead ID found, get full details:**
+   ```bash
+   br show <id> --json
+   ```
+   Extract title, parent, and dependencies from the result.
+
 2. If raw bead IDs are given, run `br show <id> --json` for each.
-3. Generate the playlist.
-4. Output a code block in your response.
-5. If an output file was requested (`-o <file>` or "save to X"), also
-   write it with the Write tool.
+3. Generate the playlist and write it to the output file.
+4. Show the playlist content in your response so the user can review it.
 
 ## How to generate the playlist
 
