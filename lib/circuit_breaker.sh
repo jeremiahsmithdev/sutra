@@ -25,11 +25,22 @@ check_exit_conditions() {
         return 1
     fi
 
+    if cost_limit_exceeded; then
+        EXIT_REASON="Cost limit reached (\$${total_cost_usd} >= \$${MAX_COST_USD})"
+        log "ERROR: $EXIT_REASON"
+        return 1
+    fi
+
     return 0
 }
 
 # Update circuit breaker based on bead status after Claude ran.
 # "in_progress" means Claude didn't close or release — no progress.
+cost_limit_exceeded() {
+    [[ "$MAX_COST_USD" == "0" ]] && return 1
+    awk "BEGIN {exit (${total_cost_usd:-0} >= $MAX_COST_USD) ? 0 : 1}"
+}
+
 update_circuit_breaker() {
 
     if [[ "$bead_status" == "in_progress" ]]; then
@@ -47,12 +58,20 @@ update_circuit_breaker() {
         fi
 
     else
-        # Progress — bead was closed or released
-        no_progress_count=0
+        record_progress
+    fi
+}
 
-        if [[ "$circuit" == "HALF_OPEN" ]]; then
-            circuit="CLOSED"
-            log "Circuit recovered → CLOSED"
-        fi
+# ── record_progress ──────────────────────────────────────────────────────
+#
+# Reset no-progress counter and recover circuit breaker if needed.
+# Called from update_circuit_breaker (bead closed/released) and
+# playlist_execute_prompt (prompts always count as progress).
+
+record_progress() {
+    no_progress_count=0
+    if [[ "$circuit" == "HALF_OPEN" ]]; then
+        circuit="CLOSED"
+        log "Circuit recovered → CLOSED"
     fi
 }

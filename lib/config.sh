@@ -68,6 +68,12 @@ CONTEXT_FILES=""
 # Minimum bead-to-gate ratio for playlist density warnings.
 GATE_DENSITY_RATIO=7
 
+# Auto-escalate model on retry (haiku→sonnet→opus).
+AUTO_ESCALATE=true
+
+# Maximum cost in USD before halting. 0 = no limit.
+MAX_COST_USD=0
+
 # Hard cap on injected beads per run. 0 = use ratio-based default.
 MAX_INJECTED_BEADS=0
 

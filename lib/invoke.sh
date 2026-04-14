@@ -21,10 +21,18 @@ init_invoke() {
     timestamp=$(date +%Y%m%d-%H%M%S)
     SESSION_NAME="${project}-${branch}-${timestamp}"
 
+    INVOKE_LOG=""  # set per-invocation
+
+    # Skip filesystem setup in dry-run — no Claude invocations will occur.
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        STREAM_LOG_DIR=""
+        SESSION_LOG="(dry-run)"
+        return
+    fi
+
     # Per-invocation stream-json logs (diagnosis + replay)
     STREAM_LOG_DIR=".ralph/logs/stream"
     mkdir -p "$STREAM_LOG_DIR"
-    INVOKE_LOG=""  # set per-invocation
 
     # Session log: full stdout+stderr capture
     SESSION_LOG_DIR=".ralph/logs/sessions"
@@ -42,23 +50,44 @@ init_invoke() {
 
 invoke_claude() {
     local attempt=1
+    local original_model="$MODEL"
 
     while [[ $attempt -le $MAX_RETRIES ]]; do
-        _invoke_claude_once && return 0
+        _invoke_claude_once && { MODEL="$original_model"; return 0; }
 
         # All retries exhausted?
         if [[ $attempt -ge $MAX_RETRIES ]]; then
             log "ERROR: All $MAX_RETRIES attempts failed. Giving up."
             EXIT_REASON="Claude invocation failed after $MAX_RETRIES retries (exit $invoke_exit)"
+            MODEL="$original_model"
             return 1
         fi
 
         log "WARNING: Attempt $attempt/$MAX_RETRIES failed (exit $invoke_exit). Retrying in ${RETRY_DELAY}s..."
+        escalate_model "$original_model"
         sleep "$RETRY_DELAY"
 
         augment_prompt_with_failure_context "$invoke_exit" "$attempt"
         attempt=$((attempt + 1))
     done
+}
+
+# ── escalate_model ─────────────────────────────────────────────────────────
+#
+# Bump MODEL to the next capability tier. Chain: haiku→sonnet→opus→opus.
+# No-op if AUTO_ESCALATE is false.
+
+escalate_model() {
+    local original="$1"
+    [[ "$AUTO_ESCALATE" != "true" ]] && return
+
+    local old="$MODEL"
+    case "$MODEL" in
+        *haiku*)  MODEL="sonnet" ;;
+        *sonnet*) MODEL="opus" ;;
+        *)        return ;;  # already at ceiling
+    esac
+    log "Escalating model: ${C_BOLD_YELLOW}$old → $MODEL${C_RESET}"
 }
 
 # ── _invoke_claude_once ────────────────────────────────────────────────────
@@ -112,8 +141,20 @@ _invoke_claude_once() {
         return 1
     fi
 
+    accumulate_cost
     log "  Stream log: $INVOKE_LOG"
     return 0
+}
+
+# ── accumulate_cost ────────────────────────────────────────────────────────
+#
+# Parse cost from the result entry and add to running total.
+
+accumulate_cost() {
+    local cost
+    cost=$(tail -5 "$INVOKE_LOG" | jq -r 'select(.type=="result") | .total_cost_usd // 0' 2>/dev/null)
+    [[ -z "$cost" || "$cost" == "null" ]] && cost=0
+    total_cost_usd=$(awk "BEGIN {printf \"%.2f\", ${total_cost_usd:-0} + $cost}")
 }
 
 # Retry context injection, failure tail extraction, and exit code diagnosis
