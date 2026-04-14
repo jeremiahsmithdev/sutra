@@ -135,8 +135,11 @@ get_task_details() {
         epic_json=$(br show "$parent" --json 2>/dev/null)
         epic_title=$(echo "$epic_json" | jq -r '.[0].title // empty')
         epic_desc=$(echo "$epic_json" | jq -r '.[0].description // empty')
-        [[ -n "$epic_title" ]] && printf 'Epic: %s — %s\n' "$parent" "$epic_title"
-        [[ -n "$epic_desc" ]]  && printf 'Epic Description: %s\n' "$epic_desc"
+        if [[ -n "$epic_title" ]]; then
+            printf 'Epic context (background only — implement the task below, not the epic):\n'
+            printf '  %s — %s\n' "$parent" "$epic_title"
+            [[ -n "$epic_desc" ]] && printf '  %s\n' "$epic_desc"
+        fi
     fi
 
     printf 'Title: %s\n' "$title"

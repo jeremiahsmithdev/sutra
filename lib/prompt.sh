@@ -19,8 +19,9 @@ build_prompt() {
     commit_rule=$(format_commit_rule)
     prior_task_context=$(format_prior_task_context)
 
-    local file_map
+    local file_map playlist_progress
     file_map=$(format_file_map)
+    playlist_progress=$(format_playlist_progress)
 
     prompt=$(render_template "$TEMPLATES_DIR/prompt_bead.txt" \
         "TASK_ID=$task_id" \
@@ -28,7 +29,8 @@ build_prompt() {
         "PRIOR_TASK_CONTEXT=$prior_task_context" \
         "BRANCH_SECTION=$branch_section" \
         "COMMIT_RULE=$commit_rule" \
-        "FILE_MAP=$file_map")
+        "FILE_MAP=$file_map" \
+        "PLAYLIST_PROGRESS=$playlist_progress")
 
     clear_task_handoff
 }

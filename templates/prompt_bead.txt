@@ -4,6 +4,7 @@ You are executing a single task from a beads issue tracker as part of an automat
 ID: {{TASK_ID}}
 {{DETAILS}}
 {{PRIOR_TASK_CONTEXT}}
+{{PLAYLIST_PROGRESS}}
 ## Orientation
 Before implementing, orient yourself to what the previous bead left behind:
 
