@@ -19,8 +19,9 @@ build_prompt() {
     commit_rule=$(format_commit_rule)
     prior_task_context=$(format_prior_task_context)
 
-    local file_map
+    local file_map project_summary
     file_map=$(format_file_map)
+    project_summary=$(format_project_summary)
 
     prompt=$(render_template "$TEMPLATES_DIR/prompt_bead.txt" \
         "TASK_ID=$task_id" \
@@ -28,7 +29,8 @@ build_prompt() {
         "PRIOR_TASK_CONTEXT=$prior_task_context" \
         "BRANCH_SECTION=$branch_section" \
         "COMMIT_RULE=$commit_rule" \
-        "FILE_MAP=$file_map")
+        "FILE_MAP=$file_map" \
+        "PROJECT_SUMMARY=$project_summary")
 
     clear_task_handoff
 }
@@ -46,8 +48,10 @@ build_raw_prompt() {
     recent_commits=$(git log --oneline -5 2>/dev/null || echo "(no commits)")
     prior_task_context=$(format_prior_task_context)
 
-    local file_map
+    local file_map playlist_progress project_summary
     file_map=$(format_file_map)
+    playlist_progress=$(format_playlist_progress)
+    project_summary=$(format_project_summary)
 
     prompt=$(render_template "$TEMPLATES_DIR/prompt_raw.txt" \
         "PROMPT_TEXT=$prompt_text" \
@@ -55,7 +59,9 @@ build_raw_prompt() {
         "WORKING_DIR=$(pwd)" \
         "CURRENT_BRANCH=$current_branch" \
         "RECENT_COMMITS=$recent_commits" \
-        "FILE_MAP=$file_map")
+        "FILE_MAP=$file_map" \
+        "PLAYLIST_PROGRESS=$playlist_progress" \
+        "PROJECT_SUMMARY=$project_summary")
 
     clear_task_handoff
 }
