@@ -81,11 +81,14 @@ format_reset_time() {
         # GNU date (Linux)
         formatted=$(date -d "$iso_time" +"%-l:%M%P" 2>/dev/null)
     else
-        # BSD date (macOS) - manually construct time with am/pm
-        local hour minute ampm
-        hour=$(date -j -f "%Y-%m-%dT%H:%M:%S" "${iso_time:0:19}" +"%-I" 2>/dev/null)
-        minute=$(date -j -f "%Y-%m-%dT%H:%M:%S" "${iso_time:0:19}" +"%M" 2>/dev/null)
-        ampm=$(date -j -f "%Y-%m-%dT%H:%M:%S" "${iso_time:0:19}" +"%p" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+        # BSD date (macOS) - interpret input as UTC and convert to local time
+        local hour minute ampm epoch
+        # Parse ISO time as UTC to get correct epoch
+        epoch=$(TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%S" "${iso_time:0:19}" +"%s" 2>/dev/null)
+        # Convert epoch to local time with am/pm
+        hour=$(date -r "$epoch" +"%-I" 2>/dev/null)
+        minute=$(date -r "$epoch" +"%M" 2>/dev/null)
+        ampm=$(date -r "$epoch" +"%p" 2>/dev/null | tr '[:upper:]' '[:lower:]')
 
         # Strip leading zero from hour if present, but keep minutes zero-padded
         hour="${hour#0}"
