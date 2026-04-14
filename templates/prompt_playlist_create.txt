@@ -1,8 +1,11 @@
 Invoke the playlist-create skill to generate a ralph playlist file.
 
-You are running in assisted mode (Mode A): bead data is provided below.
-Do NOT call br — the data is already here. Output ONLY a triple-backtick
-code block containing the playlist. Do not write a file. No commentary.
+You are running in assisted mode (Mode A): bead IDs, titles, parents,
+and dependencies are pre-fetched below — you do not need to re-query
+those. You may call br for additional context (epic description, bead
+descriptions, design notes, priorities) if it would help with ordering
+or gate placement decisions. Output ONLY a triple-backtick code block
+containing the playlist. Do not write a file. No commentary.
 
 BEADS:
 {{BEAD_DETAILS}}

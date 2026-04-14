@@ -34,11 +34,14 @@ Load these on-demand, not eagerly.
 ### Mode A — Assisted (called from ralph)
 
 The prompt contains a `BEADS:` section with pre-formatted bead data
-(`id — title (parent: X) [depends: Y, Z]`). Ralph has already queried
-`br` for you.
+(`id — title (parent: X) [depends: Y, Z]`). Ralph has already fetched
+the basics — IDs, titles, parents, and dependency edges.
 
 In this mode:
-- Do NOT call `br` — data is already provided
+- The bead list is already complete — do not re-fetch IDs or titles
+- You MAY call `br show <id> --json` or `br show <epic-id> --json` for
+  additional context: epic description, bead descriptions, design notes,
+  priorities, or anything else that would improve ordering or gate context
 - Output ONLY a triple-backtick code block containing the playlist
 - Do NOT write a file — ralph extracts and writes it
 - Do NOT add commentary before or after the code block
