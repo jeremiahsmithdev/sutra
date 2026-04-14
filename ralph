@@ -36,6 +36,11 @@ else
         check_exit_conditions || break
         select_task           || break
         handle_dry_run        && break
+        log ""
+        log "═══════════════════════════════════════════════════════"
+        log "  LOOP $((total_loops + 1))/$MAX_LOOPS  │  Task: $tid  │  Model: $MODEL"
+        log "═══════════════════════════════════════════════════════"
+        log ""
         claim_task "$tid"
         build_prompt "$tid" "$task_details"
         invoke_claude         || break
