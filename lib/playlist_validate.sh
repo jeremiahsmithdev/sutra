@@ -1,9 +1,7 @@
-# playlist_validate.sh — Dry-run validation and post-run reporting.
+# playlist_validate.sh — Dry-run validation and gate analysis display.
 #
 # Dry-run path (called per-line when --dry-run is set): validate bead IDs,
 # check statuses, detect unsatisfied blockers, accumulate warnings.
-# Report path: playlist_report_data() generates the post-run text summary
-# consumed by the completion report prompt.
 #
 # All "_dry_run_*" globals are module-scoped accumulators that reset on
 # fresh source so each session starts clean.
@@ -150,51 +148,67 @@ playlist_dry_run_summary() {
             log "  * $warning"
         done
     fi
+
+    # Gate analysis
+    report_gate_analysis
 }
 
-# ── playlist_report_data ──────────────────────────────────────────────────
+# ── report_gate_analysis ───────────────────────────────────────────────────
 #
-# Text summary of all playlist lines and their current status.
-# Consumed by the completion report prompt to give Claude full context.
+# Print gate density analysis from gate_check_playlist() and gate_minimum_rules().
 
-playlist_report_data() {
-    local total=${#PLAYLIST_LINES[@]}
-    local idx=0 item_num=0
+report_gate_analysis() {
+    local report
+    report=$(gate_check_playlist)
 
-    while [[ $idx -lt $total ]]; do
-        local raw="${PLAYLIST_LINES[$idx]}"
-        idx=$((idx + 1))
-        local trimmed="${raw#"${raw%%[![:space:]]*}"}"
-        [[ -z "$trimmed" || "$trimmed" == \#* ]] && continue
+    local beads gates
+    local -a tag_pairs
+    parse_gate_report "$report" beads gates tag_pairs
 
-        item_num=$((item_num + 1))
-        local was_processed="no"
-        [[ $idx -le $playlist_line ]] && was_processed="yes"
-
-        if [[ "$trimmed" == ">"* ]]; then
-            local prompt_text="${trimmed#>}"
-            prompt_text="${prompt_text#"${prompt_text%%[![:space:]]*}"}"
-            printf '%d. [prompt] %s (processed: %s)\n' "$item_num" "${prompt_text:0:80}" "$was_processed"
+    log ""
+    log "GATE ANALYSIS:"
+    if [[ $beads -gt 0 || $gates -gt 0 ]]; then
+        local ratio
+        if [[ $gates -gt 0 ]]; then
+            ratio=$((beads / gates))
         else
-            local bead_status
-            bead_status=$(get_bead_status "$trimmed")
-            printf '%d. [bead] %s (status: %s, processed: %s)\n' "$item_num" "$trimmed" "$bead_status" "$was_processed"
+            ratio=0
         fi
-    done
-}
+        log "  Beads: $beads  |  Gates: $gates  |  Density: $ratio:1"
+    fi
 
-# ── playlist_processed ─────────────────────────────────────────────────────
-#
-# Return the number of actionable lines processed so far.
+    # Show per-template counts if gates exist
+    if [[ ${#tag_pairs[@]} -gt 0 ]]; then
+        local tags_display=""
+        local tag_pair
+        for tag_pair in "${tag_pairs[@]}"; do
+            local tag="${tag_pair%%=*}" count="${tag_pair#*=}"
+            tags_display+="  #${tag}: $count"
+            [[ "$tag_pair" != "${tag_pairs[-1]}" ]] && tags_display+=" | "
+        done
+        [[ -n "$tags_display" ]] && log "$tags_display"
+    fi
 
-playlist_processed() {
-    local count=0
-    local i=0
-    while [[ $i -lt $playlist_line ]]; do
-        local raw="${PLAYLIST_LINES[$i]}"
-        local trimmed="${raw#"${raw%%[![:space:]]*}"}"
-        [[ -n "$trimmed" && "$trimmed" != \#* ]] && count=$((count + 1))
-        i=$((i + 1))
-    done
-    echo "$count"
+    # Check for violations
+    local violations
+    violations=$(gate_minimum_rules "$beads" "$gates" "${tag_pairs[@]}" 2>&1)
+
+    if [[ -n "$violations" ]]; then
+        local has_error=false
+        while IFS= read -r vline; do
+            if [[ "$vline" == ERROR:* ]]; then
+                has_error=true
+                log "  ${C_BOLD_RED}$vline${C_RESET}"
+            elif [[ "$vline" == WARNING:* ]]; then
+                log "  ${C_BOLD_YELLOW}$vline${C_RESET}"
+            fi
+        done <<< "$violations"
+
+        if [[ "$has_error" != true ]] && [[ -n "$violations" ]]; then
+            log "  ${C_BOLD_YELLOW}RECOMMENDATIONS:${C_RESET}"
+            log "    * Run 'ralph playlist init $PLAYLIST' to add quality gates"
+        fi
+    else
+        [[ $beads -gt 0 ]] && log "  ${C_GREEN}✓ Gate density OK${C_RESET}"
+    fi
 }
