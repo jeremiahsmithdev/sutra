@@ -1,7 +1,7 @@
-# playlist_init.sh — ralph playlist init subcommand.
+# playlist_init.sh — ralph playlist init: syntax + gate + semantic validation.
 #
-# Phase 1: deterministic syntax + gate density validation.
-# Phase 2 (task 13): semantic validation via Claude — runs if Phase 1 passes.
+# Phase 1: deterministic checks (line syntax + gate density).
+# Phase 2: Claude-assisted semantic validation and gate injection.
 
 # ── run_playlist_init ─────────────────────────────────────────────────────
 #
@@ -17,10 +17,7 @@ run_playlist_init() {
     log "Validating playlist: ${C_BOLD}$PLAYLIST${C_RESET}"
 
     # Read file into PLAYLIST_LINES for gate analysis
-    PLAYLIST_LINES=()
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        PLAYLIST_LINES+=("$line")
-    done < "$PLAYLIST"
+    read_playlist_file
 
     local errors=0 warnings=0
 
@@ -38,7 +35,8 @@ run_playlist_init() {
         return 1
     fi
 
-    # Phase 2 placeholder (task 13): playlist_validate_semantic
+    # Phase 2: Semantic validation via Claude
+    playlist_validate_semantic || return 1
     return 0
 }
 
@@ -51,7 +49,6 @@ validate_line_syntax() {
     _syntax_errors=0
     _syntax_warnings=0
     local line_num=0 past_first_actionable=false
-    local branch_directive_seen=false
 
     printf '\n%s\n' "${C_BOLD}Line syntax:${C_RESET}"
 
@@ -143,17 +140,9 @@ validate_gate_density() {
     local report
     report=$(gate_check_playlist)
 
-    # Parse report: "beads=N gates=M TAG=C ..."
-    local beads=0 gates=0
-    local -a tag_pairs=()
-    local word
-    for word in $report; do
-        case "$word" in
-            beads=*) beads="${word#beads=}" ;;
-            gates=*) gates="${word#gates=}" ;;
-            *)       tag_pairs+=("$word") ;;
-        esac
-    done
+    local beads gates
+    local -a tag_pairs
+    parse_gate_report "$report" beads gates tag_pairs
 
     printf '  Beads: %d  |  Gates: %d  |  Density: %d:%d\n' \
         "$beads" "$gates" "$gates" "$beads"

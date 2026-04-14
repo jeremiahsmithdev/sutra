@@ -1,7 +1,7 @@
-# playlist_marker.sh — Validation marker check on playlist startup.
+# playlist_marker.sh — Validation marker check and insertion.
 #
-# Scans for "# ✓ VALIDATED:" in the playlist header. If absent, warns
-# and offers inline validation. Called from playlist_init().
+# check_validation_marker(): scans playlist header on startup, warns if absent.
+# add_validation_marker(): inserts marker after init validation passes.
 
 # ── check_validation_marker ───────────────────────────────────────────────
 #
@@ -72,12 +72,40 @@ offer_inline_init() {
             ;;
         *)
             run_playlist_init || exit 1
-            PLAYLIST_LINES=()
-            while IFS= read -r line || [[ -n "$line" ]]; do
-                PLAYLIST_LINES+=("$line")
-            done < "$PLAYLIST"
+            read_playlist_file
             recount_playlist_total
             init_playlist_checksum
             ;;
     esac
+}
+
+# ── add_validation_marker ──────────────────────────────────────────────────
+#
+# Add validation marker to the top of the playlist if not already present.
+
+add_validation_marker() {
+    if head -5 "$PLAYLIST" 2>/dev/null | grep -q "✓ VALIDATED:"; then
+        return  # Already present
+    fi
+
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local marker="# ✓ VALIDATED: $timestamp by ralph playlist init"
+
+    # Create temp file with marker inserted
+    local temp_file
+    temp_file=$(mktemp)
+
+    if head -1 "$PLAYLIST" 2>/dev/null | grep -q "^#!"; then
+        # Insert after shebang
+        head -1 "$PLAYLIST" > "$temp_file"
+        echo "$marker" >> "$temp_file"
+        tail -n +2 "$PLAYLIST" >> "$temp_file"
+    else
+        # Insert at beginning
+        echo "$marker" > "$temp_file"
+        cat "$PLAYLIST" >> "$temp_file"
+    fi
+
+    mv "$temp_file" "$PLAYLIST"
 }

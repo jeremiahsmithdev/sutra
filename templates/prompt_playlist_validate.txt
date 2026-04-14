@@ -1,0 +1,20 @@
+Audit this playlist for semantic correctness.
+
+For each bead ID listed:
+1. Check dependency ordering: does a bead depend on work that comes later in the playlist?
+2. Flag any beads whose dependencies are missing from the playlist entirely.
+
+For each gate line (> prefix with #TAG):
+1. Check if the context is specific to the surrounding beads (not generic).
+2. If a gate has no context after the #TAG, suggest specific context based on the surrounding beads.
+
+Do NOT add a validation marker — the outer loop handles that.
+Do NOT create or modify any files. Report findings as plain text only.
+
+Print a short summary of findings when done.
+
+PLAYLIST:
+{{PLAYLIST_CONTENT}}
+
+BEADS:
+{{BEAD_DETAILS}}

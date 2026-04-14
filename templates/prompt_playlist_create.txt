@@ -1,0 +1,17 @@
+Generate a ralph playlist file. Order the beads logically and insert quality gate lines.
+
+RULES:
+1. Order by dependency: foundational work before dependent work.
+2. Insert gate lines at intervals:
+   - After ~5 beads: >@opus #SMOKE_TEST <what to test based on preceding beads>
+   - Every ~5 beads without a gate: > #COMPLETENESS_SCAN <what to scan>
+   - At epic boundaries: >@opus #REVIEW <what to review>
+3. Gate context must be SPECIFIC to the surrounding beads — not generic.
+4. Do NOT add branch directives, comments, or blank lines.
+5. Do NOT duplicate or invent bead IDs — only reorder the ones given.
+
+OUTPUT: A single code block containing one bead ID or > prompt per line. Nothing else.
+
+BEADS:
+{{BEAD_DETAILS}}
+{{EPIC_NOTES}}
