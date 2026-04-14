@@ -35,9 +35,6 @@ playlist_validate_semantic() {
         return 1
     fi
 
-    # Add validation marker if not already present
-    add_validation_marker
-
     log ""
     log "${C_GREEN}✓ Semantic validation complete${C_RESET}"
     log "Review changes with: ${C_DIM}git diff $PLAYLIST${C_RESET}"

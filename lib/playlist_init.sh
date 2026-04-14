@@ -37,6 +37,10 @@ run_playlist_init() {
         return 1
     fi
 
+    # Phase 1 passed — write the validation marker now.
+    # Phase 2 is advisory; the playlist is structurally valid regardless.
+    add_validation_marker
+
     # Phase 2: Semantic validation via Claude.
     # In automated pipelines (playlist create) skip the prompt.
     if [[ "$auto" != "true" ]]; then
