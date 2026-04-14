@@ -9,6 +9,8 @@
 # (when implemented) runs semantic validation.
 
 run_playlist_init() {
+    local auto="${1:-false}"
+
     if [[ ! -f "$PLAYLIST" ]]; then
         log "ERROR: Playlist file not found: $PLAYLIST"
         return 1
@@ -35,7 +37,17 @@ run_playlist_init() {
         return 1
     fi
 
-    # Phase 2: Semantic validation via Claude
+    # Phase 2: Semantic validation via Claude.
+    # In automated pipelines (playlist create) skip the prompt.
+    if [[ "$auto" != "true" ]]; then
+        printf '\nRun Phase 2 semantic validation via Claude? [Y/n]: '
+        local answer
+        read -r answer
+        case "$answer" in
+            n|N) log "Skipping Phase 2."; return 0 ;;
+        esac
+    fi
+
     playlist_validate_semantic || return 1
     return 0
 }

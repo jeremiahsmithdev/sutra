@@ -51,11 +51,11 @@ run_playlist_create() {
         return 1
     fi
 
-    # Step 4: Pipe through init for verification
+    # Step 4: Pipe through init for verification (auto — no prompt)
     log "Running validation pipeline..."
     PLAYLIST="$OUTPUT_FILE"
     read_playlist_file
-    run_playlist_init || return 1
+    run_playlist_init "auto" || return 1
 
     log ""
     log "${C_GREEN}✓ Playlist created successfully${C_RESET}"

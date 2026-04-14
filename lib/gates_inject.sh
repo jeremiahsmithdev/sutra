@@ -31,6 +31,20 @@ playlist_inject_gates() {
         lines+=("$line")
     done < "$playlist_file"
 
+    # Pre-scan: if a SMOKE_TEST gate already exists anywhere in the file,
+    # don't inject another one. Without this, the injection fires at bead 5
+    # before encountering an existing gate that sits after bead 5.
+    local prescan_line
+    for prescan_line in "${lines[@]}"; do
+        local prescan_trimmed="${prescan_line#"${prescan_line%%[![:space:]]*}"}"
+        if [[ "$prescan_trimmed" == ">"* ]]; then
+            local prescan_content="${prescan_trimmed#>}"
+            prescan_content="${prescan_content#"${prescan_content%%[![:space:]]*}"}"
+            [[ "$prescan_content" == @* ]] && prescan_content="${prescan_content#* }"
+            [[ "$prescan_content" == "#SMOKE_TEST"* ]] && has_smoke_test=true
+        fi
+    done
+
     for line in "${lines[@]}"; do
         local trimmed="${line#"${line%%[![:space:]]*}"}"
 
