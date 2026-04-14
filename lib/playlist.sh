@@ -3,16 +3,24 @@
 # A playlist line is one of: <bead-id>, `> <prompt>`, `# comment`, or blank.
 # Dry-run validation and reporting live in playlist_validate.sh.
 
+# ── read_playlist_file ─────────────────────────────────────────────────────
+#
+# Read PLAYLIST into PLAYLIST_LINES[]. Shared by playlist_init, reload,
+# validation, and creation — the single source of truth for file → array.
+
+read_playlist_file() {
+    PLAYLIST_LINES=()
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        PLAYLIST_LINES+=("$line")
+    done < "$PLAYLIST"
+}
+
 # ── playlist_init ──────────────────────────────────────────────────────────
 #
 # Read PLAYLIST into PLAYLIST_LINES[], count actionable lines, resume position.
 
 playlist_init() {
-    PLAYLIST_LINES=()
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        PLAYLIST_LINES+=("$line")
-    done < "$PLAYLIST"
-
+    read_playlist_file
     recount_playlist_total
     init_playlist_checksum
     init_injection_limit
@@ -58,16 +66,14 @@ playlist_next() {
         local trimmed="${raw#"${raw%%[![:space:]]*}"}"
         [[ -z "$trimmed" || "$trimmed" == \#* ]] && continue
 
-        playlist_line_model=""
-        playlist_line_gate_tag=""
-        playlist_line_gate_context=""
+        reset_line_annotations
         if [[ "$trimmed" == ">"* ]]; then
             playlist_line_type="prompt"
             parse_playlist_prompt_line "$trimmed"
             parse_playlist_gate_tag || return 1
         else
             playlist_line_type="bead"
-            playlist_current_line="$trimmed"
+            parse_bead_annotations "$trimmed"
         fi
 
         # playlist_line is only updated by playlist_advance() on success.
@@ -87,11 +93,13 @@ parse_playlist_prompt_line() {
     local trimmed="$1"
     playlist_current_line="${trimmed#>}"
     playlist_current_line="${playlist_current_line#"${playlist_current_line%%[![:space:]]*}"}"
-    if [[ "$playlist_current_line" == @* ]]; then
-        playlist_line_model="${playlist_current_line%% *}"
-        playlist_line_model="${playlist_line_model#@}"
-        playlist_current_line="${playlist_current_line#* }"
-    fi
+    # Parse all @key or @key=value tokens from the front
+    while [[ "$playlist_current_line" == @* ]]; do
+        local token="${playlist_current_line%% *}"
+        playlist_current_line="${playlist_current_line#"$token"}"
+        playlist_current_line="${playlist_current_line#"${playlist_current_line%%[![:space:]]*}"}"
+        apply_annotation_token "$token"
+    done
 }
 
 # ── playlist_advance ──────────────────────────────────────────────────────
@@ -141,14 +149,21 @@ playlist_execute() {
 
 playlist_execute_bead() {
     tid="$playlist_current_line"
+    apply_line_overrides
+    local ann
+    ann=$(format_annotation_display)
     log ""
     log "═══════════════════════════════════════════════════════"
-    log "  LOOP $((total_loops + 1))/$MAX_LOOPS  │  Task: $tid  │  Model: $MODEL"
+    log "  LOOP $((total_loops + 1))/$MAX_LOOPS  │  Task: $tid  │  Model: $MODEL${ann}"
     log "═══════════════════════════════════════════════════════"
     log ""
     claim_task "$tid"
     build_prompt "$tid" "$task_details"
-    invoke_claude            || return 1
+    if ! invoke_claude; then
+        restore_line_overrides
+        return 1
+    fi
+    restore_line_overrides
     check_bead_status "$tid"
     update_circuit_breaker
     handle_task_outcome "$tid"
@@ -162,15 +177,12 @@ playlist_execute_bead() {
 # Returns 1 if invoke_claude fails (caller should break).
 
 playlist_execute_prompt() {
-    local saved_model=""
-    if [[ -n "$playlist_line_model" ]]; then
-        saved_model="$MODEL"
-        MODEL="$playlist_line_model"
-    fi
-
+    apply_line_overrides
+    local ann
+    ann=$(format_annotation_display)
     log ""
     log "═══════════════════════════════════════════════════════"
-    log "  LOOP $((total_loops + 1))/$MAX_LOOPS  │  Prompt  │  Model: $MODEL"
+    log "  LOOP $((total_loops + 1))/$MAX_LOOPS  │  Prompt  │  Model: $MODEL${ann}"
     log "═══════════════════════════════════════════════════════"
     log ""
     log "Prompt: ${C_BOLD}${playlist_current_line:0:80}${C_RESET}"
@@ -182,17 +194,13 @@ playlist_execute_prompt() {
     build_raw_prompt "$prompt_text"
 
     if ! invoke_claude; then
-        [[ -n "$saved_model" ]] && MODEL="$saved_model"
+        restore_line_overrides
         return 1
     fi
 
-    [[ -n "$saved_model" ]] && MODEL="$saved_model"
+    restore_line_overrides
     playlist_reload
     total_tasks_completed=$((total_tasks_completed + 1))
-    no_progress_count=0
-    if [[ "$circuit" == "HALF_OPEN" ]]; then
-        circuit="CLOSED"
-        log "Circuit recovered → CLOSED"
-    fi
+    record_progress
     current_task=""
 }

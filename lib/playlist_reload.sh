@@ -69,11 +69,7 @@ remember_current_line_content() {
 
 reread_playlist_file() {
     local old_count=${#PLAYLIST_LINES[@]}
-    PLAYLIST_LINES=()
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        PLAYLIST_LINES+=("$line")
-    done < "$PLAYLIST"
-
+    read_playlist_file
     local new_count=${#PLAYLIST_LINES[@]}
     local delta=$((new_count - old_count))
 
