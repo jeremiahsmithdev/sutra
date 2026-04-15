@@ -116,33 +116,88 @@ truncate_to_word_limit() {
     fi
 }
 
+# ── _dirty_file_signatures ────────────────────────────────────────────
+#
+# Emit one "<hash>\t<path>" line per dirty file in the working tree.
+# Hash is git hash-object of current content, or "deleted" for removed files.
+# Used by snapshot_bead_start_state and commit_bead_work to compute the set
+# of files THIS BEAD touched (vs pre-existing dirt from prior beads).
+
+_dirty_file_signatures() {
+    local status_code path
+    git status --porcelain 2>/dev/null | while read -r status_code path; do
+        # Renames appear as "R  old -> new"; take the new path.
+        [[ "$path" == *" -> "* ]] && path="${path##* -> }"
+        if [[ -f "$path" ]]; then
+            printf '%s\t%s\n' "$(git hash-object "$path" 2>/dev/null)" "$path"
+        else
+            printf 'deleted\t%s\n' "$path"
+        fi
+    done | sort
+}
+
+# ── snapshot_bead_start_state ─────────────────────────────────────────
+#
+# Capture the set of dirty files at bead-start so commit_bead_work can
+# commit only THIS bead's changes (excluding pre-existing dirt).
+# Called from playlist_execute_bead before claim_task.
+# No-op in standard mode (AUTO_COMMIT=true) where the inner loop commits.
+
+snapshot_bead_start_state() {
+    [[ "$AUTO_COMMIT" == "true" ]] && return
+    _pre_bead_dirty=$(_dirty_file_signatures)
+    if [[ -n "$_pre_bead_dirty" ]]; then
+        local count
+        count=$(printf '%s\n' "$_pre_bead_dirty" | wc -l | tr -d ' ')
+        log "Pre-existing dirty files at bead start ($count) — will NOT be attributed to this bead"
+    fi
+}
+
 # ── commit_bead_work ──────────────────────────────────────────────────
 #
-# After br close, commit all dirty tracked and untracked files (code +
-# .beads/ state from the close itself) as a single per-bead commit.
-# Only runs when AUTO_COMMIT=false (playlist mode); in standard mode the
-# inner loop has already committed.
-# Skips gracefully when the working tree is already clean.
+# After br close, commit only the files this bead changed as a single
+# per-bead commit (code + .beads/ state from claim/close events).
+# Files dirty BEFORE the bead started (per snapshot_bead_start_state) are
+# excluded — only files whose content hash changed during the bead are
+# staged. No-op in standard mode (AUTO_COMMIT=true).
 
 commit_bead_work() {
     local tid="$1"
     [[ "$AUTO_COMMIT" == "true" ]] && return  # inner loop already committed
 
-    # Nothing to commit — clean working tree (tracked changes + untracked files).
-    if [[ -z "$(git status --porcelain 2>/dev/null)" ]]; then
-        return
+    local current_dirty delta
+    current_dirty=$(_dirty_file_signatures)
+    delta=$(comm -23 \
+        <(printf '%s\n' "$current_dirty") \
+        <(printf '%s\n' "${_pre_bead_dirty:-}"))
+
+    if [[ -z "$delta" ]]; then
+        return  # bead made no changes since snapshot
     fi
+
+    local -a files=()
+    while IFS=$'\t' read -r _hash path; do
+        [[ -n "$path" ]] && files+=("$path")
+    done <<<"$delta"
+
+    [[ ${#files[@]} -eq 0 ]] && return
 
     local title slug
     title=$(get_bead_field "$tid" title)
     slug=$(slugify "$title")
 
-    git add -A
-    git commit --no-verify -m "feat(${slug}): close ${tid}
+    if ! git add -- "${files[@]}"; then
+        log "ERROR: git add failed for $tid (${#files[@]} files) — commit skipped"
+        return 1
+    fi
+    if ! git commit --no-verify -m "feat(${slug}): close ${tid}
 
 ${title}
 
-Closes ${tid}." 2>/dev/null || true
+Closes ${tid}."; then
+        log "ERROR: per-bead commit failed for $tid — staged changes preserved for inspection"
+        return 1
+    fi
 }
 
 # ── mark_needs_review ──────────────────────────────────────────────────
