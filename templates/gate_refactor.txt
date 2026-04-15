@@ -40,6 +40,22 @@ Adopt the perspective of a skeptical senior developer reviewing code from a juni
    - Type safety: implicit any, unsafe casts, missing null checks
    - Incomplete implementations: TODOs, FIXMEs, placeholder code, stubbed functions
 
+## Scope Limit (enforced)
+Before any analysis, check the breadth of this session's changes:
+  git diff --stat $SESSION_START_SHA..HEAD
+
+Count the number of files changed and the total added+deleted lines.
+
+If the diff touches more than 10 files OR more than 1000 added+deleted lines:
+  1. STOP. Do NOT proceed to Phase 1 analysis. Do NOT touch any code.
+  2. create beads (type=bug only) — run `br create --type=bug --title "REFACTOR: scope exceeded — <N> files / <L> lines" -d "<git diff --stat output>\n\nWhich directory should the refactor focus on?"` and note the new bead ID.
+  3. inject into playlist: append the new bead ID on the line immediately after the current #REFACTOR line in the playlist file.
+  4. Exit this invocation without modifying any source files.
+
+If a path was given after #REFACTOR (e.g. "#REFACTOR focus on path/to/dir/"), narrow the diff:
+  git diff --stat $SESSION_START_SHA..HEAD -- path/to/dir/
+Apply the 10/1000 check against this narrowed diff only. If it passes, continue to Phase 1 with that path as scope.
+
 ### Phase 2: Plan
 Write a detailed plan to SCRATCHPAD.md with:
 - **Must Fix**: security vulnerabilities, logic errors, broken error handling

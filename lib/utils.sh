@@ -157,10 +157,17 @@ save_state() {
     printf '%s\n' "$state_content" > "$STATE_FILE"
 
     # Append playlist state when in playlist mode (skip during dry-run).
-    # playlist_advance() commits the pending line position — only called here,
-    # so a crash mid-task means playlist_line stays at the unfinished line.
+    # playlist_advance() commits the pending line position.  It is only allowed
+    # when _invocation_succeeded=true, which _invoke_claude_once sets after a
+    # successful Claude exit.  The pre-invocation save_state call (which
+    # persists total_loops for crash recovery) clears the flag beforehand, so
+    # the pointer does NOT advance on that write.  After advancing, the flag is
+    # reset so subsequent save_state calls in the same iteration are no-ops.
     if [[ -n "${PLAYLIST:-}" && "${DRY_RUN:-false}" != "true" ]]; then
-        playlist_advance
+        if [[ "${_invocation_succeeded:-false}" == "true" ]]; then
+            playlist_advance
+            _invocation_succeeded=false
+        fi
         local playlist_state
         playlist_state=$(render_template "$TEMPLATES_DIR/state_playlist.txt" \
             "PLAYLIST_FILE=${PLAYLIST}" \
@@ -177,14 +184,25 @@ save_state() {
 # Read a template file and substitute {{KEY}} placeholders with values.
 # Usage: render_template <template_file> [KEY=value ...]
 # Pure bash — no external deps. Handles multi-line values correctly.
+#
+# Values are sentinel-escaped before substitution so that any {{...}} tokens
+# inside a value (e.g. bead titles, task descriptions, playlist progress)
+# are not treated as template placeholders in subsequent iterations.
+# This prevents external content from leaking unfilled placeholder names
+# into the rendered output.
 render_template() {
     local template_file="$1"; shift
-    local content pair key value
+    local content pair key value _safe_value
+    local _sentinel=$'\x01\x01'
     content=$(<"$template_file")
     for pair in "$@"; do
         key="${pair%%=*}"
         value="${pair#*=}"
-        content="${content//\{\{$key\}\}/$value}"
+        # Escape {{ in value so it cannot trigger further placeholder expansion.
+        _safe_value="${value//\{\{/$_sentinel}"
+        content="${content//\{\{$key\}\}/$_safe_value}"
     done
+    # Restore escaped {{ back to literal {{ in the final output.
+    content="${content//$_sentinel/\{\{}"
     printf '%s' "$content"
 }

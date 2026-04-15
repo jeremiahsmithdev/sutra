@@ -33,12 +33,20 @@ check_validation_marker() {
 
 # ── prompt_for_validation ─────────────────────────────────────────────────
 #
-# Interactive prompt when validation marker is missing. Non-TTY skips.
+# Interactive prompt when validation marker is missing.
+# Non-interactive (no TTY): halts unless PLAYLIST_AUTO_CONTINUE=true or --yes.
 
 prompt_for_validation() {
     if [[ ! -t 0 ]]; then
-        log "WARNING: Playlist not validated (non-interactive, continuing)"
-        return
+        if [[ "${PLAYLIST_AUTO_CONTINUE:-false}" == "true" || "${YES:-false}" == "true" ]]; then
+            log "WARNING: Playlist not validated (non-interactive, PLAYLIST_AUTO_CONTINUE=true — proceeding)"
+            return
+        fi
+        log "ERROR: Playlist not validated and running non-interactively."
+        log "  Run 'ralph playlist init $PLAYLIST' first, or:"
+        log "    set PLAYLIST_AUTO_CONTINUE=true in .ralph/config, or"
+        log "    pass --yes to ralph on the CLI."
+        exit 1
     fi
 
     log "WARNING: Playlist not validated."

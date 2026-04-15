@@ -98,13 +98,65 @@ get_bead_title() {
 
 # ── format_playlist_progress ──────────────────────────────────────────────
 #
-# Read the progress file and return it for prompt injection. Returns empty
-# string when no progress file exists (first task, or non-playlist mode).
+# Read the progress file and return a prompt-optimised excerpt.
+# Returns empty string when no progress file exists.
+#
+# Token-saving rules applied here (playlist_write_progress is unchanged):
+#   - 0 completed: single "Position: 1/N · In Progress: …" line.
+#   - ≥1 completed: full Completed + In Progress sections; Remaining capped
+#     at PLAYLIST_PROGRESS_LOOKAHEAD entries with "…plus N more" tail.
+# The full progress file at PROGRESS_FILE is always written by
+# playlist_write_progress for monitor/debug tooling.
 
 format_playlist_progress() {
     [[ ! -f "$PROGRESS_FILE" ]] && return
+
+    # Parse completed/total from the Status line
+    local status_line completed=0 total=0
+    status_line=$(grep -m1 '^## Status:' "$PROGRESS_FILE" || true)
+    [[ "$status_line" =~ ([0-9]+)/([0-9]+) ]] \
+        && completed="${BASH_REMATCH[1]}" total="${BASH_REMATCH[2]}"
+
     printf '\n## Playlist Progress\n'
-    cat "$PROGRESS_FILE"
+
+    if [[ $completed -eq 0 ]]; then
+        # Compact format: no completed list, no remaining noise.
+        local in_progress
+        in_progress=$(awk '/^## In Progress/{f=1;next} f && /^\* /{sub(/^\* /,""); print; exit}' "$PROGRESS_FILE")
+        printf 'Position: 1/%d' "$total"
+        [[ -n "$in_progress" ]] && printf ' · In Progress: %s' "$in_progress"
+        printf '\n'
+        return
+    fi
+
+    # Count total remaining items so we can compute the "…plus N more" delta
+    local total_remaining
+    total_remaining=$(awk '/^## Remaining/{f=1;next} f && /^\* /{c++} END{print c+0}' "$PROGRESS_FILE")
+
+    local lookahead="${PLAYLIST_PROGRESS_LOOKAHEAD:-3}"
+    local in_remaining=0 remaining_shown=0
+    while IFS= read -r line; do
+        case "$line" in
+            "# Playlist Progress:"*|"Updated:"*) continue ;;
+            "## Remaining")
+                in_remaining=1
+                printf '%s\n' "$line"
+                ;;
+            *)
+                if [[ $in_remaining -eq 1 && "$line" == \** ]]; then
+                    remaining_shown=$((remaining_shown + 1))
+                    if [[ $remaining_shown -le $lookahead ]]; then
+                        printf '%s\n' "$line"
+                    elif [[ $remaining_shown -eq $((lookahead + 1)) ]]; then
+                        printf '…plus %d more\n' $((total_remaining - lookahead))
+                    fi
+                    # Items beyond the first overflow line are silently dropped
+                else
+                    printf '%s\n' "$line"
+                fi
+                ;;
+        esac
+    done < "$PROGRESS_FILE"
 }
 
 # ── playlist_report_data ──────────────────────────────────────────────────

@@ -1,3 +1,5 @@
 You are working on branch `{{BRANCH}}`. This is the single branch for this entire playlist session.
 Do NOT create feature branches. Do NOT run `git checkout` to any other branch.
-Commit directly on `{{BRANCH}}`. Merging is a separate manual step.
+Commits on `{{BRANCH}}` are made by the outer loop after `br close`.
+Do NOT run `git add`, `git commit`, or `git stash` — if you commit yourself,
+the per-bead history is lost and downstream gates cannot attribute work to beads.

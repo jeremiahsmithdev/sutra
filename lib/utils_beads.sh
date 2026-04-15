@@ -32,9 +32,11 @@ get_epic_dependency_title() {
 }
 
 # Count non-closed parent-child children of an epic.
+# Uses a positive allowlist of "open" states rather than a negative filter so
+# that transient states like DONE (beads_rust close race) are treated as done.
 count_open_epic_children() {
     br show "$1" --json 2>/dev/null \
-        | jq '[.[0].dependents // [] | .[] | select(.dependency_type == "parent-child") | select(.status != "closed")] | length' 2>/dev/null
+        | jq '[.[0].dependents // [] | .[] | select(.dependency_type == "parent-child") | select(.status == "open" or .status == "in_progress" or .status == "blocked" or .status == "ready")] | length' 2>/dev/null
 }
 
 # Return JSON array of tasks closed since the given RFC3339 timestamp.

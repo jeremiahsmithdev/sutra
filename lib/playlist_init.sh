@@ -4,9 +4,6 @@
 # Phase 2: Claude-assisted semantic validation and gate injection.
 
 # ── run_playlist_init ─────────────────────────────────────────────────────
-#
-# Entry point for `ralph playlist init <file>`. Validates syntax, then
-# (when implemented) runs semantic validation.
 
 run_playlist_init() {
     local auto="${1:-false}"
@@ -57,9 +54,6 @@ run_playlist_init() {
 }
 
 # ── validate_line_syntax ──────────────────────────────────────────────────
-#
-# Phase 1a: check each line. Bead IDs verified against br, prompts
-# accepted as-is. Branch directives validated for git ref safety.
 
 validate_line_syntax() {
     _syntax_errors=0
@@ -126,26 +120,49 @@ validate_comment_directive() {
 
 validate_bead_id() {
     local line_num="$1" id="$2"
-
-    if ! br show "$id" &>/dev/null; then
+    local bead_json
+    bead_json=$(br show "$id" --json 2>/dev/null) || {
         printf '  Line %d: %sERROR%s — "%s" is not a valid bead ID\n' \
             "$line_num" "$C_BOLD_RED" "$C_RESET" "$id"
         _syntax_errors=$((_syntax_errors + 1))
         return
-    fi
+    }
 
     local status
-    status=$(get_bead_status "$id")
+    status=$(echo "$bead_json" | jq -r '.[0].status // "unknown"' 2>/dev/null)
     if [[ "$status" == "closed" ]]; then
         printf '  Line %d: %sWARNING%s — bead "%s" is already closed\n' \
             "$line_num" "$C_BOLD_YELLOW" "$C_RESET" "$id"
         _syntax_warnings=$((_syntax_warnings + 1))
     fi
+
+    warn_epic_description_length "$line_num" "$id" "$bead_json"
+}
+
+# ── warn_epic_description_length ──────────────────────────────────────────
+#
+# Advisory: epics with long descriptions inflate token counts for every child.
+
+warn_epic_description_length() {
+    local line_num="$1" bead_id="$2" bead_json="$3"
+
+    local issue_type
+    issue_type=$(echo "$bead_json" | jq -r '.[0].issue_type // ""' 2>/dev/null)
+    [[ "$issue_type" != "epic" ]] && return
+
+    local description line_count
+    description=$(echo "$bead_json" | jq -r '.[0].description // ""' 2>/dev/null)
+    line_count=$(echo "$description" | wc -l | tr -d ' ')
+    local threshold="${EPIC_DESC_LINE_WARN:-40}"
+
+    if [[ "$line_count" -gt "$threshold" ]]; then
+        printf '  Line %d: %sADVISORY%s — epic "%s" description is %d lines (>%d). Consider linking to a spec file. See CLAUDE.md §Epic description conventions.\n' \
+            "$line_num" "$C_BOLD_YELLOW" "$C_RESET" "$bead_id" "$line_count" "$threshold"
+        _syntax_warnings=$((_syntax_warnings + 1))
+    fi
 }
 
 # ── validate_gate_density ─────────────────────────────────────────────────
-#
-# Phase 1b: run gate_check_playlist and gate_minimum_rules.
 
 validate_gate_density() {
     _gate_errors=0

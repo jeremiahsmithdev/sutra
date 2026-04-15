@@ -1,2 +1,88 @@
-Test API endpoints against live backend. curl each endpoint implemented in the last batch of beads. Verify responses match expected schemas.
-If issues found: create beads (type=bug only) with br create, insert IDs into the playlist file after this line.
+You are running a smoke test against a live dev environment. This invocation
+verifies that endpoints and code paths delivered by the most recent beads
+actually work end-to-end.
+
+## Preconditions (run before any checks)
+
+Run these steps in order. If a step fails, STOP immediately — do not proceed
+to the Checks section.
+
+1. **Start dev server.**
+   Consult the project's README or CLAUDE.md for the standard run command
+   (e.g. `flask run`, `npm run dev`, `rails server`). Start it in the
+   background and capture its PID:
+   ```
+   <run-command> &
+   DEV_SERVER_PID=$!
+   ```
+   Wait up to 15 s for it to respond (poll the health endpoint or root URL).
+
+2. **Confirm the server is reachable.**
+   `curl -sf <health-endpoint-or-root>` must return 2xx. If it does not
+   within 15 s, the server failed to start — go straight to Precondition
+   Failure handling below.
+
+3. **Establish auth / tenant context (if the project requires it).**
+   * Check for seed fixtures in `tests/helpers/`, `tests/conftest.py`,
+     `tests/fixtures/`, or similar. Use them to obtain a session token,
+     API key, or cookie — do NOT fabricate credentials.
+   * If the project is multi-tenant, pick one tenant from the seed data.
+   * If no auth fixtures exist, note "no auth required" and continue.
+
+**Precondition Failure:** If ANY step above fails, create ONE bug bead:
+```
+br create --type=bug --title "SMOKE: preconditions failed — <which step>"
+```
+Append the bead ID to the playlist file after this line, then stop.
+Do NOT attempt any checks.
+
+## Checks
+
+Determine which endpoints and code paths were added or modified in this
+session:
+```
+git diff --name-only ${SESSION_START_SHA:-HEAD~1}..HEAD
+```
+For each relevant endpoint (routes, views, API handlers):
+
+* Issue the correct HTTP request with the auth context from preconditions.
+* Assert the expected response: status code, content-type, and key response
+  fields (use what the code or tests document as correct — do not invent).
+* Record **pass** or **fail** with evidence (response status + body snippet).
+
+**Run ALL checks before recording any result. Do NOT stop on first failure
+and do NOT create beads during this phase.** The goal is a complete picture
+before diagnosis.
+
+## Output
+
+Produce one table:
+
+| Check | Passed | Evidence / Error |
+|-------|--------|-----------------|
+| ...   | yes/no | ...             |
+
+Analyse the failures together. Group by root cause — multiple failing
+endpoints often share one underlying issue (missing migration, wrong
+env var, broken middleware). One root cause = one bead.
+
+If ANY check failed:
+* create beads (type=bug only) with `br create`, one per distinct root cause
+* append each bead ID to the playlist file after this line
+
+## Teardown
+
+Kill the dev server regardless of outcome:
+```
+kill $DEV_SERVER_PID 2>/dev/null || true
+```
+Do not leave background processes running.
+
+## Rules
+
+* **Detection only.** Do not fix bugs in this invocation.
+* If scenario context below specifies particular endpoints or request bodies,
+  use them verbatim rather than inferring from source.
+* Group failures by root cause before creating beads — avoid one bead per
+  failing endpoint when they share a common cause.
+

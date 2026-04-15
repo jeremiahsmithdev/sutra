@@ -1,6 +1,7 @@
 
 
-## RETRY CONTEXT (attempt {{ATTEMPT}}/{{MAX_RETRIES}})
+## RETRY CONTEXT (attempt {{ATTEMPT}}/{{MAX_RETRIES}}) [{{TIMESTAMP}}]
+Log: {{INVOKE_LOG}}
 The previous attempt FAILED. Here is what happened:
 * Exit code: {{EXIT_CODE}}
 * Diagnosis: {{DIAGNOSIS}}

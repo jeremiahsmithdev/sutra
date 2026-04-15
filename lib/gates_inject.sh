@@ -75,13 +75,13 @@ playlist_inject_gates() {
         current_epic=$(br show "$bead_id" --json 2>/dev/null | jq -r '.[0].parent // ""')
 
         if [[ -n "$last_epic" && "$current_epic" != "$last_epic" && $bead_count -gt 1 ]]; then
-            output+=("> @opus #REVIEW")
+            output+=("> #REVIEW")
             gate_count=$((gate_count + 1))
             beads_since_gate=0
         fi
 
         if [[ "$has_smoke_test" == false && $bead_count -eq 5 ]]; then
-            output+=("> @opus #SMOKE_TEST")
+            output+=("> #SMOKE_TEST")
             gate_count=$((gate_count + 1))
             has_smoke_test=true
             beads_since_gate=0
@@ -124,6 +124,6 @@ inject_tail_gate() {
         [[ "$line" == *"#$tag"* ]] && return
     done
 
-    _output+=(">@opus #$tag")
+    _output+=("> #$tag")
     _count=$((_count + 1))
 }

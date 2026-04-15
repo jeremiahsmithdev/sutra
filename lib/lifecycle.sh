@@ -130,10 +130,13 @@ generate_playlist_report() {
     git_log=$(git log --oneline --since="${session_start:-1 hour ago}" 2>/dev/null) || git_log="(no commits)"
 
     build_report_prompt "$report_dir" "$report_file" "$playlist_data" "$git_log"
-    invoke_claude || {
+    local saved_exit_reason="$EXIT_REASON"
+    invoke_claude_no_retry || {
+        EXIT_REASON="$saved_exit_reason"
         log "WARNING: Report generation failed. Continuing cleanup."
         return
     }
+    EXIT_REASON="$saved_exit_reason"
 
     log "Report written to ${C_BOLD}$report_file${C_RESET}"
 }

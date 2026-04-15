@@ -4,284 +4,258 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Ralph is an autonomous AI coding system — a bash outer loop that feeds beads issues to Claude Code one at a time. ~1,800 lines of bash across 17 library files implementing the core loop, playlist execution, circuit breaker, monitoring dashboard, remote execution, and branch management.
+Ralph is an autonomous AI coding system — a bash outer loop that feeds tasks to Claude Code one at a time. ~4,200 lines of bash across ~35 library files in `lib/`. Two execution modes share one main loop:
 
-**Philosophy:** Read [[PHILOSOPHY.md]] first. The bitter lesson applies: simple deterministic orchestration + a smart model beats clever multi-agent systems. The outer loop is a for-loop with a sort. All intelligence lives in the inner loop (Claude).
+- **Playlist mode** (`--playlist FILE`, now the primary mode) — execute a hand-authored or Claude-authored list of beads + free-form prompts + quality gates in order.
+- **Standard `br ready` mode** — pull the next unblocked bead and work it. Kept for ad-hoc use.
+
+Read [[PHILOSOPHY.md]] first. The bitter lesson: simple deterministic orchestration + a smart model beats clever multi-agent systems. All intelligence lives in Claude (inner loop); the outer loop is a for-loop with a sort.
 
 ## Coding Style: Functional Decomposition
 
-**Prefer linear sequences of descriptive function calls over nested logic, inline code, or deep conditionals.**
-
-Every function should do one thing, named so the caller reads like prose. The main loop is the model — each line is a verb phrase describing what happens next:
-
-```bash
-# GOOD — linear, self-documenting
-validate_environment
-load_configuration
-select_next_task
-claim_task "$tid"
-build_prompt "$task_details"
-invoke_claude "$prompt"
-evaluate_outcome "$tid"
-update_circuit_breaker
-save_state
-
-# BAD — inline logic, nested conditionals, unclear intent
-if [[ -n "$tid" ]]; then
-  result=$(br show "$tid" --json)
-  if [[ $? -eq 0 ]]; then
-    status=$(echo "$result" | jq -r '.status')
-    if [[ "$status" == "closed" ]]; then
-      # ... 20 more lines of nested logic
-```
+**Prefer linear sequences of descriptive function calls over nested logic, inline code, or deep conditionals.** Every function does one thing; the caller reads like prose. See the main script (`ralph`) and `lifecycle.sh` for the pattern.
 
 ### Rules
 
-1. **Name functions as verb phrases** — `pick_next_task()`, `ensure_ralph_branch()`, `commit_beads_if_dirty()`. The name IS the documentation.
-2. **Keep callers linear** — a function body should read top-to-bottom as a sequence of function calls, not a tree of conditionals. Extract branches into named functions.
-3. **One level of abstraction per function** — don't mix high-level orchestration (`run_main_loop`) with low-level details (`jq -r '.status'`). Push details down into well-named helpers.
-4. **Avoid deep nesting** — if you're 3+ levels deep in `if/for/while`, extract the inner block into a function with a descriptive name.
-5. **Guard clauses over nesting** — return/exit early for error cases at the top, keep the happy path unindented.
-6. **Functions over comments** — if you need a comment to explain a block, extract it into a function whose name provides that explanation.
-7. **Regenerate ctags after adding/renaming functions** — run `ctags -R .` from the project root. Neovim's `gd` uses the `tags` file for cross-file navigation (bashls can't do this). The `.ctags.d/ralph.ctags` config excludes non-source directories.
+1. **Name functions as verb phrases** (`pick_next_task`, `playlist_next`, `ensure_ralph_branch`). The name IS the documentation.
+2. **Keep callers linear** — a function body is a sequence of function calls, not a tree of conditionals. Extract branches.
+3. **One level of abstraction per function** — don't mix orchestration with `jq -r '.status'`.
+4. **Guard clauses over nesting** — return/exit early; keep the happy path unindented.
+5. **Functions over comments** — if you need a comment to explain a block, extract it.
+6. **Regenerate ctags after adding/renaming functions** — `ctags -R .` from project root (Neovim `gd` uses `tags`).
 
-### Size Limits
+### Size Limits (hard, no exceptions without approval)
 
-Hard limits. No exceptions without explicit approval.
-
-| Unit | Max Lines | Action When Exceeded |
-|------|-----------|---------------------|
-| **File** | 200 | Split into focused files. A file does one thing. |
-| **Function** | 50 | Extract sub-functions with descriptive names. |
-| **Case branch** | 10 | Extract the branch body into a named function. |
-| **Inline string** | 5 | Extract to a variable, or a file under `templates/`. |
-
-### String & Template Extraction
-
-Long inline strings destroy readability. Extract them.
-
-1. **Multi-line heredocs >5 lines** → move to a file under `templates/` and `cat` it in. Prompt templates, config scaffolds, help text — none of these belong inline.
-2. **Complex jq expressions >3 lines** → extract to a named function (e.g., `extract_epic_blocker()` instead of inline `jq -r '[.[0].dependencies // ...`). The function name documents what the query does.
-3. **printf chains for display** → extract each logical section into a `render_*()` or `build_*()` function. A dashboard frame builder should read as a sequence of section calls, not 60 lines of printf.
-4. **Prompt construction** → assemble from named variables, not one giant string. Each section (task details, branch instructions, rules, closure protocol) should be its own variable or function return.
-5. **Repeated query patterns** → if the same `br show ... | jq ...` pattern appears in multiple files, extract to a shared helper in `utils_beads.sh`. Naming convention matters for performance:
-   - **`get_*`** — spawns a subprocess (e.g., `get_bead_status <id>` calls `br show`).
-   - **`extract_*`** — operates on pre-fetched JSON passed as an argument (e.g., `extract_epic_blocker <epic_json>`).
-
-   A caller that already has JSON in hand should use the `extract_*` variant — calling `get_*` would spawn a redundant subprocess. A caller that only has an ID uses `get_*`.
-
-```bash
-# BAD — 20-line heredoc inline
-prompt="You are executing a single task...
-## Your Task
-ID: $task_id
-$details
-## Branch
-$branch_section
-## Rules
-1. Implement this ONE task completely...
-..."
-
-# GOOD — assembled from named parts
-local task_section branch_section rules_section closing_section
-task_section=$(format_task_section "$task_id" "$details")
-branch_section=$(format_branch_instructions "$branch_ctx")
-rules_section=$(format_execution_rules)
-closing_section=$(format_closure_protocol "$task_id")
-prompt="${task_section}
-
-${branch_section}
-
-${rules_section}
-
-${closing_section}"
-```
-
-```bash
-# BAD — complex jq inline
-dep_epic_id=$(echo "$epic_json" | jq -r '
-    [.[0].dependencies // [] | .[] | select(.dependency_type == "blocks")
-     | select(.issue_type == "epic")] | .[0].id // empty
-' 2>/dev/null)
-
-# GOOD — named function
-dep_epic_id=$(extract_epic_blocker "$epic_json")
-```
-
-**When inline jq is acceptable:** complex jq is OK when it operates on locally-scoped data with no reuse elsewhere. For example, `playlist_dry_run` validates beads against pre-fetched JSON in a single call site — extracting the inline jq to a helper would add indirection without eliminating duplication. The rule targets *repeated* or *subprocess-spawning* complex jq, not all complex jq.
-
-### File Splitting Guidelines
-
-When a file exceeds 200 lines, split by responsibility:
-
-- **One concern per file** — parsing, rendering, validation, and execution are separate concerns even if they operate on the same data.
-- **Name the new file `<parent>_<concern>.sh`** — `monitor_render.sh`, `playlist_validate.sh`, `invoke_retry.sh`, `utils_beads.sh`. Keeping the parent stem as a prefix makes the relationship obvious in `loader.sh` and in file listings. The concern should be a noun/verb describing what's inside — `validate_playlist.sh` not `playlist_helpers.sh`.
-- **Source new files next to their parent in `loader.sh`** — extracted files belong immediately after the file they came from, preserving load-order intuition.
-- **Keep the original file as the orchestrator** — it calls into the extracted files, reading like a table of contents.
+| Unit | Max | Action |
+|------|-----|--------|
+| File | 200 | Split by responsibility. Name new file `<parent>_<concern>.sh` (e.g. `playlist_validate.sh`). Source next to parent in `loader.sh`. |
+| Function | 50 | Extract sub-functions. |
+| Case branch | 10 | Extract branch body to a named function. |
+| Inline string | 5 | Extract to variable, or a file under `templates/`. |
 
 ### Template System
 
-Templates under `templates/` are pure data — no shell logic. Render them with the `render_template` helper from `utils.sh`:
+Templates under `templates/` are pure data — no shell logic. Render with `render_template` from `utils.sh` using `{{KEY}}` placeholders:
 
 ```bash
-# render_template <template_file> [KEY=value ...]
 prompt=$(render_template "$TEMPLATES_DIR/prompt_bead.txt" \
-    "TASK_ID=$tid" \
-    "DETAILS=$details" \
-    "BRANCH_SECTION=$branch_section")
+    "TASK_ID=$tid" "DETAILS=$details")
 ```
 
-Templates use `{{KEY}}` placeholders. `render_template` is pure bash (no `envsubst` or `sed` dependency) and handles multi-line values cleanly — the substitution works even when a value itself contains newlines.
+File extensions:
+- `.txt` — content rendered to stdout/captured (prompts, help, ASCII art).
+- `.template` — scaffolds copied verbatim (e.g. `config.template` → `.ralph/config`).
+- `.jq` — filter files loaded with `jq -f` when the filter exceeds ~3 lines.
 
-**File extensions:**
-- **`.txt`** — content rendered to stdout or captured into a variable (prompts, help text, ASCII art).
-- **`.template`** — scaffolds copied verbatim to a project directory (e.g., `config.template` → `.ralph/config` via `cat` in `init_project()`).
-- **`.jq`** — jq filter files loaded via `jq -f "$TEMPLATES_DIR/foo.jq"` when the filter is more than ~3 lines. Gives you syntax highlighting in editors and lets you test the filter standalone (`jq -f templates/foo.jq < some.jsonl`).
+`TEMPLATES_DIR` lives in `loader.sh` alongside `LIB_DIR` — top-level constants every module needs belong there.
 
-**`TEMPLATES_DIR` lives in `loader.sh`** alongside `LIB_DIR`, not in a late-loaded module. Top-level constants that every module needs to see belong in `loader.sh` so they're defined before any `source` statement references them. Functions resolve variables lazily (at call time), but `set -u` at the top of a file would trip on a missing constant referenced outside a function body.
+### Naming conventions for helpers
+
+- `get_*` — spawns a subprocess (e.g. `get_bead_status <id>` calls `br show`).
+- `extract_*` — operates on pre-fetched JSON passed as an argument.
+
+If a caller already has JSON in hand, using `get_*` would spawn a redundant subprocess.
 
 ### Module-Scoped Globals
 
-Bash has no real modules — all globals are global. To make module boundaries visible, prefix module-scoped state with the module's abbreviation:
+Bash has no modules, so prefix module-local globals visibly: `DB_*` (dashboard state), `_dry_run_*` (playlist validation accumulators), `playlist_*` (playlist runtime state). Collisions on generic names like `count`/`status` are otherwise inevitable after a split.
 
-- **`DB_*`** — dashboard state (`monitor_render.sh`): `DB_circuit`, `DB_cur_title`, `DB_ready`, `DB_blocked`, etc.
-- **`_dry_run_*`** — playlist validation accumulators (`playlist_validate.sh`): `_dry_run_count`, `_dry_run_warnings`, `_dry_run_seen_beads`.
+### Don't write tracker IDs in source
 
-The prefix signals "this belongs to module X — don't read or write it from outside." Without this convention, split modules will accidentally collide on common names like `count`, `status`, or `warnings`. Pick a 2-4 letter prefix or a leading-underscore noun; the exact scheme matters less than consistency within a module.
+Never put bead IDs (`ralph-0h1.11`, `br-xxx`), JIRA, or GitHub issue numbers into code — comments, docstrings, logs, or names. Only commit subjects and PR descriptions.
 
 ## Running Ralph
 
 ```bash
-./ralph                          # Run the loop (picks tasks from br ready)
-./ralph --dry-run                # Show next task without executing
-./ralph --max-tasks 3            # Stop after 3 completed tasks
-./ralph --max-loops 10           # Stop after 10 Claude invocations
-./ralph --max-turns 200          # Max turns per Claude invocation (default: 500)
-./ralph --timeout 20             # 20 minutes per invocation (default: 10)
-./ralph --scope "auth"           # Only work issues matching regex
-./ralph --playlist plan.playlist # Execute tasks in file order (see Playlist Mode)
-./ralph --auto-commit false      # Disable per-task commits (playlist default)
-./ralph --model sonnet           # Override model (default: haiku)
-./ralph --sandbox                # Bubblewrap isolation (Linux only)
-./ralph --monitor                # Live dashboard (run in separate terminal)
-./ralph --remote oracle          # Run on remote server via SSH+tmux
-./ralph --status                 # Print current .ralph/state
-./ralph --reset                  # Clear circuit breaker and counters
+./ralph                          # Standard mode: pull from br ready
+./ralph --playlist plan.playlist # Playlist mode (primary)
+./ralph --dry-run [--playlist F] # Validate without executing
+./ralph --max-tasks N            # Stop after N completed
+./ralph --max-loops N            # Stop after N invocations (default 50)
+./ralph --max-turns N            # Per-invocation turn cap (default 100)
+./ralph --timeout M              # Per-invocation minutes (default 10)
+./ralph --max-cost USD           # Halt if cumulative cost exceeds (0 = unlimited)
+./ralph --model {haiku|sonnet|opus|glm-...}  # Inner-loop model (default haiku)
+./ralph --scope REGEX            # Filter beads by title regex (standard mode)
+./ralph --no-commit / --commit   # Override per-task commit default
+./ralph --context-files a,b,c    # File manifest injected into prompts
+./ralph --playlist-branch NAME   # Override one-branch-per-session name
+./ralph --sandbox                # Bubblewrap isolation (Linux)
+./ralph --monitor                # Live dashboard (separate terminal)
+./ralph --tmux / -t              # Wrap in detachable tmux session
+./ralph --remote [HOST] / -r     # Rsync + SSH + tmux to remote
+./ralph --status                 # Print .ralph/state
+./ralph --reset                  # Clear circuit breaker / counters
+./ralph --init                   # Scaffold .ralph/config from template
+./ralph playlist init  FILE      # Two-phase validation (syntax + Claude semantic)
+./ralph playlist create [IDS...] [--epic EID] [-o FILE]   # Claude-authored playlist
 ```
 
-Per-project overrides go in `.ralph/config` (sourced by `config.sh`). CLI flags override both defaults and `.ralph/config`.
-
-### Navigation
-
-`ctags -R .` regenerates the `tags` file for cross-file function navigation in Neovim (`gd`). The `.ctags.d/ralph.ctags` config scopes to Sh files and excludes `.git`, `.beads`, `.history`, `reference-projects`, and `output`. `.shellcheckrc` doubles as a root marker for bash-language-server.
+Per-project defaults: `.ralph/config` (sourced by `config.sh`). CLI flags override both defaults and project config.
 
 ## Prerequisites
 
-Ralph requires: `br` (beads_rust), `claude` (Claude Code CLI), `jq`, `timeout`/`gtimeout`. Checked by `lib/prereqs.sh`.
+`br` (beads_rust), `claude` CLI, `jq`, `timeout`/`gtimeout`. Checked by `lib/prereqs.sh`.
 
 ## Architecture
 
-### The Main Loop (45 lines)
+### Main Loop (`ralph`)
 
-`ralph` sources `lib/loader.sh` which loads all 17 library files. The main script has two execution modes:
+Top-level script sources `lib/loader.sh`, calls `initialize "$@"`, then runs one of two loops:
+
+**Playlist mode** (primary):
+```
+while true:
+    check_exit_conditions
+    playlist_next            # advance past comments/blanks, parse annotations + gate tags
+    playlist_handle_dry_run  # skip execution when --dry-run
+    playlist_execute         # dispatch: bead → claim+invoke+close, prompt → raw invoke
+    save_state
+```
+On exit, playlist mode generates a completion report via one final Claude invocation.
 
 **Standard mode** (`br ready`):
 ```
 while true:
-    check_exit_conditions  →  max tasks/loops/circuit breaker
-    select_task            →  br ready --json, skip epics, apply --scope
-    claim_task             →  br update --status in_progress
-    build_prompt           →  task details + branch instructions + rules
-    invoke_claude          →  claude -p with timeout, stream-json output
-    check_bead_status      →  query br for current status
-    update_circuit_breaker →  track no-progress streaks
-    handle_task_outcome    →  closed → bump counter; epic auto-close
-    save_state             →  persist to .ralph/state
+    check_exit_conditions
+    select_task              # br ready --json, skip epics, apply --scope
+    handle_dry_run           # exit after showing next
+    claim_task
+    build_prompt             # task + branch + rules + (optional) playlist progress
+    invoke_claude            # claude -p, timeout, stream-json, retry with failure context
+    check_bead_status
+    update_circuit_breaker
+    handle_task_outcome      # close → bump counter, epic auto-close
+    save_state
 ```
 
-**Playlist mode** (`--playlist FILE`):
+### Library Layout (load order in `loader.sh` matters)
+
+Config / core:
+- `config.sh` — defaults (MAX_LOOPS=50, MODEL=haiku, GATE_DENSITY_RATIO=7, INJECTION_RATIO=0.25, …). Sources `.ralph/config` at the bottom.
+- `utils.sh` — `log`, `save_state`/`load_state`, ANSI colors, `render_template`, `commit_beads_if_dirty`.
+- `utils_beads.sh` — shared `br` query helpers (`get_*` spawning / `extract_*` pure).
+- `glm.sh` — GLM z.ai model provider integration (alternate Anthropic-compatible endpoint).
+- `args.sh` — CLI parsing into globals; handles early-exit actions (`--status`, `--reset`, `--init`, `playlist init`, `playlist create`, `--help`).
+- `prereqs.sh` — dependency checks, `ensure_ralph_branch`.
+- `sandbox.sh`, `remote.sh` — isolation / remote execution wrappers.
+
+Monitoring:
+- `monitor.sh` + `monitor_render.sh` — live dashboard, double-buffered, reads `.ralph/state` + `br`.
+
+Task selection (standard mode):
+- `tasks.sh` — `pick_next_task`, `claim_task`, `get_task_details`, `get_branch_context`, `slugify`.
+
+Quality gates:
+- `gates.sh` — loads `templates/gate_*.txt` into `GATE_TEMPLATES[]`, expands `#SMOKE_TEST`/`#COMPLETENESS_SCAN`/`#REVIEW`/`#REFACTOR`/`#DOCUMENT` tags inline. Strips self-healing bead-creation lines when injection is capped.
+- `gates_inject.sh` — automatic gate insertion during playlist authoring (density-based, epic-boundary, tail-only).
+
+Playlist (the big surface area):
+- `playlist.sh` — parse, navigate, execute (`playlist_next`, `playlist_execute`, `read_playlist_file`).
+- `playlist_annotations.sh` — `@model=…`, `@turns=…`, `@timeout=…`, and gate tag parsing.
+- `playlist_branch.sh` — one-branch-per-session resolution (`ralph-<playlist-slug>`).
+- `playlist_reload.sh` — reload playlist after a `>` prompt modifies it (checksum-based).
+- `playlist_validate.sh` — Phase 1 dry-run: syntax, bead existence/status, dependency ordering, density warnings.
+- `playlist_init.sh` — `ralph playlist init FILE`: Phase 1 + Phase 2 semantic validation driver.
+- `playlist_semantic.sh` — Phase 2: auto-inject gates, spawn Claude for semantic audit, stamp marker.
+- `playlist_create.sh` — `ralph playlist create`: spawn Claude to author a playlist from bead/epic IDs.
+- `playlist_marker.sh` — `✓ VALIDATED:` marker check/insertion in playlist header.
+- `playlist_progress.sh` — writes `.ralph/playlist-progress.md` snapshot; feeds completion report.
+
+Prompt assembly:
+- `prompt_context.sh` — per-project file manifest (from `CONTEXT_FILES`), cross-task handoff notes.
+- `prompt.sh` — `build_prompt`: assembles bead/prompt text from `templates/prompt_*.txt` and branch-context templates.
+
+Invocation:
+- `format_stream.sh` — jq filter: `stream-json` → human-readable (text, tool uses, cost).
+- `invoke.sh` — `invoke_claude`: `claude -p` with timeout, stream capture, cost tracking, auto-escalation (haiku→sonnet→opus) on retry.
+- `invoke_retry.sh` — retry logic (up to 3 attempts), augments prompt with failure context from `templates/failure_tail.jq`.
+- `circuit_breaker.sh` — 3-state machine: CLOSED →(2 no-progress)→ HALF_OPEN →(3)→ OPEN. Reset only via `--reset`.
+- `task_outcome.sh` — `handle_task_outcome`, `mark_needs_review`, `maybe_close_epic`.
+
+Lifecycle:
+- `lifecycle.sh` — `initialize`, exit `cleanup`, playlist completion report generation.
+
+### Playlist File Format
+
+A playlist line is one of:
+
 ```
-while true:
-    check_exit_conditions  →  same as standard
-    playlist_next          →  advance to next actionable line
-    playlist_execute       →  dispatch: bead task or raw prompt
-    save_state             →  persist + advance playlist position
+abc123                           # bead: claim → invoke → close
+abc123 @opus @turns=30           # per-line annotations (first attempt only)
+def456 @model=sonnet @timeout=15
+> Review the changes so far       # free-form prompt (no bead to close)
+>@opus Refactor the auth module   # prompt with per-line model
+#SMOKE_TEST <optional context>    # quality gate tag, expanded from gate_smoke_test.txt
+#COMPLETENESS_SCAN
+#REVIEW
+#REFACTOR
+#DOCUMENT
+# comment / blank line            # skipped
+✓ VALIDATED: 2026-04-15           # marker (first 5 lines) — inserted by `playlist init`
 ```
 
-On exit, playlist mode generates a completion report via one final Claude invocation.
+Playlist state is crash-safe: `playlist_line` in `.ralph/state` only advances **after** successful execution, so a crash mid-task resumes at the same line. `playlist_reload.sh` re-reads the file after each `>` prompt so Claude can edit the playlist mid-run.
 
-### Library Files (`lib/`)
+Gate tags are shorthand — ralph expands them at runtime from `templates/gate_*.txt`. The playlist file is **never modified** by expansion. `gates_inject.sh` *can* edit the file, but only during authoring (`playlist init` / `playlist create`).
 
-Load order matters — defined in `loader.sh`:
+### Epic description conventions
 
-| File | Responsibility |
-|------|---------------|
-| `config.sh` | Default globals (MAX_LOOPS=50, TIMEOUT_MINUTES=10, MODEL=haiku, etc.) |
-| `utils.sh` | `log()`, `save_state()`/`load_state()`, ANSI colors, `commit_beads_if_dirty()` |
-| `args.sh` | CLI parsing → globals. Handles --help/--status/--reset early exits |
-| `prereqs.sh` | Dependency checks, `ensure_ralph_branch()` |
-| `tasks.sh` | `pick_next_task()`, `claim_task()`, `get_task_details()`, `get_branch_context()`, `slugify()` |
-| `prompt.sh` | `build_prompt()` — constructs the Claude prompt with task + branch + rules |
-| `invoke.sh` | `invoke_claude()` — runs `claude -p` with timeout, captures exit code |
-| `circuit_breaker.sh` | 3-state machine: CLOSED →(2 no-progress)→ HALF_OPEN →(3)→ OPEN (halt) |
-| `task_outcome.sh` | `handle_task_outcome()`, `mark_needs_review()`, `maybe_close_epic()` |
-| `monitor.sh` | Live dashboard — double-buffered, 1s refresh, reads .ralph/state + br queries |
-| `remote.sh` | `run_remote()` — rsync + SSH + tmux session management |
-| `sandbox.sh` | Bubblewrap filesystem isolation wrapper |
-| `format_stream.sh` | jq filter: stream-json → human-readable (text, tool uses, cost) |
-| `splash.sh` | ASCII art |
-| `playlist.sh` | Playlist parsing, line classification, dry-run validation, execution dispatch |
-| `lifecycle.sh` | Session lifecycle — `initialize()`, exit `cleanup()`, playlist completion reports |
+**Link, don't inline.** Epic descriptions that paste long spec prose are re-injected into every child invocation, burning tokens on irrelevant context. Instead, put the spec in a file and reference it.
 
-### Key Global Variables
-
-State flows through globals (set in `config.sh`, modified by `args.sh`, persisted via `save_state()`):
-
-- `circuit` / `no_progress_count` — circuit breaker state
-- `total_tasks_completed` / `total_loops` — progress counters
-- `current_task` — retry tracking (non-empty = retrying same task)
-- `tid` / `task_details` — current task being worked
-- `CLAUDE_PID` — for interrupt handling
-
-### Playlist Mode
-
-A playlist is a text file where each line is one of:
-- `<bead-id>` — executed as a normal bead task (claim → build prompt → invoke → close)
-- `> <prompt>` — executed as a free-form Claude prompt (no bead to claim/close)
-- `>@opus <prompt>` — free-form prompt with per-line model override
-- `# comment` or blank — skipped
-
-```bash
-# Example playlist
-abc123
-def456
-> Review the changes so far and fix any test failures
->@opus Refactor the auth module for clarity
-ghi789
+**Bad** (80 lines of inline spec):
+```
+## Scope
+* OAuth 2.0 with PKCE …
+* ONE-WAY contact sync …
+…80 lines of spec prose…
 ```
 
-Playlist state is crash-safe: `playlist_line` in `.ralph/state` only advances after successful execution, so a crash mid-task resumes at the same line. Dry-run (`--dry-run --playlist`) validates all bead IDs, checks statuses, and warns about dependency ordering.
+**Good** (3–5 line summary + path link):
+```
+Xero accounting integration for Chippie tenants (AU/GB/IE).
+Specification: docs/technical/features/XERO_SPEC.md
+Branch: xero-integration.playlist — cherry-picked from xero@65021d1 in task .1
+```
 
-### Invocation Retry Logic
+- **Where spec files should live:** `docs/technical/features/<epic-slug>_SPEC.md`, or project-local equivalent.
+- **What the epic description SHOULD contain:** 3–5 line summary + path to spec file + branch/provenance notes.
+- **What bead descriptions SHOULD contain:** task-specific scope only — no re-pasting of epic context.
 
-`invoke_claude()` retries up to 3 times on failure (configurable via `MAX_RETRIES` in `invoke.sh`). Each retry augments the prompt with failure context — the exit code diagnosis and the last 10 lines of stream-json output — so Claude can adapt its approach. Exit codes are mapped to human-readable diagnoses (124=timeout, 137=OOM/kill, etc.).
+`ralph playlist init` warns when an epic in the playlist has a description exceeding `EPIC_DESC_LINE_WARN` lines (default 40). The Phase 2 semantic audit also flags ≥20-line blocks that appear verbatim across multiple children.
 
-### Logging
+### The Two-Phase `playlist init` Workflow
 
-All output is captured to `.ralph/logs/`:
-- **Session logs** (`sessions/<project>-<branch>-<timestamp>.log`) — full stdout+stderr via `tee`
-- **Stream logs** (`stream/<session>-<NNN>.jsonl`) — raw `stream-json` output per invocation, useful for diagnosis and replay
+`ralph playlist init FILE`:
+1. **Phase 1** — pure-bash: syntax check, bead existence (`br show`), status, dependency ordering, gate-density warnings.
+2. **Phase 2** — Claude-assisted: `playlist_inject_gates` inserts missing `#SMOKE_TEST`/`#COMPLETENESS_SCAN`/`#REVIEW`/`#REFACTOR`/`#DOCUMENT` lines at density-based intervals and epic boundaries, then Claude audits descriptions and adds the `✓ VALIDATED:` marker.
+
+Startup (`playlist_init.sh` → `check_validation_marker`) checks for the marker. If absent in non-interactive mode (tmux, CI, SSH, detached agents), ralph **halts with an error** rather than proceeding silently. To override:
+
+- Set `PLAYLIST_AUTO_CONTINUE=true` in `.ralph/config` (for CI environments that validate externally).
+- Pass `--yes` (or `-y`) on the CLI for a one-shot override.
+
+Interactive runs still prompt `[y/N]` as before.
+
+### Injection / Self-Healing Limits
+
+Gate templates contain "create beads (type=bug only) …" self-healing instructions. To prevent runaway bead creation, `MAX_INJECTED_BEADS` (or derived `INJECTION_RATIO * total_beads`, floor 5) caps total injections. Once capped, `gates.sh:strip_injection_instructions` removes the self-healing line from expanded gates.
+
+### Cost Tracking & Auto-Escalation
+
+`invoke.sh` accumulates cost from stream-json. `MAX_COST_USD` halts the loop via the circuit breaker when exceeded. `AUTO_ESCALATE=true` bumps model tier on retry (haiku → sonnet → opus) to get past tasks that failed on a cheap model.
 
 ### Branch Strategy
 
-`get_branch_context()` in `tasks.sh` determines where Claude works:
-- **Standalone task** → `ralph` branch
-- **Task in epic** → `ralph-<epic-slug>` branch (from `ralph`)
-- **Task in epic that depends on another epic** → `ralph-<epic-slug>` (from `ralph-<dep-epic-slug>`)
+`get_branch_context()` in `tasks.sh`:
+- Standalone task → `ralph` branch.
+- Task in epic → `ralph-<epic-slug>` (from `ralph`).
+- Task in epic blocked by another epic → `ralph-<epic-slug>` from `ralph-<dep-epic-slug>`.
+- Playlist mode → one branch per playlist session (`playlist_branch.sh`), resolved from playlist filename or `--playlist-branch`.
 
 ### Circuit Breaker
 
-Progress = bead status changed (closed or reopened). No progress = still in_progress after Claude finishes.
+Progress = bead status changed (closed or reopened). No-progress = Claude returned but bead still `in_progress`.
 
 ```
 CLOSED ──[2 no-progress]──► HALF_OPEN ──[3 no-progress]──► OPEN (halt)
@@ -289,27 +263,27 @@ CLOSED ──[2 no-progress]──► HALF_OPEN ──[3 no-progress]──► O
   └─────────────────────────────┘
 ```
 
-Recovery: `ralph --reset` only. No automatic recovery from OPEN.
+Only `ralph --reset` clears OPEN. Also trips on `MAX_COST_USD`.
 
 ### Verification Workflow
 
-On task close, ralph adds `verified:needs-review` label. Human reviews with `bnr` (list needing review) and `bV` (mark verified). Epic auto-closes when all children are closed.
+On close, ralph adds the `verified:needs-review` label. Humans review with `bnr` (needing review) and `bV` (mark verified). Epic auto-closes when all children are closed.
+
+### Logging
+
+Everything is captured to `.ralph/logs/`:
+- `sessions/<project>-<branch>-<timestamp>.log` — full stdout+stderr via `tee`.
+- `stream/<session>-<NNN>.jsonl` — raw `stream-json` per invocation, for diagnosis and replay.
+
+Playlist progress snapshot: `.ralph/playlist-progress.md`.
 
 ## Reference Projects
 
-Under `reference-projects/` — read for context, don't modify:
-
-| Directory | What It Is |
-|-----------|-----------|
-| `beads/` | bd source — git-backed issue tracker (legacy reference) |
-| `beads_viewer/` | bv source — graph scoring (PageRank, betweenness) |
-| `ralph-claude-code/` | Reference autonomous loop implementation |
-| `gastown/` | Enterprise multi-agent orchestration |
-| `choo-choo-ralph/` | 5-phase workflow with knowledge harvesting |
+Under `reference-projects/` — read for context, don't modify: `beads/` (bd, legacy), `beads_viewer/` (bv graph scoring), `ralph-claude-code/`, `gastown/`, `choo-choo-ralph/`.
 
 ## Key Tool Commands
 
-**beads_rust (br):** `br ready`, `br show <id> --json`, `br update <id> --status in_progress`, `br close <id> --reason "..."`, `br dep add <child> <parent>`
+**beads_rust (br):** `br ready`, `br show <id> --json`, `br update <id> --status in_progress`, `br close <id> --reason "…"`, `br dep add <child> <parent>`. Ralph itself calls these from `utils_beads.sh` / `tasks.sh` / `task_outcome.sh`.
 
 **beads_viewer (bv):** Always use robot flags. **Never run bare `bv`** — it launches a TUI that hangs agents.
 ```bash
@@ -320,12 +294,7 @@ bv --robot-insights  # Graph analysis
 
 ## Not Yet Implemented
 
-From [[PLAN.md]] — designed but not coded:
-- **BV integration** for task selection (currently just `br ready`)
-- **Metrics collection** to `.ralph/metrics.db` (schema in [[metrics.md]])
-- **Scout system** — pre-execution reconnaissance (design in [[scout/]])
-- **Harvest tooling** — slash commands for morning review
-- **Quality gate injection** — auto-create review/test beads after completion
+From [[PLAN.md]]: BV integration for task selection, `.ralph/metrics.db` instrumentation ([[metrics.md]]), scout system ([[scout/]]), harvest tooling ([[Harvest.md]]).
 
 ## Document Map
 
@@ -333,10 +302,10 @@ From [[PLAN.md]] — designed but not coded:
 |----------|---------|
 | [[PHILOSOPHY.md]] | Founding principles — read first |
 | [[PLAN.md]] | Build order checklist |
-| [[GUIDE.md]] | Complete operational guide (756 lines) |
+| [[GUIDE.md]] | Complete operational guide |
 | [[TOOLS.md]] | Ecosystem tool catalog |
-| [[outer-loop.md]] | Research on orchestrator options |
-| [[AI-TRIAGE.md]] | Semantic actionability scoring concept |
+| [[outer-loop.md]] | Orchestrator research |
+| [[AI-TRIAGE.md]] | Semantic actionability scoring |
 | [[metrics.md]] | SQLite instrumentation schema |
 | [[Harvest.md]] | Morning review process |
 | [[BEADS_VERIFICATION_WORKFLOW.md]] | Human verification tracking |
