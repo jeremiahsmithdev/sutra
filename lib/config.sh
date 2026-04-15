@@ -13,7 +13,7 @@ MAX_LOOPS=50
 TIMEOUT_MINUTES=10
 
 # Maximum turns per Claude invocation.
-MAX_TURNS=500
+MAX_TURNS=100
 
 # Regex pattern to filter which beads issues to work on.
 # Empty string means "work on everything ready".
@@ -25,7 +25,9 @@ SCOPE=""
 PLAYLIST=""
 
 # Whether Claude should commit per-task. Default true for normal mode.
-# In playlist mode, defaults to false (commits at checkpoint prompts instead).
+# In playlist mode, args.sh forces false (Option B: outer loop commits per-bead
+# after br close — see lib/task_outcome.sh). Claude is explicitly told not to
+# commit in the branch template; the outer loop handles git history attribution.
 AUTO_COMMIT=true
 
 # When true, ralph shows the next task and exits without invoking Claude.
@@ -68,6 +70,17 @@ CONTEXT_FILES=""
 # Minimum bead-to-gate ratio for playlist density warnings.
 GATE_DENSITY_RATIO=7
 
+# Advisory threshold: epic descriptions longer than this many lines trigger a
+# warning in `playlist init` Phase 1. Long epic descriptions re-inject into
+# every child invocation, burning tokens on irrelevant context.
+# See CLAUDE.md §Epic description conventions.
+EPIC_DESC_LINE_WARN=40
+
+# Maximum number of "Remaining" items shown in the ## Playlist Progress prompt
+# excerpt. Items beyond this cap are replaced with a "…plus N more" tail line.
+# Tune down to 1 on token-constrained models; raise to 5+ for full visibility.
+PLAYLIST_PROGRESS_LOOKAHEAD=3
+
 # Auto-escalate model on retry (haiku→sonnet→opus).
 AUTO_ESCALATE=true
 
@@ -79,6 +92,16 @@ MAX_INJECTED_BEADS=0
 
 # If MAX_INJECTED_BEADS=0, limit = max(5, floor(total_beads * ratio)).
 INJECTION_RATIO=0.25
+
+# When true, a playlist missing the ✓ VALIDATED: marker will proceed in
+# non-interactive mode (tmux, CI, remote) with a warning instead of halting.
+# Set in .ralph/config for CI/CD environments that self-validate externally.
+# Override with --yes on the CLI.
+PLAYLIST_AUTO_CONTINUE=false
+
+# YES=true is the internal flag set by --yes. It mirrors PLAYLIST_AUTO_CONTINUE
+# for the validation-marker bypass only; prefer PLAYLIST_AUTO_CONTINUE in config.
+YES=false
 
 # Resolved playlist branch name. Empty = non-playlist mode.
 PLAYLIST_BRANCH=""

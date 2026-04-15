@@ -184,14 +184,25 @@ save_state() {
 # Read a template file and substitute {{KEY}} placeholders with values.
 # Usage: render_template <template_file> [KEY=value ...]
 # Pure bash — no external deps. Handles multi-line values correctly.
+#
+# Values are sentinel-escaped before substitution so that any {{...}} tokens
+# inside a value (e.g. bead titles, task descriptions, playlist progress)
+# are not treated as template placeholders in subsequent iterations.
+# This prevents external content from leaking unfilled placeholder names
+# into the rendered output.
 render_template() {
     local template_file="$1"; shift
-    local content pair key value
+    local content pair key value _safe_value
+    local _sentinel=$'\x01\x01'
     content=$(<"$template_file")
     for pair in "$@"; do
         key="${pair%%=*}"
         value="${pair#*=}"
-        content="${content//\{\{$key\}\}/$value}"
+        # Escape {{ in value so it cannot trigger further placeholder expansion.
+        _safe_value="${value//\{\{/$_sentinel}"
+        content="${content//\{\{$key\}\}/$_safe_value}"
     done
+    # Restore escaped {{ back to literal {{ in the final output.
+    content="${content//$_sentinel/\{\{}"
     printf '%s' "$content"
 }

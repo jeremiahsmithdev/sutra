@@ -12,17 +12,20 @@
 augment_prompt_with_failure_context() {
     local exit_code="$1"
     local attempt="$2"
-    local diagnosis last_output retry_block
+    local diagnosis last_output retry_block timestamp
 
     diagnosis=$(diagnose_exit_code "$exit_code")
     last_output=$(extract_failure_tail)
+    timestamp=$(date +%Y-%m-%dT%H:%M:%S)
 
     retry_block=$(render_template "$TEMPLATES_DIR/retry_context.txt" \
         "ATTEMPT=$((attempt + 1))" \
         "MAX_RETRIES=$MAX_RETRIES" \
         "EXIT_CODE=$exit_code" \
         "DIAGNOSIS=$diagnosis" \
-        "LAST_OUTPUT=$last_output")
+        "LAST_OUTPUT=$last_output" \
+        "TIMESTAMP=$timestamp" \
+        "INVOKE_LOG=${INVOKE_LOG:-none}")
 
     prompt="${prompt}${retry_block}"
 }
