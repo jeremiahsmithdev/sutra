@@ -8,6 +8,10 @@ For each gate line (> prefix with #TAG):
 1. Check if the context is specific to the surrounding beads (not generic).
 2. If a gate has no context after the #TAG, suggest specific context based on the surrounding beads.
 
+Epic description bloat check:
+1. If any bead is an epic type and its description exceeds 40 lines, flag it as ADVISORY: the inline spec prose will re-inject into every child invocation. Suggest linking to a spec file instead (see the "Epic description conventions" section in CLAUDE.md).
+2. If a block of 20 or more lines appears verbatim in multiple bead descriptions (e.g. copied spec sections), flag all affected beads as ADVISORY and suggest extracting the shared content to a spec file referenced by the epic.
+
 Do NOT add a validation marker — the outer loop handles that.
 Do NOT create or modify any files. Report findings as plain text only.
 

@@ -2,6 +2,9 @@ You are executing a single task from a beads issue tracker as part of an automat
 
 ## Your Task
 ID: {{TASK_ID}}
+On success:  br close {{TASK_ID}} --reason "VERIFY: <exact test command>  NOTES: <≤3 lines on what changed>"
+On blocked:  br update {{TASK_ID}} --status open  AND write a handoff note in the reason.
+
 {{DETAILS}}
 {{PRIOR_TASK_CONTEXT}}
 {{PLAYLIST_PROGRESS}}
@@ -26,9 +29,3 @@ Before implementing, orient yourself to what the previous bead left behind:
 6. Do NOT touch .beads/ files — never commit, stash, or modify them. Do NOT run `br sync`. The outer loop handles beads state automatically.
 7. Prefer Read, Grep, and Glob tools for file operations. Only spawn Agent sub-tasks when exploring unfamiliar parts of the codebase that are not described in this task or the project context. Direct tool use is faster and cheaper.
 {{FILE_MAP}}
-## When Done
-Close the issue with a reason that a human reviewer can use to verify your work:
-  br close {{TASK_ID}} --reason "VERIFY: [how to test] NOTES: [what changed]"
-
-If you are BLOCKED and cannot complete the task, release it:
-  br update {{TASK_ID}} --status open
