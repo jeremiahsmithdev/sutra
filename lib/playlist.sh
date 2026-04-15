@@ -109,8 +109,9 @@ parse_playlist_prompt_line() {
 # ── playlist_advance ──────────────────────────────────────────────────────
 #
 # Commit the playlist position after successful task execution.
-# Called from save_state() — only advances after the task completes.
-# This ensures that a crash mid-task resumes at the same line.
+# Called from save_state() ONLY when _invocation_succeeded=true (set by
+# _invoke_claude_once on a clean exit).  The pre-invocation save_state
+# call clears that flag so the pointer never advances on a crash or failure.
 
 playlist_advance() {
     if [[ -n "${_playlist_pending_line:-}" ]]; then

@@ -157,10 +157,17 @@ save_state() {
     printf '%s\n' "$state_content" > "$STATE_FILE"
 
     # Append playlist state when in playlist mode (skip during dry-run).
-    # playlist_advance() commits the pending line position — only called here,
-    # so a crash mid-task means playlist_line stays at the unfinished line.
+    # playlist_advance() commits the pending line position.  It is only allowed
+    # when _invocation_succeeded=true, which _invoke_claude_once sets after a
+    # successful Claude exit.  The pre-invocation save_state call (which
+    # persists total_loops for crash recovery) clears the flag beforehand, so
+    # the pointer does NOT advance on that write.  After advancing, the flag is
+    # reset so subsequent save_state calls in the same iteration are no-ops.
     if [[ -n "${PLAYLIST:-}" && "${DRY_RUN:-false}" != "true" ]]; then
-        playlist_advance
+        if [[ "${_invocation_succeeded:-false}" == "true" ]]; then
+            playlist_advance
+            _invocation_succeeded=false
+        fi
         local playlist_state
         playlist_state=$(render_template "$TEMPLATES_DIR/state_playlist.txt" \
             "PLAYLIST_FILE=${PLAYLIST}" \
