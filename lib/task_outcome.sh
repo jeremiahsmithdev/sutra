@@ -9,6 +9,31 @@
 LAST_TASK_SUMMARY=""
 LAST_TASK_ID=""
 
+# ── check_bead_status ───────────────────────────────────────────────────────
+#
+# Query beads for the task's post-invocation status. Normalises transient
+# DONE state (br close --suggest-next race) to closed.
+
+check_bead_status() {
+    local tid="$1"
+    bead_status=$(get_bead_status "$tid")
+
+    if [[ "${bead_status,,}" == "done" ]]; then
+        log "Bead ${C_BOLD_CYAN}$tid${C_RESET} in transient DONE state — rolling forward to closed"
+        br close "$tid" --reason "Auto-rolled forward from DONE state" 2>/dev/null || true
+        bead_status="closed"
+    fi
+
+    local status_color="$C_RESET"
+    case "$bead_status" in
+        closed)      status_color="$C_BOLD_GREEN" ;;
+        open)        status_color="$C_YELLOW" ;;
+        in_progress) status_color="$C_YELLOW" ;;
+        *)           status_color="$C_RED" ;;
+    esac
+    log "Claude finished. Bead status: ${status_color}${bead_status}${C_RESET}"
+}
+
 handle_task_outcome() {
     local tid="$1"
 
@@ -19,6 +44,7 @@ handle_task_outcome() {
             log "Task ${C_BOLD_CYAN}$tid${C_RESET} ${C_BOLD_GREEN}complete${C_RESET}"
             capture_task_handoff "$tid"
             mark_needs_review "$tid"
+            commit_bead_work "$tid"
             maybe_close_epic "$tid"
             current_task=""
             ;;
@@ -88,6 +114,35 @@ truncate_to_word_limit() {
     else
         echo "$collapsed"
     fi
+}
+
+# ── commit_bead_work ──────────────────────────────────────────────────
+#
+# After br close, commit all dirty tracked and untracked files (code +
+# .beads/ state from the close itself) as a single per-bead commit.
+# Only runs when AUTO_COMMIT=false (playlist mode); in standard mode the
+# inner loop has already committed.
+# Skips gracefully when the working tree is already clean.
+
+commit_bead_work() {
+    local tid="$1"
+    [[ "$AUTO_COMMIT" == "true" ]] && return  # inner loop already committed
+
+    # Nothing to commit — clean working tree (tracked changes + untracked files).
+    if [[ -z "$(git status --porcelain 2>/dev/null)" ]]; then
+        return
+    fi
+
+    local title slug
+    title=$(get_bead_field "$tid" title)
+    slug=$(slugify "$title")
+
+    git add -A
+    git commit --no-verify -m "feat(${slug}): close ${tid}
+
+${title}
+
+Closes ${tid}." 2>/dev/null || true
 }
 
 # ── mark_needs_review ──────────────────────────────────────────────────

@@ -14,6 +14,11 @@ init_invoke() {
     CLAUDE_PID=""
     INVOKE_COUNT=0
 
+    # Capture HEAD at session start so gate templates can scope their git diffs.
+    # Exported so Claude sub-processes receive it as $SESSION_START_SHA.
+    SESSION_START_SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
+    export SESSION_START_SHA
+
     # Session name: <project>-<branch>-<timestamp>
     local project branch timestamp
     project=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" || echo "unknown")
@@ -21,6 +26,7 @@ init_invoke() {
     timestamp=$(date +%Y%m%d-%H%M%S)
     SESSION_NAME="${project}-${branch}-${timestamp}"
 
+    _invocation_succeeded=false
     INVOKE_LOG=""  # set per-invocation
 
     # Skip filesystem setup in dry-run — no Claude invocations will occur.
@@ -77,6 +83,21 @@ invoke_claude() {
     done
 }
 
+# ── invoke_claude_no_retry ─────────────────────────────────────────────────
+#
+# Fire-and-forget variant: one attempt only, no quota wait, no retry loop.
+# Use for non-load-bearing invocations (e.g. completion reports) where
+# burning budget on futile retries is worse than skipping the output.
+
+invoke_claude_no_retry() {
+    local _saved_max_retries="$MAX_RETRIES"
+    MAX_RETRIES=1
+    invoke_claude
+    local _rc=$?
+    MAX_RETRIES="$_saved_max_retries"
+    return $_rc
+}
+
 # ── escalate_model ─────────────────────────────────────────────────────────
 #
 # Bump MODEL to the next capability tier. Chain: haiku→sonnet→opus→opus.
@@ -112,6 +133,10 @@ _invoke_claude_once() {
 
     # Count this invocation and persist before calling Claude,
     # so a crash mid-invocation doesn't lose the loop count.
+    # _invocation_succeeded is cleared here so save_state's playlist_advance
+    # guard does NOT fire on this pre-invocation write — the pointer must
+    # only advance after Claude exits successfully (see utils.sh:save_state).
+    _invocation_succeeded=false
     total_loops=$((total_loops + 1))
     save_state
 
@@ -146,6 +171,8 @@ _invoke_claude_once() {
         return 1
     fi
 
+    # Signal success so the next save_state call may advance the playlist pointer.
+    _invocation_succeeded=true
     accumulate_cost
     log "  Stream log: $INVOKE_LOG"
     return 0
@@ -162,28 +189,5 @@ accumulate_cost() {
     total_cost_usd=$(awk "BEGIN {printf \"%.2f\", ${total_cost_usd:-0} + $cost}")
 }
 
-# Retry context injection, failure tail extraction, and exit code diagnosis
-# live in invoke_retry.sh — sourced by loader.sh immediately after this file.
 
-# ── check_bead_status ───────────────────────────────────────────────────────
-#
-# Query beads for the current status of the task after Claude ran.
-# Sets the global $bead_status variable to one of:
-#   "closed"      — Claude completed and closed the task
-#   "open"        — Claude released it (blocked)
-#   "in_progress" — Claude made progress but didn't finish
-
-check_bead_status() {
-    local tid="$1"
-
-    bead_status=$(get_bead_status "$tid")
-
-    local status_color="$C_RESET"
-    case "$bead_status" in
-        closed)      status_color="$C_BOLD_GREEN" ;;
-        open)        status_color="$C_YELLOW" ;;
-        in_progress) status_color="$C_YELLOW" ;;
-        *)           status_color="$C_RED" ;;
-    esac
-    log "Claude finished. Bead status: ${status_color}${bead_status}${C_RESET}"
-}
+# Retry logic lives in invoke_retry.sh; bead status checking in task_outcome.sh.
