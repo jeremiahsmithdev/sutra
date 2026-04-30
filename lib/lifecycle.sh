@@ -40,7 +40,11 @@ initialize() {
     fi
     if [[ "$DRY_RUN" != "true" ]]; then
         migrate_state_file
-        commit_beads_if_dirty
+        # Standard mode only — see invoke.sh for rationale. Playlist mode
+        # carries any dirty .beads/ into the first commit_bead_work bundle.
+        if [[ "$AUTO_COMMIT" == "true" ]]; then
+            commit_beads_if_dirty
+        fi
     fi
     if [[ -n "$PLAYLIST" ]]; then playlist_resolve_branch; fi
     if [[ "$DRY_RUN" != "true" ]]; then

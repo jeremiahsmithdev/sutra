@@ -124,10 +124,13 @@ escalate_model() {
 _invoke_claude_once() {
     show_prompt "$prompt"
 
-    # Auto-commit any dirty .beads/ files so the working tree is clean.
-    # The daemon writes to issues.jsonl continuously; uncommitted changes
-    # block `git checkout` when Claude switches branches.
-    commit_beads_if_dirty
+    # Standard mode only: Claude switches branches per-task, so .beads/
+    # must be clean before invocation. In playlist mode (one branch per
+    # session) we leave .beads/ dirty so commit_bead_work can bundle it
+    # with the feature commit instead of producing a standalone chore commit.
+    if [[ "$AUTO_COMMIT" == "true" ]]; then
+        commit_beads_if_dirty
+    fi
 
     log "Invoking Claude Code (timeout: ${TIMEOUT_MINUTES}m)..."
 
