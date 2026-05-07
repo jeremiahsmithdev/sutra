@@ -103,8 +103,11 @@ get_bead_title() {
 #
 # Token-saving rules applied here (playlist_write_progress is unchanged):
 #   - 0 completed: single "Position: 1/N · In Progress: …" line.
-#   - ≥1 completed: full Completed + In Progress sections; Remaining capped
-#     at PLAYLIST_PROGRESS_LOOKAHEAD entries with "…plus N more" tail.
+#   - ≥1 completed: '## Completed' is replaced by a one-line '## Recent work'
+#     reference to git log (PLAYLIST_PROGRESS_LOOKBACK=0, default). Setting
+#     LOOKBACK to N>0 shows the last N entries verbatim.
+#     '## Remaining' is capped at PLAYLIST_PROGRESS_LOOKAHEAD entries with
+#     a "…plus N more" tail.
 # The full progress file at PROGRESS_FILE is always written by
 # playlist_write_progress for monitor/debug tooling.
 
@@ -129,21 +132,37 @@ format_playlist_progress() {
         return
     fi
 
-    # Count total remaining items so we can compute the "…plus N more" delta
-    local total_remaining
+    # Count total completed and remaining for summary lines.
+    local total_completed total_remaining
+    total_completed=$(awk '/^## Completed/{f=1;next} /^## /{f=0} f && /^\* /{c++} END{print c+0}' "$PROGRESS_FILE")
     total_remaining=$(awk '/^## Remaining/{f=1;next} f && /^\* /{c++} END{print c+0}' "$PROGRESS_FILE")
 
     local lookahead="${PLAYLIST_PROGRESS_LOOKAHEAD:-3}"
-    local in_remaining=0 remaining_shown=0
+    local lookback="${PLAYLIST_PROGRESS_LOOKBACK:-0}"
+    local section="" completed_shown=0 remaining_shown=0
     while IFS= read -r line; do
         case "$line" in
             "# Playlist Progress:"*|"Updated:"*) continue ;;
+            "## Completed")
+                section="completed"
+                if [[ $lookback -eq 0 ]]; then
+                    printf '## Recent work\nLast %d bead(s) closed — see `git log --oneline -20` for full history.\n' "$total_completed"
+                else
+                    printf '%s\n' "$line"
+                fi
+                ;;
             "## Remaining")
-                in_remaining=1
+                section="remaining"
                 printf '%s\n' "$line"
                 ;;
             *)
-                if [[ $in_remaining -eq 1 && "$line" == \** ]]; then
+                if [[ "$section" == "completed" && "$line" == \** ]]; then
+                    completed_shown=$((completed_shown + 1))
+                    if [[ $lookback -gt 0 && $completed_shown -gt $((total_completed - lookback)) ]]; then
+                        printf '%s\n' "$line"
+                    fi
+                    # LOOKBACK=0: entries replaced by '## Recent work' summary above.
+                elif [[ "$section" == "remaining" && "$line" == \** ]]; then
                     remaining_shown=$((remaining_shown + 1))
                     if [[ $remaining_shown -le $lookahead ]]; then
                         printf '%s\n' "$line"
