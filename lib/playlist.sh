@@ -139,7 +139,10 @@ playlist_handle_dry_run() {
 
 playlist_execute() {
     if [[ "$playlist_line_type" == "bead" ]]; then
-        bead_already_closed "$playlist_current_line" && return 0
+        if bead_already_closed "$playlist_current_line"; then
+            playlist_advance
+            return 0
+        fi
         playlist_execute_bead || { _playlist_pending_line=""; return 1; }
     else
         playlist_execute_prompt || { _playlist_pending_line=""; return 1; }
