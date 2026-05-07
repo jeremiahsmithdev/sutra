@@ -26,7 +26,14 @@ playlist_resolve_branch() {
             local name
             name=$(basename "$PLAYLIST")
             name="${name%.*}"
-            PLAYLIST_BRANCH="${name}.playlist"
+            # When ralph is launched inside a worktree, suffix the default
+            # branch with the worktree basename so two worktrees running
+            # the same playlist filename don't collide on a single branch.
+            if [[ "${IS_WORKTREE:-false}" == "true" && -n "${WORKTREE_NAME:-}" ]]; then
+                PLAYLIST_BRANCH="${name}.playlist.${WORKTREE_NAME}"
+            else
+                PLAYLIST_BRANCH="${name}.playlist"
+            fi
             source="default"
         fi
     fi

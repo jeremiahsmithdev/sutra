@@ -9,13 +9,28 @@ to the Checks section.
 
 1. **Start dev server.**
    Consult the project's README or CLAUDE.md for the standard run command
-   (e.g. `flask run`, `npm run dev`, `rails server`). Start it in the
-   background and capture its PID:
+   (e.g. `flask run`, `npm run dev`, `rails server`).
+
+   **Pick a free port before starting.** Other instances of this app may
+   already be running — most commonly when this checkout is a git worktree
+   and the main checkout is also serving on the default port. Procedure:
+   * Run `git worktree list` — if more than one entry exists, treat the
+     default port as potentially taken.
+   * If `RALPH_DEV_PORT` is set in the environment, use it.
+   * Otherwise probe with `lsof -i :<default-port>` (or `nc -z localhost <port>`)
+     and pick the first free port at or above the default. Pass it via
+     the framework's standard env var or flag (`PORT=<n>`, `--port <n>`,
+     `-p <n>`, etc.) so curl checks below hit YOUR server, not another
+     worktree's.
+   * Record the chosen port: `DEV_SERVER_PORT=<n>`.
+
+   Start in the background and capture its PID:
    ```
-   <run-command> &
+   <run-command-with-port> &
    DEV_SERVER_PID=$!
    ```
-   Wait up to 15 s for it to respond (poll the health endpoint or root URL).
+   Wait up to 15 s for it to respond (poll the health endpoint or root URL
+   on `$DEV_SERVER_PORT`).
 
 2. **Confirm the server is reachable.**
    `curl -sf <health-endpoint-or-root>` must return 2xx. If it does not
@@ -45,7 +60,9 @@ git diff --name-only ${SESSION_START_SHA:-HEAD~1}..HEAD
 ```
 For each relevant endpoint (routes, views, API handlers):
 
-* Issue the correct HTTP request with the auth context from preconditions.
+* Issue the correct HTTP request **against `localhost:$DEV_SERVER_PORT`**
+  with the auth context from preconditions. Never curl a hard-coded port
+  — use the port you chose in step 1.
 * Assert the expected response: status code, content-type, and key response
   fields (use what the code or tests document as correct — do not invent).
 * Record **pass** or **fail** with evidence (response status + body snippet).

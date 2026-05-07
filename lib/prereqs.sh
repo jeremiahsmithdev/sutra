@@ -49,6 +49,40 @@ check_prereqs() {
     if ! br config get types.custom 2>/dev/null | grep -q "event"; then
         br config set types.custom "event" 2>/dev/null || true
     fi
+
+    detect_worktree
+}
+
+# ── detect_worktree ───────────────────────────────────────────────────────
+#
+# If ralph was started inside a linked git worktree (not the main clone),
+# announce it loudly and warn about per-worktree state isolation. Sets
+# IS_WORKTREE=true and WORKTREE_NAME globals for downstream consumers
+# (e.g. playlist_branch.sh suffixing default branch names).
+
+detect_worktree() {
+    IS_WORKTREE=false
+    WORKTREE_NAME=""
+
+    local git_dir common_dir
+    git_dir=$(git rev-parse --git-dir 2>/dev/null) || return
+    common_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return
+
+    # Resolve to absolute paths so the comparison survives ./ prefixes.
+    git_dir=$(cd "$git_dir" 2>/dev/null && pwd) || return
+    common_dir=$(cd "$common_dir" 2>/dev/null && pwd) || return
+
+    [[ "$git_dir" == "$common_dir" ]] && return  # main clone, not a worktree
+
+    IS_WORKTREE=true
+    local worktree_path main_path
+    worktree_path=$(git rev-parse --show-toplevel 2>/dev/null)
+    main_path=$(dirname "$common_dir")
+    WORKTREE_NAME=$(basename "$worktree_path")
+
+    log "Worktree mode: ${C_BOLD_CYAN}$worktree_path${C_RESET}"
+    log "Main repo:     ${C_DIM}$main_path${C_RESET}"
+    log "Note: ${C_BOLD_YELLOW}.beads/ and .ralph/ are per-worktree${C_RESET} — bead state will not sync to other worktrees until \`.beads/issues.jsonl\` is committed and pulled."
 }
 
 # ── ensure_ralph_branch ───────────────────────────────────────────────────
@@ -74,7 +108,27 @@ ensure_playlist_branch() {
 
 checkout_or_create_branch() {
     local branch="$1"
+
+    # Skip the checkout entirely if we're already on the target branch.
+    # Avoids a redundant "fatal: already checked out" error when ralph
+    # is started inside a worktree whose HEAD already matches.
+    local current
+    current=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [[ "$current" == "$branch" ]]; then
+        log "On branch: ${C_BOLD_CYAN}$branch${C_RESET}"
+        return
+    fi
+
     if git rev-parse --verify "$branch" &>/dev/null; then
+        # If the branch is checked out in another worktree, git refuses
+        # the checkout. Detect this up front and produce a useful error.
+        local other_worktree
+        other_worktree=$(branch_checked_out_elsewhere "$branch")
+        if [[ -n "$other_worktree" ]]; then
+            log "ERROR: branch ${C_BOLD_CYAN}$branch${C_RESET} is already checked out at ${C_BOLD_YELLOW}$other_worktree${C_RESET}"
+            log "       Run ralph from that worktree, or pass --playlist-branch to choose a different branch."
+            exit 1
+        fi
         git checkout "$branch" 2>/dev/null || {
             log "ERROR: Could not switch to $branch branch"
             exit 1
@@ -88,4 +142,20 @@ checkout_or_create_branch() {
             exit 1
         }
     fi
+}
+
+# ── branch_checked_out_elsewhere ──────────────────────────────────────────
+#
+# If $1 is checked out in any other worktree, echo that worktree's path.
+# Otherwise echo nothing. Uses `git worktree list --porcelain` so it
+# works even when ralph is itself running inside a worktree.
+
+branch_checked_out_elsewhere() {
+    local branch="$1"
+    local self
+    self=$(git rev-parse --show-toplevel 2>/dev/null)
+    git worktree list --porcelain 2>/dev/null | awk -v target="refs/heads/$branch" -v self="$self" '
+        /^worktree / { wt = substr($0, 10); next }
+        /^branch /   { if ($2 == target && wt != self) { print wt; exit } }
+    '
 }

@@ -52,6 +52,26 @@ run_remote() {
         exit 1
     fi
 
+    # --remote is incompatible with linked git worktrees: the worktree's
+    # `.git` is a file pointing to an absolute path inside the main repo
+    # on this machine. Rsyncing it to the remote produces a checkout
+    # whose git metadata references a non-existent path, breaking every
+    # subsequent git command.
+    local git_dir common_dir
+    git_dir=$(git rev-parse --git-dir 2>/dev/null)
+    common_dir=$(git rev-parse --git-common-dir 2>/dev/null)
+    if [[ -n "$git_dir" && -n "$common_dir" ]]; then
+        git_dir=$(cd "$git_dir" 2>/dev/null && pwd)
+        common_dir=$(cd "$common_dir" 2>/dev/null && pwd)
+        if [[ "$git_dir" != "$common_dir" ]]; then
+            log "ERROR: --remote cannot be used from a git worktree."
+            log "       The worktree's .git file references an absolute path on this"
+            log "       machine that does not exist on the remote. Run --remote from"
+            log "       the main clone, or push the branch and clone it on the remote."
+            exit 1
+        fi
+    fi
+
     # Remote targets are Linux — always enable bubblewrap sandbox
     SANDBOX_MODE=true
 
