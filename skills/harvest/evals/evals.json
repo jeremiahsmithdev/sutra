@@ -1,0 +1,295 @@
+{
+  "skill_name": "harvest",
+  "evals": [
+    {
+      "id": 1,
+      "name": "code-harvest-single-run",
+      "prompt": "Run a harvest on the most recent playlist run. Need to review verifications and check quality gates.",
+      "expected_output": "Interactive flow that reviews verifications queue, presents options for each bead (Verified/Reopen/Needs rework), checks quality gates, grooms backlog, marks run as harvested in .ralph/reports/, and generates final report with actionable commands.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects unharvested runs in .ralph/reports/ directory",
+          "passed": false,
+          "evidence": "Check for .ralph/reports/ scan and harvest: metadata check"
+        },
+        {
+          "text": "Uses bnr command or equivalent to list verification queue",
+          "passed": false,
+          "evidence": "Look for bnr or br list --label needs-review in flow"
+        },
+        {
+          "text": "Presents interactive multiple choice for verification decisions",
+          "passed": false,
+          "evidence": "Check for AskUserQuestion with Verified/Reopen/Needs rework options"
+        },
+        {
+          "text": "Generates report with actionable items and bash commands",
+          "passed": false,
+          "evidence": "Check for br create / bV / breopen commands in output"
+        },
+        {
+          "text": "Marks run as harvested in report file with harvest: metadata",
+          "passed": false,
+          "evidence": "Look for harvest: stamp added to .ralph/reports/*.md file"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "methodology-harvest-single-run",
+      "prompt": "Do a methodology harvest on last night's run. Look for orchestration gaps and instruction problems.",
+      "expected_output": "Interactive flow that analyzes session logs, stream-json files, and playlist files to diagnose symptoms (retries, escalations, circuit breaker trips), classifies findings into one of five categories, scores against seven guardrails with user confirmation, generates report with bead-ready commands, and marks run as harvested.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads session logs and stream-json files from .ralph/logs/",
+          "passed": false,
+          "evidence": "Check for reading .ralph/logs/sessions/ and .ralph/logs/stream/"
+        },
+        {
+          "text": "Diagnoses at least one symptom type (retries, escalations, circuit breaker, shallow gates, stalls)",
+          "passed": false,
+          "evidence": "Look for symptom diagnosis with evidence line numbers/bead IDs"
+        },
+        {
+          "text": "Classifies findings into one of five categories",
+          "passed": false,
+          "evidence": "Check for category labels: inner-loop instruction, outer-loop orchestration, bead-description, gate template, context injection"
+        },
+        {
+          "text": "Scores findings against seven guardrails with user confirmation",
+          "passed": false,
+          "evidence": "Look for guardrail checks numbered 1-7 or named explicitly"
+        },
+        {
+          "text": "Generates report at .ralph/harvests/ or similar with bead commands",
+          "passed": false,
+          "evidence": "Check for .ralph/harvests/ or .ralph/reports/ report with br create commands"
+        },
+        {
+          "text": "Marks run as harvested in report file",
+          "passed": false,
+          "evidence": "Look for harvest: or methodology harvest completed stamp in report"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "harvest-mode-ambiguous",
+      "prompt": "Harvest this run.",
+      "expected_output": "Asks user to clarify which harvest mode: code harvest (review work produced), methodology harvest (analyze run itself), or self harvest (review skill improvement).",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects ambiguous mode from user prompt",
+          "passed": false,
+          "evidence": "Check for mode detection logic that doesn't find clear mode indicator"
+        },
+        {
+          "text": "Uses AskUserQuestion to present mode options",
+          "passed": false,
+          "evidence": "Look for AskUserQuestion with three mode options: code/methodology/self"
+        },
+        {
+          "text": "Mode options have clear descriptions of what each does",
+          "passed": false,
+          "evidence": "Check that each option has description text explaining the mode"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "multiple-unharvested-runs",
+      "prompt": "I ran a few playlists overnight. Harvest them.",
+      "expected_output": "Detects multiple unharvested runs in .ralph/reports/ (checking for harvest: metadata), lists available runs with timestamps/identifiers, and asks user which to harvest first or if they want to process all sequentially.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Scans .ralph/reports/ for multiple unharvested runs",
+          "passed": false,
+          "evidence": "Check for listing and checking harvest: metadata on multiple report files"
+        },
+        {
+          "text": "Lists available runs with metadata (timestamp, identifier, type)",
+          "passed": false,
+          "evidence": "Look for formatted list showing run details for user selection"
+        },
+        {
+          "text": "Presents multiple choice for sequential vs single run processing",
+          "passed": false,
+          "evidence": "Check for AskUserQuestion with options like 'Harvest [run 1] first', 'Harvest all sequentially'"
+        },
+        {
+          "text": "Extracts run identifier from report filename or content",
+          "passed": false,
+          "evidence": "Look for parsing of report filenames or content to extract IDs"
+        }
+      ]
+    },
+    {
+      "name": "code-harvest-with-failures",
+      "id": 5,
+      "prompt": "Morning review — some beads failed, others completed. Need to decide what to revert and what to keep.",
+      "expected_output": "Reads session log to understand failure patterns, reviews verifications queue with options (Verified/Reopen/Needs rework), identifies failed beads, proposes backlog updates (reopen failures, mark verified successes), and includes metrics-driven calibration for time prediction outliers.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads session log first to get shape of the night",
+          "passed": false,
+          "evidence": "Check for reading .ralph/logs/sessions/ before reviewing specific beads"
+        },
+        {
+          "text": "Identifies failed beads from session log or bead state",
+          "passed": false,
+          "evidence": "Look for logic that finds failed/crashed/timed-out beads"
+        },
+        {
+          "text": "Queries metrics.db for time prediction outliers if available",
+          "passed": false,
+          "evidence": "Check for sqlite3 .ralph/metrics.db query or equivalent"
+        },
+        {
+          "text": "Proposes specific backlog actions (reopen, verify, create new bead)",
+          "passed": false,
+          "evidence": "Look for breopen / bV / br create commands in output"
+        }
+      ]
+    },
+    {
+      "name": "methodology-harvest-guardrail-scoring",
+      "id": 6,
+      "prompt": "Run methodology harvest. Be ruthless with the guardrails — only accept findings that improve the system, not just add complexity.",
+      "expected_output": "Diagnoses symptoms from logs, classifies findings, scores each against seven guardrails with user confirmation at each step, rejects findings that fail any guardrail with one-line reason, and generates report showing both accepted beads and rejected candidates with guardrail violation.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Checks all seven guardrails for each finding",
+          "passed": false,
+          "evidence": "Look for explicit checks numbered 1-7 or named guardrails"
+        },
+        {
+          "text": "Provides one-line rejection reason for failed guardrails",
+          "passed": false,
+          "evidence": "Check for 'Rejected: Guardrail N — reason' format in output"
+        },
+        {
+          "text": "Includes both accepted findings and rejected candidates in report",
+          "passed": false,
+          "evidence": "Look for separate sections in report for accepted and rejected items"
+        },
+        {
+          "text": "Ruthlessness message or principle mentioned",
+          "passed": false,
+          "evidence": "Check for 'ruthless' language or 'reject more than half' guidance"
+        }
+      ]
+    },
+    {
+      "name": "code-harvest-quality-gate-check",
+      "id": 7,
+      "prompt": "Harvest code review — specifically check if the quality gates produced substantive work or were superficial.",
+      "expected_output": "Reviews quality gate beads created during the run, asks user for each whether the gate work is substantive (meaningful reviews, real tests) or superficial (generic 'looks good', trivial changes), and flags superficial gates in the report for attention.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies quality gate beads from the run",
+          "passed": false,
+          "evidence": "Look for logic finding #SMOKE_TEST / #REVIEW / etc gate beads"
+        },
+        {
+          "text": "Asks user to evaluate gate substance (substantive vs superficial)",
+          "passed": false,
+          "evidence": "Check for AskUserQuestion or direct question about gate quality"
+        },
+        {
+          "text": "Flags superficial gates in report for follow-up",
+          "passed": false,
+          "evidence": "Look for flagged or highlighted superficial gates in final report"
+        }
+      ]
+    },
+    {
+      "name": "self-harvest-skill-improvement",
+      "id": 8,
+      "prompt": "Self harvest the skill itself. Evaluate how well it's working and what could be improved.",
+      "expected_output": "Follows methodology harvest pattern but for the skill file itself: analyzes skill content (SKILL.md, guardrails.md), evaluates previous run transcripts and user feedback, produces findings tagged `self-improvement` with `SELF:` prefix, and generates report with bead-ready commands for skill improvements.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Reads skill file (SKILL.md) for self-harvest mode",
+          "passed": false,
+          "evidence": "Check for reading skills/harvest/SKILL.md"
+        },
+        {
+          "text": "Uses SELF: prefix for self-harvest finding titles",
+          "passed": false,
+          "evidence": "Look for bead titles with 'SELF:' prefix"
+        },
+        {
+          "text": "Tags findings as self-improvement",
+          "passed": false,
+          "evidence": "Check for self-improvement label in output"
+        },
+        {
+          "text": "Evaluates skill performance (mode detection, interactive flow, report usefulness)",
+          "passed": false,
+          "evidence": "Look for analysis questions about skill effectiveness"
+        }
+      ]
+    },
+    {
+      "name": "code-harvest-metrics-calibration",
+      "id": 9,
+      "prompt": "Harvest and calibrate — use metrics data to find predictions that were way off and analyze why.",
+      "expected_output": "Queries .ralph/metrics.db for time prediction outliers (time_ratio > 3 or < 0.3), presents flagged issues to user with multiple choice options (Scout entity issue / Task complexity / Entry point wrong / Other), and incorporates calibration insights into backlog update proposals.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Queries .ralph/metrics.db for time prediction outliers",
+          "passed": false,
+          "evidence": "Check for sqlite3 query with time_ratio conditions"
+        },
+        {
+          "text": "Presents multiple choice for outlier analysis",
+          "passed": false,
+          "evidence": "Look for AskUserQuestion with calibration reason options"
+        },
+        {
+          "text": "Incorporates calibration insights into backlog proposals",
+          "passed": false,
+          "evidence": "Check for updates to scout config or prompt templates based on findings"
+        }
+      ]
+    },
+    {
+      "name": "playlist-mode-vs-standard",
+      "id": 10,
+      "prompt": "Harvest the playlist run from last night — not the standard br ready run.",
+      "expected_output": "Detects run type from metadata, reads playlist-specific files (playlist-progress.md, playlist file), compares planned order vs actual execution, and generates report with context about which beads were planned, completed, and failed during the playlist.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects playlist mode from run metadata",
+          "passed": false,
+          "evidence": "Check for playlist vs standard mode detection logic"
+        },
+        {
+          "text": "Reads playlist-specific files (.playlist, playlist-progress.md)",
+          "passed": false,
+          "evidence": "Look for reading of playlist file and progress snapshot"
+        },
+        {
+          "text": "Compares planned vs actual bead order",
+          "passed": false,
+          "evidence": "Check for comparison between playlist order and executed order"
+        },
+        {
+          "text": "Reports which beads were planned, completed, failed",
+          "passed": false,
+          "evidence": "Look for bead status breakdown in report"
+        }
+      ]
+    }
+  ]
+}
