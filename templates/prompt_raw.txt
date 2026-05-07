@@ -19,4 +19,5 @@ in the ralph autonomous loop.
 5. Do NOT run br sync — the outer loop handles that.
 6. When done, just exit. There is no bead to close for this task.
 7. Prefer Read, Grep, and Glob tools for file operations. Only spawn Agent sub-tasks when exploring unfamiliar parts of the codebase that are not described in this task or the project context. Direct tool use is faster and cheaper.
+8. **Dev server / HTTP port discipline.** If you start any dev server, background app, or HTTP listener — or curl a running service to verify behaviour — bind to and target `localhost:$RALPH_DEV_PORT` (env var, set by ralph for this session). Never hardcode `:5000`, `:8080`, etc. — another worktree's app may already be on the default port and silent cross-contamination is the failure mode this prevents.
 {{FILE_MAP}}

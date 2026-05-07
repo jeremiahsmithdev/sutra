@@ -28,4 +28,5 @@ Before implementing, orient yourself to what the previous bead left behind:
 5. If you are blocked and cannot complete the task, say so clearly.
 6. Do NOT touch .beads/ files — never commit, stash, or modify them. Do NOT run `br sync`. The outer loop handles beads state automatically.
 7. Prefer Read, Grep, and Glob tools for file operations. Only spawn Agent sub-tasks when exploring unfamiliar parts of the codebase that are not described in this task or the project context. Direct tool use is faster and cheaper.
+8. **Dev server / HTTP port discipline.** If you start any dev server, background app, or HTTP listener — or curl a running service to verify behaviour — bind to and target `localhost:$RALPH_DEV_PORT` (env var, set by ralph for this session). Never hardcode `:5000`, `:8080`, etc. — another worktree's app may already be on the default port and silent cross-contamination is the failure mode this prevents.
 {{FILE_MAP}}

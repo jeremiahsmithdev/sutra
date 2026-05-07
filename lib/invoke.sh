@@ -19,6 +19,8 @@ init_invoke() {
     SESSION_START_SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
     export SESSION_START_SHA
 
+    init_dev_port
+
     # Session name: <project>-<branch>-<timestamp>
     local project branch timestamp
     project=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" || echo "unknown")
@@ -49,6 +51,20 @@ init_invoke() {
     # Output to terminal with colors, log file with ANSI codes stripped
     # tee writes to both the terminal (colored) and a pipe that strips codes for the log
     exec > >(tee >(sed 's/\x1b\[[0-9;]*m//g' >> "$SESSION_LOG")) 2>&1
+}
+
+# ── init_dev_port ──────────────────────────────────────────────────────────
+#
+# Pick a stable per-session dev port so smoke tests in different worktrees
+# don't curl each other's apps. Hashed from the playlist branch (or git
+# branch in standard mode) so the same playlist resumes to the same port.
+# Templates consume this via $RALPH_DEV_PORT.
+
+init_dev_port() {
+    local key
+    key="${PLAYLIST_BRANCH:-$(git branch --show-current 2>/dev/null || echo default)}"
+    RALPH_DEV_PORT=$((8000 + $(printf '%s' "$key" | cksum | awk '{print $1 % 1000}')))
+    export RALPH_DEV_PORT
 }
 
 # ── invoke_claude ───────────────────────────────────────────────────────────

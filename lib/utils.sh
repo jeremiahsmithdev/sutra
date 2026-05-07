@@ -119,6 +119,7 @@ ralph_provenance_block() {
 # invoked:  ralph ${RALPH_INVOKED_AS:-}
 # model:    ${MODEL:-haiku}
 # playlist: ${PLAYLIST:-(none)}
+# dev port: ${RALPH_DEV_PORT:-(unset)}
 # started:  $(date -u +%Y-%m-%dT%H:%M:%SZ)
 # =====================
 EOF
