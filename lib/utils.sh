@@ -222,16 +222,21 @@ save_state() {
 render_template() {
     local template_file="$1"; shift
     local content pair key value _safe_value
-    local _sentinel=$'\x01\x01'
+    local _sentinel_brace=$'\x01\x01'
+    local _sentinel_amp=$'\x02\x02'
     content=$(<"$template_file")
     for pair in "$@"; do
         key="${pair%%=*}"
         value="${pair#*=}"
-        # Escape {{ in value so it cannot trigger further placeholder expansion.
-        _safe_value="${value//\{\{/$_sentinel}"
+        # Escape {{ so injected tokens are not re-expanded as placeholders.
+        # Escape & because bash's ${var//pat/repl} treats & in the
+        # replacement as a back-reference to the matched pattern.
+        _safe_value="${value//\{\{/$_sentinel_brace}"
+        _safe_value="${_safe_value//&/$_sentinel_amp}"
         content="${content//\{\{$key\}\}/$_safe_value}"
     done
-    # Restore escaped {{ back to literal {{ in the final output.
-    content="${content//$_sentinel/\{\{}"
+    content="${content//$_sentinel_brace/\{\{}"
+    # \& escapes the back-reference so it lands as a literal '&' in the output.
+    content="${content//$_sentinel_amp/\&}"
     printf '%s' "$content"
 }
