@@ -29,6 +29,7 @@ init_project() {
 }
 
 initialize() {
+    RALPH_INVOKED_AS="$*"
     parse_args "$@"
     show_splash
     if [[ "$REMOTE_MODE" == "true" ]]; then run_remote; exit $?; fi

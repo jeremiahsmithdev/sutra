@@ -7,7 +7,7 @@ Create the directory {{REPORT_DIR}} if it does not exist (mkdir -p).
 ## Report Template
 
 # Ralph Playlist Report: {{PLAYLIST_NAME}}
-**Date:** {{TIMESTAMP}} **Model:** {{MODEL}}
+**Date:** {{TIMESTAMP}} **Model:** {{MODEL}} **Ralph:** `{{RALPH_VERSION}}`
 **Exit reason:** {{EXIT_REASON}} **Circuit breaker:** {{CIRCUIT}}
 
 ## Summary

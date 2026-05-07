@@ -44,6 +44,8 @@ init_invoke() {
     SESSION_LOG_DIR=".ralph/logs/sessions"
     mkdir -p "$SESSION_LOG_DIR"
     SESSION_LOG="$SESSION_LOG_DIR/${SESSION_NAME}.log"
+    ralph_provenance_block > "$SESSION_LOG"
+    printf '\n' >> "$SESSION_LOG"
     # Output to terminal with colors, log file with ANSI codes stripped
     # tee writes to both the terminal (colored) and a pipe that strips codes for the log
     exec > >(tee >(sed 's/\x1b\[[0-9;]*m//g' >> "$SESSION_LOG")) 2>&1

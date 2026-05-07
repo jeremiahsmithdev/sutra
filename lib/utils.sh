@@ -96,6 +96,34 @@ migrate_state_file() {
     fi
 }
 
+# ── ralph self-provenance ─────────────────────────────────────────────────
+#
+# Record which ralph commit produced this session, so harvest can tell
+# whether a finding from an old run is already fixed in current ralph.
+# `--dirty` flags uncommitted edits — the recorded hash lies otherwise.
+
+ralph_version_string() {
+    local repo
+    repo="$(dirname "$LIB_DIR")"
+    git -C "$repo" describe --tags --always --dirty 2>/dev/null \
+        || echo "unknown"
+}
+
+ralph_provenance_block() {
+    local repo branch
+    repo="$(dirname "$LIB_DIR")"
+    branch="$(git -C "$repo" branch --show-current 2>/dev/null || echo "?")"
+    cat <<EOF
+# === ralph session ===
+# ralph:    $(ralph_version_string) (branch: $branch)
+# invoked:  ralph ${RALPH_INVOKED_AS:-}
+# model:    ${MODEL:-haiku}
+# playlist: ${PLAYLIST:-(none)}
+# started:  $(date -u +%Y-%m-%dT%H:%M:%SZ)
+# =====================
+EOF
+}
+
 commit_beads_if_dirty() {
     if git diff --quiet .beads/ 2>/dev/null && git diff --cached --quiet .beads/ 2>/dev/null; then
         return   # nothing dirty
