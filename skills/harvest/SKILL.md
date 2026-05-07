@@ -57,9 +57,10 @@ ls -t .ralph/reports/*.md 2>/dev/null | while read f; do
 done
 ```
 
-Also check `.ralph/harvests/` for methodology harvests:
+Also list prior harvest reports for this project — both code and methodology
+harvests are written to `.ralph/harvests/`:
 ```bash
-ls -t .ralph/harvests/*.md 2>/dev/null || echo "No methodology harvests"
+ls -t .ralph/harvests/*.md 2>/dev/null || echo "No prior harvests"
 ```
 
 ### Step 2 — Multiple runs found
@@ -190,17 +191,33 @@ Ask user:
 - "Proposed prompt improvements found. Approve?"
 - [Yes, apply] [Review first] [Skip]
 
-### Step 7 — Mark as harvested
+### Step 7 — Generate harvest report
 
-After user review, mark the run as harvested in its report:
+Write the final harvest report (see "Report Format" below) to
+`.ralph/harvests/`. This is the harvest's own output; the ralph
+completion report under `.ralph/reports/` is left untouched except
+for the marker stamp added in Step 8.
 
 ```bash
-# Add harvest metadata to the report file
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+HARVEST_REPORT=".ralph/harvests/${TIMESTAMP}-code.md"
+mkdir -p .ralph/harvests
+# Render the report using the structure documented under "Report Format"
+# below, then write it to "$HARVEST_REPORT".
+```
+
+### Step 8 — Mark the run as harvested
+
+After the harvest report is written and user review is complete,
+stamp the underlying ralph completion report so future harvest runs
+skip it:
+
+```bash
+# Append a marker to the run's completion report (NOT the harvest report).
 REPORT_FILE=".ralph/reports/$(basename "$REPORT_PATH")"
 harvest_date=$(date +%Y-%m-%d)
 
-# Add harvest stamp
-echo -e "\n\n---\n## Harvest\n\n**Code harvest completed:** $harvest_date\n**Mode:** code\n**Verifications reviewed:** N\n**Reopened:** M\n**New beads:** K\n" >> "$REPORT_FILE"
+echo -e "\n\n---\n## Harvest\n\n**Code harvest completed:** $harvest_date\n**Mode:** code\n**Verifications reviewed:** N\n**Reopened:** M\n**New beads:** K\n**Report:** $HARVEST_REPORT\n" >> "$REPORT_FILE"
 ```
 
 ---
@@ -271,7 +288,7 @@ For each finding, use AskUserQuestion to confirm classification:
 
 ### Step 5 — Generate harvest report
 
-Create report at `.ralph/harvests/<timestamp>.md`:
+Create report at `.ralph/harvests/<timestamp>-methodology.md`:
 
 ```markdown
 # Harvest <timestamp> — <playlist-name-or-session-id>
@@ -352,7 +369,7 @@ Run metadata:
 - Timestamp: $TIMESTAMP
 
 Epic contains all findings that survived the seven guardrails.
-See .ralph/harvests/$TIMESTAMP.md for full report." | jq -r '.id')
+See .ralph/harvests/$TIMESTAMP-methodology.md for full report." | jq -r '.id')
 
 # Create beads for accepted findings
 # (use commands from report)
@@ -372,7 +389,7 @@ Mark the run as harvested in its report:
 REPORT_FILE=".ralph/reports/$(basename "$REPORT_PATH")"
 harvest_date=$(date +%Y-%m-%d)
 
-echo -e "\n\n---\n## Harvest\n\n**Methodology harvest completed:** $harvest_date\n**Mode:** methodology\n**Epic:** br-$EPIC_ID\n**Findings accepted:** M\n**Report:** .ralph/harvests/$TIMESTAMP.md\n" >> "$REPORT_FILE"
+echo -e "\n\n---\n## Harvest\n\n**Methodology harvest completed:** $harvest_date\n**Mode:** methodology\n**Epic:** br-$EPIC_ID\n**Findings accepted:** M\n**Report:** .ralph/harvests/$TIMESTAMP-methodology.md\n" >> "$REPORT_FILE"
 ```
 
 ---
@@ -511,7 +528,8 @@ br create --title "<title>" --description "<description>"
 ## Harvest Status
 
 **Marked as harvested:** <date>
-**Report location:** `.ralph/reports/<filename>.md`
+**Harvest report:** `.ralph/harvests/<timestamp>-{code|methodology}.md`
+**Run report (stamped):** `.ralph/reports/<filename>.md`
 ```
 
 ---
