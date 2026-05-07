@@ -24,10 +24,10 @@ SCOPE=""
 # Mutually exclusive with --scope.
 PLAYLIST=""
 
-# Whether Claude should commit per-task. Default true for normal mode.
-# In playlist mode, args.sh forces false (Option B: outer loop commits per-bead
-# after br close — see lib/task_outcome.sh). Claude is explicitly told not to
-# commit in the branch template; the outer loop handles git history attribution.
+# Whether Claude should commit per-task. Default true in both standard and
+# playlist modes — Claude commits each bead's code + .beads/ updates together
+# (one commit per bead) per prompt rule 4 in templates/prompt_bead.txt.
+# The outer loop does not commit on Claude's behalf in playlist mode.
 AUTO_COMMIT=true
 
 # When true, ralph shows the next task and exits without invoking Claude.
