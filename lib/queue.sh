@@ -8,6 +8,11 @@
 # even when --queue runs without forwarded args.
 FORWARDED_QUEUE_ARGS=()
 
+# queue_index — index of the next queue entry to run. Persisted in
+# .ralph/state alongside playlist progress so an interrupted queue
+# resumes where it stopped instead of restarting at entry 0.
+queue_index=0
+
 # ── read_queue_file ────────────────────────────────────────────────────────
 #
 # Read QUEUE_FILE into QUEUE_ENTRIES[]. Comments and blank lines are
@@ -60,17 +65,19 @@ spawn_queue_child() {
 
 # ── ensure_clean_tree ──────────────────────────────────────────────────────
 #
-# Verify the working tree is clean before moving to the next queue
-# entry. Each playlist's commits must stay attributable to its branch.
+# Verify no tracked-file changes remain before moving to the next queue
+# entry. Untracked files are ignored — they can't be the playlist's
+# uncommitted work, only stray runtime files (lockfiles, logs, etc.).
+# Each playlist's commits must stay attributable to its branch.
 
 ensure_clean_tree() {
     local just_finished="$1"
     local dirty
-    dirty=$(git status --porcelain 2>/dev/null)
+    dirty=$(git status --porcelain --untracked-files=no 2>/dev/null)
     [[ -z "$dirty" ]] && return 0
     local first_file
     first_file=$(printf '%s\n' "$dirty" | head -1 | awk '{print $NF}')
-    log "ERROR: Working tree dirty after playlist '$just_finished': $first_file"
+    log "ERROR: Tracked file uncommitted after playlist '$just_finished': $first_file"
     log "Each queue entry must produce committed work only. Halting."
     return 1
 }
@@ -87,6 +94,8 @@ run_queue_entry() {
         log "ERROR: Child ralph failed on entry: $entry"
         return 1
     fi
+    queue_index=$((i + 1))
+    save_state
     if (( i < total - 1 )); then
         ensure_clean_tree "$entry" || return 1
     fi
@@ -95,15 +104,32 @@ run_queue_entry() {
 # ── run_queue ──────────────────────────────────────────────────────────────
 #
 # Walk QUEUE_ENTRIES, spawning one child ralph per entry. Halt on any
-# non-zero child exit or any dirty tree between entries.
+# non-zero child exit or any dirty tree between entries. Resumes from
+# queue_index in .ralph/state when --queue points at the same file as
+# the previous run.
 
 run_queue() {
     read_queue_file        || return 1
     require_queue_nonempty || return 1
-    log "=== Queue: $QUEUE_FILE (${#QUEUE_ENTRIES[@]} entries) ==="
+    load_state
+    local total="${#QUEUE_ENTRIES[@]}"
+    local start="${queue_index:-0}"
+    if (( start >= total )); then
+        log "Queue $QUEUE_FILE already complete (index $start of $total). Use --reset to rerun."
+        queue_index=0
+        save_state
+        return 0
+    fi
+    if (( start > 0 )); then
+        log "=== Queue: $QUEUE_FILE — resuming at entry $((start + 1))/$total ==="
+    else
+        log "=== Queue: $QUEUE_FILE ($total entries) ==="
+    fi
     local i
-    for ((i = 0; i < ${#QUEUE_ENTRIES[@]}; i++)); do
+    for ((i = start; i < total; i++)); do
         run_queue_entry "$i" || return 1
     done
-    log "=== Queue complete: ${#QUEUE_ENTRIES[@]} entries ==="
+    queue_index=0
+    save_state
+    log "=== Queue complete: $total entries ==="
 }

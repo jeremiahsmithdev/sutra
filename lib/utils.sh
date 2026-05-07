@@ -157,6 +157,16 @@ load_state() {
         fi
     fi
 
+    # Queue resume: if state has a queue_file that doesn't match current
+    # --queue arg, warn and reset index. Otherwise queue_index from disk
+    # is preserved so an interrupted queue picks up where it stopped.
+    if [[ -n "${QUEUE_FILE:-}" && -n "${queue_file:-}" ]]; then
+        if [[ "$queue_file" != "$QUEUE_FILE" ]]; then
+            log "WARNING: State file has queue_file=$queue_file but --queue is $QUEUE_FILE. Resetting index."
+            queue_index=0
+        fi
+    fi
+
     # Always reset session counters — each `ralph` invocation is a new session.
     # Use local time with RFC3339 offset to match beads' closed_at format.
     # BSD date gives +0530; sed inserts the colon for RFC3339 (+05:30).
@@ -172,6 +182,15 @@ load_state() {
 # No-op during --dry-run to preserve read-only guarantee.
 save_state() {
     [[ "${DRY_RUN:-false}" == "true" ]] && return
+
+    # Preserve queue state if we're a queue child (no QUEUE_FILE set) so
+    # child playlist save_state cycles don't wipe the parent's queue
+    # progress. When we ARE the queue parent, fresh state is written below.
+    local preserved_queue=""
+    if [[ -z "${QUEUE_FILE:-}" && -f "$STATE_FILE" ]]; then
+        preserved_queue=$(grep -E '^(queue_file|queue_index)=' "$STATE_FILE" 2>/dev/null || true)
+    fi
+
     local state_content
     state_content=$(render_template "$TEMPLATES_DIR/state.txt" \
         "CIRCUIT=${circuit:-CLOSED}" \
@@ -205,6 +224,18 @@ save_state() {
             "INJECTION_CAPPED=${INJECTION_CAPPED:-false}")
         printf '%s\n' "$playlist_state" >> "$STATE_FILE"
         playlist_write_progress
+    fi
+
+    # Queue state — written by the queue parent; preserved verbatim when
+    # called from a child playlist process (no QUEUE_FILE set).
+    if [[ -n "${QUEUE_FILE:-}" ]]; then
+        local queue_state
+        queue_state=$(render_template "$TEMPLATES_DIR/state_queue.txt" \
+            "QUEUE_FILE=${QUEUE_FILE}" \
+            "QUEUE_INDEX=${queue_index:-0}")
+        printf '%s\n' "$queue_state" >> "$STATE_FILE"
+    elif [[ -n "$preserved_queue" ]]; then
+        printf '%s\n' "$preserved_queue" >> "$STATE_FILE"
     fi
 }
 

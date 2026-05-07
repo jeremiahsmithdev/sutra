@@ -262,7 +262,8 @@ reset_state() {
     total_tasks_completed=0
     total_loops=0
     current_task=""
+    queue_index=0
+    rm -f "$STATE_FILE" .ralph_remote
     save_state
-    rm -f .ralph_remote
     log "State reset."
 }
