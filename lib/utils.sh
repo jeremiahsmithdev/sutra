@@ -191,6 +191,14 @@ save_state() {
         preserved_queue=$(grep -E '^(queue_file|queue_index)=' "$STATE_FILE" 2>/dev/null || true)
     fi
 
+    # Preserve playlist state if we're not in playlist mode (e.g. queue
+    # parent has PLAYLIST empty) so the parent's save cycles don't wipe
+    # the child playlist's progress lines from disk.
+    local preserved_playlist=""
+    if [[ -z "${PLAYLIST:-}" && -f "$STATE_FILE" ]]; then
+        preserved_playlist=$(grep -E '^(playlist_file|playlist_line|injected_bead_count|INJECTION_CAPPED)=' "$STATE_FILE" 2>/dev/null || true)
+    fi
+
     local state_content
     state_content=$(render_template "$TEMPLATES_DIR/state.txt" \
         "CIRCUIT=${circuit:-CLOSED}" \
@@ -224,6 +232,8 @@ save_state() {
             "INJECTION_CAPPED=${INJECTION_CAPPED:-false}")
         printf '%s\n' "$playlist_state" >> "$STATE_FILE"
         playlist_write_progress
+    elif [[ -n "$preserved_playlist" ]]; then
+        printf '%s\n' "$preserved_playlist" >> "$STATE_FILE"
     fi
 
     # Queue state — written by the queue parent; preserved verbatim when
