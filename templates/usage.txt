@@ -7,6 +7,8 @@ Usage: ralph [OPTIONS]
   --timeout N          Minutes per Claude invocation (default: 10)
   --scope PATTERN      Only work issues matching regex pattern
   --playlist FILE      Execute tasks from playlist file (mutually exclusive with --scope)
+  --queue [FILE]       Run multiple playlists in sequence; one child ralph per
+                       entry (default: .ralph/queue)
   --no-commit          Tell Claude not to commit per-task (playlist default)
   --commit             Tell Claude to commit per-task (overrides playlist default)
   --playlist-branch N  Override playlist branch name (default: from file or filename)

@@ -55,6 +55,8 @@ source "$LIB_DIR/playlist_create.sh"
 source "$LIB_DIR/playlist_marker.sh"
 # shellcheck source=lib/playlist_progress.sh
 source "$LIB_DIR/playlist_progress.sh"
+# shellcheck source=lib/queue.sh
+source "$LIB_DIR/queue.sh"
 # shellcheck source=lib/prompt_context.sh
 source "$LIB_DIR/prompt_context.sh"
 # shellcheck source=lib/prompt.sh

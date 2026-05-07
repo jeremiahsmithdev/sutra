@@ -6,9 +6,11 @@
 parse_args() {
     ACTION=""
     local commit_explicit=false
+    ORIGINAL_ARGS=("$@")
     parse_arg_flags "$@"
     validate_model_args
     validate_playlist_args "$commit_explicit"
+    [[ "$ACTION" == "queue" ]] && build_forwarded_queue_args
     dispatch_early_exit_action
 }
 
@@ -27,6 +29,14 @@ parse_arg_flags() {
             --timeout)     TIMEOUT_MINUTES="$2"; shift 2 ;;
             --scope)       SCOPE="$2"; shift 2 ;;
             --playlist)    PLAYLIST="$2"; shift 2 ;;
+            --queue)
+                ACTION="queue"
+                if [[ $# -gt 1 && ! "$2" =~ ^- ]]; then
+                    QUEUE_FILE="$2"; shift 2
+                else
+                    QUEUE_FILE=".ralph/queue"; shift
+                fi
+                ;;
             --no-commit)   AUTO_COMMIT=false; commit_explicit=true; shift ;;
             --commit)      AUTO_COMMIT=true; commit_explicit=true; shift ;;
             --sandbox)     SANDBOX_MODE=true; shift ;;
@@ -193,12 +203,38 @@ dispatch_early_exit_action() {
         reset)          reset_state; exit 0 ;;
         playlist_init)  init_for_early_claude; run_playlist_init; exit $? ;;
         playlist_create) init_for_early_claude; run_playlist_create; exit $? ;;
+        queue)          run_queue; exit $? ;;
     esac
 
     if [[ "$MONITOR_MODE" == "true" ]]; then
         run_monitor
         exit $?
     fi
+}
+
+# ── build_forwarded_queue_args ─────────────────────────────────────────────
+#
+# Build FORWARDED_QUEUE_ARGS by stripping --queue (and its optional
+# value) from the parent's argv. Everything else (--max-cost, --model,
+# --remote, …) propagates to each child ralph invocation.
+
+build_forwarded_queue_args() {
+    FORWARDED_QUEUE_ARGS=()
+    local i=0 arg nxt
+    while (( i < ${#ORIGINAL_ARGS[@]} )); do
+        arg="${ORIGINAL_ARGS[$i]}"
+        if [[ "$arg" == "--queue" ]]; then
+            nxt="${ORIGINAL_ARGS[$((i + 1))]:-}"
+            if [[ -n "$nxt" && ! "$nxt" =~ ^- ]]; then
+                i=$((i + 2))
+            else
+                i=$((i + 1))
+            fi
+            continue
+        fi
+        FORWARDED_QUEUE_ARGS+=("$arg")
+        i=$((i + 1))
+    done
 }
 
 # ── show_help ──────────────────────────────────────────────────────────────
