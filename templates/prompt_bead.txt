@@ -12,7 +12,7 @@ On blocked:  br update {{TASK_ID}} --status open  AND write a handoff note in th
 Before implementing, orient yourself to what the previous bead left behind:
 
 1. Run `git status` to see if the working tree is dirty.
-   * If dirty: run `git diff` — this is the previous bead's uncommitted work in playlist mode (AUTO_COMMIT=false by default). Read it before making changes so you understand what's in flight.
+   * If dirty: this is unusual — the previous bead should have committed cleanly. Run `git diff` to inspect the leftover work, then either fold it into this bead's commit (if related) or commit it as a separate cleanup before starting your own work.
    * If clean: run `git log --oneline -5` and `git show HEAD` — the previous bead's work is in the most recent commit(s). Read the diff to see what changed.
 2. If a `## Prior Task Context` section appears above, treat it as the previous agent's CLAIM about what it did. Use `git diff` / `git show HEAD` to verify that claim against ground truth before trusting it.
 3. Do not re-explore files that the orientation already showed you changed. Start from the established state.
@@ -26,7 +26,7 @@ Before implementing, orient yourself to what the previous bead left behind:
 3. Run tests or manual verification after implementation.
 {{COMMIT_RULE}}
 5. If you are blocked and cannot complete the task, say so clearly.
-6. Do NOT touch .beads/ files — never commit, stash, or modify them. Do NOT run `br sync`. The outer loop handles beads state automatically.
+6. Do NOT manually edit `.beads/` JSONL files — use `br` commands only. Do NOT run `br sync`. When you commit your bead work (rule 4), include the `.beads/` updates from `br claim`/`br close` in the same commit as your code changes — do not leave them dirty.
 7. Prefer Read, Grep, and Glob tools for file operations. Only spawn Agent sub-tasks when exploring unfamiliar parts of the codebase that are not described in this task or the project context. Direct tool use is faster and cheaper.
 8. **Dev server / HTTP port discipline.** If you start any dev server, background app, or HTTP listener — or curl a running service to verify behaviour — bind to and target `localhost:$RALPH_DEV_PORT` (env var, set by ralph for this session). Never hardcode `:5000`, `:8080`, etc. — another worktree's app may already be on the default port and silent cross-contamination is the failure mode this prevents.
 {{FILE_MAP}}

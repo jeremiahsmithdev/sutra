@@ -165,7 +165,6 @@ playlist_execute_bead() {
     log "  LOOP $((total_loops + 1))/$playlist_total  │  Task: $tid  │  Model: $MODEL${ann}"
     log "═══════════════════════════════════════════════════════"
     log ""
-    snapshot_bead_start_state
     claim_task "$tid"
     playlist_write_progress
     build_prompt "$tid" "$task_details"

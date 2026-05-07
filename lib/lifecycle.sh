@@ -42,8 +42,9 @@ initialize() {
     if [[ "$DRY_RUN" != "true" ]]; then
         migrate_state_file
         # Standard mode only — see invoke.sh for rationale. Playlist mode
-        # carries any dirty .beads/ into the first commit_bead_work bundle.
-        if [[ "$AUTO_COMMIT" == "true" ]]; then
+        # has Claude bundle .beads/ with each bead's code commit, so no
+        # outer-loop commit happens here.
+        if [[ -z "$PLAYLIST" ]]; then
             commit_beads_if_dirty
         fi
     fi

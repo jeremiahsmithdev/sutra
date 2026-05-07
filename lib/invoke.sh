@@ -144,9 +144,9 @@ _invoke_claude_once() {
 
     # Standard mode only: Claude switches branches per-task, so .beads/
     # must be clean before invocation. In playlist mode (one branch per
-    # session) we leave .beads/ dirty so commit_bead_work can bundle it
-    # with the feature commit instead of producing a standalone chore commit.
-    if [[ "$AUTO_COMMIT" == "true" ]]; then
+    # session) Claude itself commits .beads/ with each bead's code per
+    # prompt rule 4, so no outer-loop chore commits happen here.
+    if [[ -z "$PLAYLIST" ]]; then
         commit_beads_if_dirty
     fi
 

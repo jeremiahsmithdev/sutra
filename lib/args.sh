@@ -174,9 +174,6 @@ validate_playlist_args() {
         log "ERROR: Cannot use --playlist with --scope"
         exit 1
     fi
-    if [[ "$commit_explicit" == false ]]; then
-        AUTO_COMMIT=false
-    fi
     if [[ -n "$PLAYLIST_BRANCH_CLI" && -z "$PLAYLIST" ]]; then
         log "ERROR: --playlist-branch requires --playlist"
         exit 1

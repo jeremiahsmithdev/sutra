@@ -132,7 +132,7 @@ format_branch_instructions() {
 
 format_commit_rule() {
     if [[ "$AUTO_COMMIT" == true ]]; then
-        echo "4. Commit your changes with a conventional commit message."
+        echo "4. Before closing the bead, commit your work with a conventional commit message. \`git add\` BOTH the code files you changed AND the \`.beads/\` updates from \`br claim\`/\`br close\`, then \`git commit\` — one commit per bead, code and beads state together."
     else
         echo "4. Do NOT commit. Leave changes staged or unstaged — commits are handled externally."
     fi
