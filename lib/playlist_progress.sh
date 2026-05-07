@@ -101,6 +101,13 @@ get_bead_title() {
 # Read the progress file and return a prompt-optimised excerpt.
 # Returns empty string when no progress file exists.
 #
+# Argument: include_in_progress (default: true)
+#   true  — keep '## In Progress' section (Type A bead prompts use this as
+#           an orientation cue: "you are working on bead X").
+#   false — drop '## In Progress' entirely (Type B injection / @opus prompts:
+#           the task text is already inline in '## Task' so the duplicate
+#           adds nothing).
+#
 # Token-saving rules applied here (playlist_write_progress is unchanged):
 #   - 0 completed: single "Position: 1/N · In Progress: …" line.
 #   - ≥1 completed: '## Completed' is replaced by a one-line '## Recent work'
@@ -112,6 +119,7 @@ get_bead_title() {
 # playlist_write_progress for monitor/debug tooling.
 
 format_playlist_progress() {
+    local include_in_progress="${1:-true}"
     [[ ! -f "$PROGRESS_FILE" ]] && return
 
     # Parse completed/total from the Status line
@@ -124,10 +132,12 @@ format_playlist_progress() {
 
     if [[ $completed -eq 0 ]]; then
         # Compact format: no completed list, no remaining noise.
-        local in_progress
-        in_progress=$(awk '/^## In Progress/{f=1;next} f && /^\* /{sub(/^\* /,""); print; exit}' "$PROGRESS_FILE")
         printf 'Position: 1/%d' "$total"
-        [[ -n "$in_progress" ]] && printf ' · In Progress: %s' "$in_progress"
+        if [[ "$include_in_progress" == "true" ]]; then
+            local in_progress
+            in_progress=$(awk '/^## In Progress/{f=1;next} f && /^\* /{sub(/^\* /,""); print; exit}' "$PROGRESS_FILE")
+            [[ -n "$in_progress" ]] && printf ' · In Progress: %s' "$in_progress"
+        fi
         printf '\n'
         return
     fi
@@ -143,6 +153,10 @@ format_playlist_progress() {
     while IFS= read -r line; do
         case "$line" in
             "# Playlist Progress:"*|"Updated:"*) continue ;;
+            "## In Progress")
+                section="in_progress"
+                [[ "$include_in_progress" == "true" ]] && printf '%s\n' "$line"
+                ;;
             "## Completed")
                 section="completed"
                 if [[ $lookback -eq 0 ]]; then
@@ -156,7 +170,9 @@ format_playlist_progress() {
                 printf '%s\n' "$line"
                 ;;
             *)
-                if [[ "$section" == "completed" && "$line" == \** ]]; then
+                if [[ "$section" == "in_progress" ]]; then
+                    [[ "$include_in_progress" == "true" ]] && printf '%s\n' "$line"
+                elif [[ "$section" == "completed" && "$line" == \** ]]; then
                     completed_shown=$((completed_shown + 1))
                     if [[ $lookback -gt 0 && $completed_shown -gt $((total_completed - lookback)) ]]; then
                         printf '%s\n' "$line"

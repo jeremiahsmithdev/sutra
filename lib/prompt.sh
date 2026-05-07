@@ -50,7 +50,9 @@ build_raw_prompt() {
 
     local file_map playlist_progress
     file_map=$(format_file_map)
-    playlist_progress=$(format_playlist_progress)
+    # Type B (injection / @opus): drop ## In Progress; the prompt text is
+    # already inline above, so the duplicate adds nothing.
+    playlist_progress=$(format_playlist_progress false)
 
     prompt=$(render_template "$TEMPLATES_DIR/prompt_raw.txt" \
         "PROMPT_TEXT=$prompt_text" \

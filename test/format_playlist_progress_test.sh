@@ -172,5 +172,40 @@ contains "& in completed title preserved (entry 2)" \
          "* [bead] foo-2 — auth & sessions" "$result"
 unset PLAYLIST_PROGRESS_LOOKBACK
 
+# ── Test 6: include_in_progress=false (Type B injection) drops the section ─
+write_fixture
+result=$(format_playlist_progress false)
+not_contains "type-b: ## In Progress header dropped" "## In Progress" "$result"
+not_contains "type-b: in-progress entry dropped" \
+             "* [bead] foo-current — current task" "$result"
+contains     "type-b: ## Recent work still present" "## Recent work" "$result"
+contains     "type-b: ## Remaining still present" "## Remaining" "$result"
+
+# ── Test 7: include_in_progress=true (default, Type A bead) keeps section ─
+write_fixture
+result=$(format_playlist_progress true)
+contains     "type-a: ## In Progress header kept" "## In Progress" "$result"
+contains     "type-a: in-progress entry kept" \
+             "* [bead] foo-current — current task" "$result"
+
+# ── Test 8: 0 completed + include_in_progress=false → just Position line ──
+cat > "$PROGRESS_FILE" <<'EOF'
+# Playlist Progress: foo.playlist
+Updated: 2026-05-08 12:00:00
+
+## Status: 0/3 items completed
+
+## In Progress
+* [bead] foo-1 — first
+
+## Remaining
+* [bead] foo-2 — second
+* [bead] foo-3 — third
+EOF
+result=$(format_playlist_progress false)
+contains     "type-b 0-completed: Position line present" "Position: 1/3" "$result"
+not_contains "type-b 0-completed: In Progress dropped" "In Progress:" "$result"
+not_contains "type-b 0-completed: bead title dropped" "foo-1" "$result"
+
 printf '\nResults: %d passed, %d failed\n' "$PASS" "$FAIL"
 [[ $FAIL -eq 0 ]]
