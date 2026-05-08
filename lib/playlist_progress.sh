@@ -73,7 +73,8 @@ playlist_write_progress() {
 # ── format_progress_item ──────────────────────────────────────────────────
 #
 # Format a playlist line for the progress file. Bead lines get title lookup;
-# prompt lines show the first 60 chars.
+# prompt lines render in full so subsequent tasks see the complete directive
+# when this file is injected as PLAYLIST_PROGRESS context.
 
 format_progress_item() {
     local line="$1"
@@ -81,7 +82,7 @@ format_progress_item() {
     if [[ "$line" == ">"* ]]; then
         local text="${line#>}"
         text="${text#"${text%%[![:space:]]*}"}"
-        printf '[prompt] %s' "${text:0:60}"
+        printf '[prompt] %s' "$text"
     else
         local id="${line%% @*}"
         local title
@@ -216,7 +217,7 @@ playlist_report_data() {
         if [[ "$trimmed" == ">"* ]]; then
             local prompt_text="${trimmed#>}"
             prompt_text="${prompt_text#"${prompt_text%%[![:space:]]*}"}"
-            printf '%d. [prompt] %s (processed: %s)\n' "$item_num" "${prompt_text:0:80}" "$was_processed"
+            printf '%d. [prompt] %s (processed: %s)\n' "$item_num" "$prompt_text" "$was_processed"
         else
             local bead_status
             bead_status=$(get_bead_status "$trimmed")
