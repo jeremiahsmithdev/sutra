@@ -111,33 +111,6 @@ run_queue_entry() {
 # queue_index in .ralph/state when --queue points at the same file as
 # the previous run.
 
-# ── resume_queue_from_state ────────────────────────────────────────────────
-#
-# `ralph resume` / `ralph --resume` — pick up the last queue without
-# having to remember the queue file path. Reads queue_file from
-# .ralph/state and dispatches into run_queue with QUEUE_FILE set.
-
-resume_queue_from_state() {
-    if [[ ! -f "$STATE_FILE" ]]; then
-        log "ERROR: No state file at $STATE_FILE — nothing to resume."
-        return 1
-    fi
-    # shellcheck source=/dev/null
-    local queue_file=""
-    queue_file=$(grep -E '^queue_file=' "$STATE_FILE" | head -1 | cut -d= -f2-)
-    if [[ -z "$queue_file" ]]; then
-        log "ERROR: No queue_file recorded in $STATE_FILE — start one with: ralph --queue <file>"
-        return 1
-    fi
-    if [[ ! -f "$queue_file" ]]; then
-        log "ERROR: Recorded queue file no longer exists: $queue_file"
-        return 1
-    fi
-    QUEUE_FILE="$queue_file"
-    log "Resuming queue: $QUEUE_FILE"
-    run_queue
-}
-
 run_queue() {
     read_queue_file        || return 1
     require_queue_nonempty || return 1

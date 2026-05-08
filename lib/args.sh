@@ -9,8 +9,9 @@ parse_args() {
     ORIGINAL_ARGS=("$@")
     parse_arg_flags "$@"
     validate_model_args
+    [[ "$ACTION" == "resume" ]] && resolve_resume_action
     validate_playlist_args "$commit_explicit"
-    [[ "$ACTION" == "queue" || "$ACTION" == "resume" ]] && build_forwarded_queue_args
+    [[ "$ACTION" == "queue" ]] && build_forwarded_queue_args
     dispatch_early_exit_action
 }
 
@@ -147,6 +148,52 @@ parse_playlist_create_args() {
     fi
 }
 
+# ── resolve_resume_action ──────────────────────────────────────────────────
+#
+# `ralph resume` / `ralph --resume` — figure out what was running last
+# and dispatch to the right mode. Queue takes precedence over playlist
+# because a queue parent's state coexists with the last child's playlist
+# state; resuming the queue restarts the right child, which then reads
+# its own playlist_line and picks up mid-playlist.
+
+resolve_resume_action() {
+    if [[ ! -f "$STATE_FILE" ]]; then
+        log "ERROR: No state file at $STATE_FILE — nothing to resume."
+        exit 1
+    fi
+
+    local queue_file playlist_file
+    queue_file=$(grep -E '^queue_file=' "$STATE_FILE" | head -1 | cut -d= -f2-)
+    playlist_file=$(grep -E '^playlist_file=' "$STATE_FILE" | head -1 | cut -d= -f2-)
+
+    if [[ -n "$queue_file" ]]; then
+        if [[ ! -f "$queue_file" ]]; then
+            log "ERROR: Recorded queue file no longer exists: $queue_file"
+            exit 1
+        fi
+        ACTION="queue"
+        QUEUE_FILE="$queue_file"
+        log "Resuming queue: $QUEUE_FILE"
+        return
+    fi
+
+    if [[ -n "$playlist_file" ]]; then
+        if [[ ! -f "$playlist_file" ]]; then
+            log "ERROR: Recorded playlist file no longer exists: $playlist_file"
+            exit 1
+        fi
+        ACTION=""
+        PLAYLIST="$playlist_file"
+        log "Resuming playlist: $PLAYLIST"
+        return
+    fi
+
+    log "ERROR: No queue_file or playlist_file in $STATE_FILE — nothing to resume."
+    log "  Start a queue with: ralph --queue <file>"
+    log "  Start a playlist with: ralph --playlist <file>"
+    exit 1
+}
+
 # ── validate_model_args ──────────────────────────────────────────────────────
 #
 # Validate model argument. If it's a GLM model, extract and validate
@@ -206,7 +253,6 @@ dispatch_early_exit_action() {
         playlist_init)  init_for_early_claude; run_playlist_init; exit $? ;;
         playlist_create) init_for_early_claude; run_playlist_create; exit $? ;;
         queue)          run_queue; exit $? ;;
-        resume)         resume_queue_from_state; exit $? ;;
     esac
 
     if [[ "$MONITOR_MODE" == "true" ]]; then
