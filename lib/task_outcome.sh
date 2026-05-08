@@ -79,10 +79,11 @@ capture_task_handoff() {
 
 # ── extract_last_assistant_text ───────────────────────────────────────────
 #
-# Read a stream-json log and return the last assistant text block,
-# whitespace-collapsed and truncated to ~200 words. Returns empty string
-# if the log is missing, empty, or has no text blocks. Never fails loudly —
-# the handoff is a best-effort feature, not a correctness requirement.
+# Read a stream-json log and return the last assistant text block in full.
+# render_template handles multi-line values cleanly, so paragraph/code-block
+# structure flows through into the next prompt's "## Prior Task Context".
+# Returns empty string if the log is missing, empty, or has no text blocks.
+# Never fails loudly — the handoff is best-effort, not load-bearing.
 
 extract_last_assistant_text() {
     local log_path="$1"
@@ -92,27 +93,7 @@ extract_last_assistant_text() {
     text=$(jq -rs -f "$TEMPLATES_DIR/last_assistant_text.jq" < "$log_path" 2>/dev/null)
     [[ -z "$text" || "$text" == "null" ]] && { echo ""; return; }
 
-    truncate_to_word_limit "$text" 200
-}
-
-# ── truncate_to_word_limit ────────────────────────────────────────────────
-#
-# Collapse whitespace and truncate a string to the given word count,
-# appending "..." if truncation occurred.
-
-truncate_to_word_limit() {
-    local text="$1"
-    local max_words="$2"
-    local collapsed
-    collapsed=$(printf '%s' "$text" | tr '\n\r\t' '   ' | tr -s ' ')
-
-    # shellcheck disable=SC2206  # intentional word split
-    local -a words=($collapsed)
-    if [[ ${#words[@]} -gt $max_words ]]; then
-        echo "${words[*]:0:max_words}..."
-    else
-        echo "$collapsed"
-    fi
+    printf '%s' "$text"
 }
 
 # ── mark_needs_review ──────────────────────────────────────────────────
