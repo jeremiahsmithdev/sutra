@@ -65,21 +65,24 @@ spawn_queue_child() {
 
 # ── ensure_clean_tree ──────────────────────────────────────────────────────
 #
-# Verify no tracked-file changes remain before moving to the next queue
-# entry. Untracked files are ignored — they can't be the playlist's
-# uncommitted work, only stray runtime files (lockfiles, logs, etc.).
-# Each playlist's commits must stay attributable to its branch.
+# Tidy the working tree before moving to the next queue entry. Untracked
+# files are ignored. Dirty .beads/ state is auto-committed as a chore —
+# bead bookkeeping shouldn't halt the queue. Other tracked-file changes
+# are reported but do NOT halt: the next entry's Orientation flow will
+# either fold them into its own commit or commit as separate cleanup.
 
 ensure_clean_tree() {
     local just_finished="$1"
+    commit_beads_if_dirty
     local dirty
     dirty=$(git status --porcelain --untracked-files=no 2>/dev/null)
     [[ -z "$dirty" ]] && return 0
-    local first_file
-    first_file=$(printf '%s\n' "$dirty" | head -1 | awk '{print $NF}')
-    log "ERROR: Tracked file uncommitted after playlist '$just_finished': $first_file"
-    log "Each queue entry must produce committed work only. Halting."
-    return 1
+    log "WARNING: Tracked changes uncommitted after playlist '$just_finished':"
+    printf '%s\n' "$dirty" | head -5 | while IFS= read -r dirty_line; do
+        log "  $dirty_line"
+    done
+    log "Continuing — next entry's Orientation will absorb leftovers."
+    return 0
 }
 
 # ── run_queue_entry ────────────────────────────────────────────────────────
