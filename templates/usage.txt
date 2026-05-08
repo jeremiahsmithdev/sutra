@@ -9,6 +9,8 @@ Usage: ralph [OPTIONS]
   --playlist FILE      Execute tasks from playlist file (mutually exclusive with --scope)
   --queue [FILE]       Run multiple playlists in sequence; one child ralph per
                        entry (default: .ralph/queue)
+  resume, --resume     Resume the last queue from where it stopped
+                       (reads queue_file + queue_index from .ralph/state)
   --no-commit          Tell Claude not to commit per-task (playlist default)
   --commit             Tell Claude to commit per-task (overrides playlist default)
   --playlist-branch N  Override playlist branch name (default: from file or filename)

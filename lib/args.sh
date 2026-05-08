@@ -10,7 +10,7 @@ parse_args() {
     parse_arg_flags "$@"
     validate_model_args
     validate_playlist_args "$commit_explicit"
-    [[ "$ACTION" == "queue" ]] && build_forwarded_queue_args
+    [[ "$ACTION" == "queue" || "$ACTION" == "resume" ]] && build_forwarded_queue_args
     dispatch_early_exit_action
 }
 
@@ -37,6 +37,8 @@ parse_arg_flags() {
                     QUEUE_FILE=".ralph/queue"; shift
                 fi
                 ;;
+            --resume|resume)
+                ACTION="resume"; shift ;;
             --no-commit)   AUTO_COMMIT=false; commit_explicit=true; shift ;;
             --commit)      AUTO_COMMIT=true; commit_explicit=true; shift ;;
             --sandbox)     SANDBOX_MODE=true; shift ;;
@@ -204,6 +206,7 @@ dispatch_early_exit_action() {
         playlist_init)  init_for_early_claude; run_playlist_init; exit $? ;;
         playlist_create) init_for_early_claude; run_playlist_create; exit $? ;;
         queue)          run_queue; exit $? ;;
+        resume)         resume_queue_from_state; exit $? ;;
     esac
 
     if [[ "$MONITOR_MODE" == "true" ]]; then
@@ -230,6 +233,10 @@ build_forwarded_queue_args() {
             else
                 i=$((i + 1))
             fi
+            continue
+        fi
+        if [[ "$arg" == "--resume" || "$arg" == "resume" ]]; then
+            i=$((i + 1))
             continue
         fi
         FORWARDED_QUEUE_ARGS+=("$arg")
