@@ -219,11 +219,53 @@ playlist_report_data() {
             prompt_text="${prompt_text#"${prompt_text%%[![:space:]]*}"}"
             printf '%d. [prompt] %s (processed: %s)\n' "$item_num" "$prompt_text" "$was_processed"
         else
-            local bead_status
-            bead_status=$(get_bead_status "$trimmed")
-            printf '%d. [bead] %s (status: %s, processed: %s)\n' "$item_num" "$trimmed" "$bead_status" "$was_processed"
+            local id="${trimmed%% @*}"
+            local bead_json bead_status bead_title
+            bead_json=$(br show "$id" --json 2>/dev/null)
+            bead_status=$(echo "$bead_json" | jq -r '.[0].status // "unknown"' 2>/dev/null)
+            bead_title=$(echo "$bead_json" | jq -r '.[0].title // ""' 2>/dev/null)
+            if [[ -n "$bead_title" ]]; then
+                printf '%d. [bead] %s — %s (status: %s, processed: %s)\n' \
+                    "$item_num" "$id" "$bead_title" "$bead_status" "$was_processed"
+            else
+                printf '%d. [bead] %s (status: %s, processed: %s)\n' \
+                    "$item_num" "$id" "$bead_status" "$was_processed"
+            fi
         fi
     done
+}
+
+# ── playlist_epic_ids ─────────────────────────────────────────────────────
+#
+# Comma-separated list of unique parent epic IDs across all playlist beads.
+# The completion-report prompt passes this to Claude so the agent knows which
+# `br show <epic_id>` calls to make when reviewing implementation against
+# epic intent. Standalone beads (no parent) are omitted.
+
+playlist_epic_ids() {
+    local total=${#PLAYLIST_LINES[@]}
+    local idx=0
+    local -A seen=()
+    local -a epics=()
+
+    while [[ $idx -lt $total ]]; do
+        local raw="${PLAYLIST_LINES[$idx]}"
+        idx=$((idx + 1))
+        local trimmed="${raw#"${raw%%[![:space:]]*}"}"
+        [[ -z "$trimmed" || "$trimmed" == \#* || "$trimmed" == ">"* ]] && continue
+
+        local id="${trimmed%% @*}"
+        local parent
+        parent=$(get_bead_field "$id" parent)
+        [[ -z "$parent" ]] && continue
+        [[ -n "${seen[$parent]:-}" ]] && continue
+        seen[$parent]=1
+        epics+=("$parent")
+    done
+
+    [[ ${#epics[@]} -eq 0 ]] && return
+    local IFS=,
+    printf '%s' "${epics[*]}"
 }
 
 # ── playlist_processed ─────────────────────────────────────────────────────

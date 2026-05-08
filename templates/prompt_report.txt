@@ -1,20 +1,82 @@
-You are generating a completion report for a ralph playlist run.
+You are generating a completion report for a ralph playlist run. Your job
+is not to log what happened — that's already captured below. Your job is
+to render an OPINIONATED VERDICT on whether the implementation is sound,
+based on first-hand inspection of the playlist intent and the resulting code.
 
-## Instructions
-Write a markdown report to: {{REPORT_FILE}}
+Write the report to: {{REPORT_FILE}}
 Create the directory {{REPORT_DIR}} if it does not exist (mkdir -p).
 
-## Report Template
+## Sources to read before writing the verdict
 
+Use the Read and Bash tools to inspect these directly. Do NOT skip this step —
+the verdict is worthless without it.
+
+1. **The playlist file** — `Read {{PLAYLIST_PATH}}`. See what was supposed to happen.
+2. **Parent epic descriptions** — for each ID in `{{EPIC_IDS}}`, run `br show <id>`.
+   Read the epic's title, description, and any linked spec file the description
+   points to (e.g. `docs/technical/features/<feature>_SPEC.md`). The verdict
+   compares implementation against this stated intent.
+3. **The diff this run produced** —
+   `git diff {{SESSION_START_SHA}}..HEAD --stat` for the file-level overview, then
+   `git diff {{SESSION_START_SHA}}..HEAD -- <path>` to drill into specific files.
+   Open the 2–3 largest changed files with Read and assess them against the
+   project's coding standards (CLAUDE.md if present at the repo root).
+4. **Specific commits** — `git show <sha>` for any commit whose message
+   suggests it might be problematic or interesting.
+
+## Verdict rubric
+
+Pick exactly one label for the Executive Summary. The label is the headline:
+
+- **READY TO MERGE** — every playlist item closed, code matches epic intent,
+  no obvious quality issues, tests likely passing. No follow-ups required.
+- **READY WITH CAVEATS** — substantially complete and mergeable but has minor
+  issues: untracked files, missing docs, small TODOs, low-impact follow-ups.
+  List the caveats.
+- **NEEDS WORK** — significant gaps: open beads, failed gates, unaddressed
+  issues from review prompts, missing tests on important code paths,
+  divergence from epic intent. Do not merge yet.
+- **INCOMPLETE** — playlist did not finish, circuit breaker tripped, or large
+  portions of the work are missing or stubbed. Resume next session.
+
+If you find ANY issue worth a follow-up bead, list it explicitly. Be direct:
+"create a P2 bug bead for the duplicated rate-limit logic in
+application/services/integrations/xero/" beats "consider deduplicating".
+
+## Report structure
+
+Write the report file using exactly this structure:
+
+```
 # Ralph Playlist Report: {{PLAYLIST_NAME}}
 **Date:** {{TIMESTAMP}} **Model:** {{MODEL}} **Ralph:** `{{RALPH_VERSION}}`
 **Exit reason:** {{EXIT_REASON}} **Circuit breaker:** {{CIRCUIT}}
 
-## Summary
+## Executive Summary
+
+**Verdict:** [READY TO MERGE | READY WITH CAVEATS | NEEDS WORK | INCOMPLETE]
+
+[2–4 sentence TLDR. What was attempted, what was achieved, the headline
+assessment grounded in what you read. This is the most important part of
+the report — write it like a senior reviewer signing off on a PR.]
+
+### Recommended follow-ups
+- [Concrete, actionable items. Empty list if none.]
+
+## Run Metadata
 - Tasks completed: {{TASKS_COMPLETED}}
 - Total loops: {{TOTAL_LOOPS}}
 - Playlist: {{PLAYLIST_PATH}} ({{PLAYLIST_TOTAL}} items)
 - Processed: {{PROCESSED}} / {{PLAYLIST_TOTAL}}
+- Session start SHA: {{SESSION_START_SHA}}
+- Parent epics: {{EPIC_IDS}}
+
+## Implementation Review
+
+[A short prose section, ~150–300 words, where you walk through the actual
+code that was produced. Cite specific files. Compare against epic intent.
+Note quality issues you found by reading the diffs. This is the substance
+behind the verdict.]
 
 ## Task Results
 {{PLAYLIST_DATA}}
@@ -23,10 +85,21 @@ Create the directory {{REPORT_DIR}} if it does not exist (mkdir -p).
 {{GIT_LOG}}
 
 ## Notes
-Add any observations about the run: blocked tasks, patterns, issues discovered.
+[Optional: anything else worth flagging — odd status, ralph-side anomalies,
+patterns across the run.]
+```
 
 ## Rules
-1. Write the report file directly using the template above. Fill in the Notes section with useful observations.
-2. Commit the report: git add {{REPORT_DIR}} && git commit -m 'docs(ralph): playlist completion report'
-3. Do NOT modify any other files. Do NOT run br commands.
-4. When done, just exit.
+
+1. The Executive Summary verdict and Implementation Review are MANDATORY.
+   Do not skip them. Do not write a stub. If you cannot form a verdict
+   because tools failed, say so explicitly and choose INCOMPLETE.
+2. Use Read and Bash to inspect sources first, write the report second.
+   The verdict must be grounded in something you actually looked at.
+3. Be opinionated. Ralph already shows you the run timeline; what's
+   missing from prior reports is judgment. That's your contribution.
+4. Commit the report:
+   `git add {{REPORT_DIR}} && git commit -m 'docs(ralph): playlist completion report'`
+5. Do NOT modify any files other than the report. Do NOT run br write commands
+   (no `br update`, `br create`, `br close` — read-only `br show` only).
+6. When done, just exit.

@@ -68,14 +68,23 @@ build_raw_prompt() {
 
 # ── build_report_prompt ───────────────────────────────────────────────────
 #
-# Playlist completion report prompt. Gives Claude all the raw data and
-# asks it to write a markdown report file.
+# Playlist completion report prompt. Gives Claude pointers (playlist path,
+# session-start SHA, parent epic IDs) and asks it to read those sources
+# itself before forming an opinionated verdict on the run.
 
 build_report_prompt() {
     local report_dir="$1"
     local report_file="$2"
     local playlist_data="$3"
     local git_log="$4"
+
+    # SHA of HEAD as it was at session start — stable diff base for the
+    # agent to run `git diff $SESSION_START_SHA..HEAD` against.
+    local session_sha epic_ids
+    session_sha=$(git rev-list -n 1 --before="${session_start:-1 hour ago}" HEAD 2>/dev/null || echo "")
+    [[ -z "$session_sha" ]] && session_sha="(unavailable)"
+    epic_ids=$(playlist_epic_ids)
+    [[ -z "$epic_ids" ]] && epic_ids="(none — playlist has no parent epics)"
 
     prompt=$(render_template "$TEMPLATES_DIR/prompt_report.txt" \
         "REPORT_DIR=$report_dir" \
@@ -91,6 +100,8 @@ build_report_prompt() {
         "PLAYLIST_PATH=$PLAYLIST" \
         "PLAYLIST_TOTAL=$playlist_total" \
         "PROCESSED=$(playlist_processed)" \
+        "SESSION_START_SHA=$session_sha" \
+        "EPIC_IDS=$epic_ids" \
         "PLAYLIST_DATA=$playlist_data" \
         "GIT_LOG=$git_log")
 }
