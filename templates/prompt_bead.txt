@@ -21,12 +21,12 @@ Before implementing, orient yourself to what the previous bead left behind:
 {{BRANCH_SECTION}}
 
 ## Rules
-1. Implement this ONE task completely. Do not work on other tasks.
-2. Search the codebase before assuming anything about structure.
-3. Run tests or manual verification after implementation.
+1. **Use `$RALPH_DEV_PORT` for every dev server, listener, and curl.** Bind to and target `localhost:$RALPH_DEV_PORT` (env var, set by ralph for this session). Never hardcode `:5000`, `:8080`, `:3000`, etc. — another worktree's app may be on the default port and silent cross-contamination is the failure mode this prevents. The literal string `:8080` (or `:5000`, `:3000`) MUST NOT appear in any command you run when `$RALPH_DEV_PORT` is set.
+2. Implement this ONE task completely. Do not work on other tasks.
+3. Search the codebase before assuming anything about structure.
+4. Run tests or manual verification after implementation.
 {{COMMIT_RULE}}
-5. If you are blocked and cannot complete the task, say so clearly.
-6. Do NOT manually edit `.beads/` JSONL files — use `br` commands only. Do NOT run `br sync`. When you commit your bead work (rule 4), include the `.beads/` updates from `br claim`/`br close` in the same commit as your code changes — do not leave them dirty.
-7. Prefer Read, Grep, and Glob tools for file operations. Only spawn Agent sub-tasks when exploring unfamiliar parts of the codebase that are not described in this task or the project context. Direct tool use is faster and cheaper.
-8. **Dev server / HTTP port discipline.** If you start any dev server, background app, or HTTP listener — or curl a running service to verify behaviour — bind to and target `localhost:$RALPH_DEV_PORT` (env var, set by ralph for this session). Never hardcode `:5000`, `:8080`, etc. — another worktree's app may already be on the default port and silent cross-contamination is the failure mode this prevents.
+6. If you are blocked and cannot complete the task, say so clearly.
+7. Do NOT manually edit `.beads/` JSONL files — use `br` commands only. Do NOT run `br sync`. When you commit your bead work (rule 5), include the `.beads/` updates from `br claim`/`br close` in the same commit as your code changes — do not leave them dirty.
+8. Prefer Read, Grep, and Glob tools for file operations. Only spawn Agent sub-tasks when exploring unfamiliar parts of the codebase that are not described in this task or the project context. Direct tool use is faster and cheaper.
 {{FILE_MAP}}

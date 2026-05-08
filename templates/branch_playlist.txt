@@ -1,4 +1,4 @@
 You are working on branch `{{BRANCH}}`. This is the single branch for this entire playlist session.
 Do NOT create feature branches. Do NOT run `git checkout` to any other branch.
-Commit your work directly on `{{BRANCH}}` per rule 4 below — one commit per bead, code files and `.beads/` updates together.
+Commit your work directly on `{{BRANCH}}` per rule 5 below — one commit per bead, code files and `.beads/` updates together.
 If the tree is already dirty when you start (previous bead skipped its commit), fold those leftovers into your commit per the Orientation section.
