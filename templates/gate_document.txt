@@ -97,5 +97,5 @@ Scan for .md files in docs/ not listed in INDEX.md. For each orphan, recommend:
 - No filler — every sentence should add value
 - Bidirectional links — feature docs link to INDEX.md, INDEX.md links to docs
 - ADRs for decisions — capture why not just what for significant choices
-- If issues require separate work: create beads (type=bug only) with br create, insert IDs into the playlist file after this line
+- If issues require separate work: create beads (type=bug only) with br create, insert each bead ID into the playlist file after this line **as a bare ID on its own line** (e.g. `chippie-ow6k`) — no `* [bead]` prefix, no title suffix; ralph's parser only recognises bare IDs.
 - Delete SCRATCHPAD.md when done

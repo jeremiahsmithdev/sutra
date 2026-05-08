@@ -1,2 +1,2 @@
 Review the work completed in the last epic. Check architecture, patterns, test coverage. Flag issues.
-If significant work needed: create beads (type=bug only) and inject into playlist.
+If significant work needed: create beads (type=bug only) and inject each bead ID into the playlist file after this line **as a bare ID on its own line** (e.g. `chippie-ow6k`) — no `* [bead]` prefix, no title suffix; ralph's parser only recognises bare IDs.

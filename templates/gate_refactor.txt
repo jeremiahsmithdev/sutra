@@ -49,7 +49,7 @@ Count the number of files changed and the total added+deleted lines.
 If the diff touches more than 10 files OR more than 1000 added+deleted lines:
   1. STOP. Do NOT proceed to Phase 1 analysis. Do NOT touch any code.
   2. create beads (type=bug only) — run `br create --type=bug --title "REFACTOR: scope exceeded — <N> files / <L> lines" -d "<git diff --stat output>\n\nWhich directory should the refactor focus on?"` and note the new bead ID.
-  3. inject into playlist: append the new bead ID on the line immediately after the current #REFACTOR line in the playlist file.
+  3. inject into playlist: append the new bead ID on the line immediately after the current #REFACTOR line in the playlist file. **Write the bare bead ID on its own line** (e.g. `chippie-ow6k`) — no `* [bead]` prefix, no title suffix. Ralph's parser only recognises bare IDs; bullet form silently fails as status 'unknown'.
   4. Exit this invocation without modifying any source files.
 
 If a path was given after #REFACTOR (e.g. "#REFACTOR focus on path/to/dir/"), narrow the diff:

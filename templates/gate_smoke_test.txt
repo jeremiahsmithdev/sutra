@@ -48,8 +48,21 @@ to the Checks section.
 ```
 br create --type=bug --title "SMOKE: preconditions failed — <which step>"
 ```
-Append the bead ID to the playlist file after this line, then stop.
-Do NOT attempt any checks.
+Append the bead ID to the playlist file as a **bare ID on its own line** —
+ralph's parser only recognises that form. Then stop. Do NOT attempt any checks.
+
+```
+# Correct — ralph will pick this up on the next loop:
+chippie-ow6k
+
+# Wrong — ralph treats the whole bullet as the task identifier and the
+# claim returns status 'unknown':
+* [bead] chippie-ow6k — SMOKE precondition failure: missing module
+```
+
+Use plain `echo "<bead-id>" >> "$PLAYLIST_FILE"` (no markdown, no prefix,
+no trailing notes on the same line). If you need to record context, put it
+in the bead's description via `br create --description`, not in the playlist.
 
 ## Checks
 
@@ -85,7 +98,9 @@ env var, broken middleware). One root cause = one bead.
 
 If ANY check failed:
 * create beads (type=bug only) with `br create`, one per distinct root cause
-* append each bead ID to the playlist file after this line
+* append each bead ID to the playlist file **as a bare ID on its own line**
+  (one line per bead, no `* [bead]` prefix, no title suffix — see the
+  precondition-failure example above for the exact format ralph parses)
 
 ## Teardown
 

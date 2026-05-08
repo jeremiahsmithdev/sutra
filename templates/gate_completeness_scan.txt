@@ -1,2 +1,2 @@
 Scan for incomplete work: grep -rn 'TODO|FIXME|HACK|STUB|placeholder|not yet|not implemented' in the project source. For each match in code written during this playlist, implement it fully or remove it with justification.
-If issues require separate tasks: create beads (type=bug only) and inject into playlist.
+If issues require separate tasks: create beads (type=bug only) and inject each bead ID into the playlist file after this line **as a bare ID on its own line** (e.g. `chippie-ow6k`) — no `* [bead]` prefix, no title suffix; ralph's parser only recognises bare IDs.
