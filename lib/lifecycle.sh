@@ -161,5 +161,6 @@ generate_playlist_report() {
     }
     EXIT_REASON="$saved_exit_reason"
 
-    log "Report written to ${C_BOLD}$report_file${C_RESET}"
+    log "Report written:"
+    printf '%s\n' "$report_file"
 }

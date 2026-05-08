@@ -187,7 +187,8 @@ _invoke_claude_once() {
 
     if [[ $invoke_exit -ne 0 ]]; then
         log "ERROR: Claude invocation failed (exit code: $invoke_exit)"
-        log "  Raw log: $INVOKE_LOG"
+        log "  Raw log:"
+        printf '%s\n' "$INVOKE_LOG"
         current_task=""
         return 1
     fi
@@ -195,7 +196,8 @@ _invoke_claude_once() {
     # Signal success so the next save_state call may advance the playlist pointer.
     _invocation_succeeded=true
     accumulate_cost
-    log "  Stream log: $INVOKE_LOG"
+    log "  Stream log:"
+    printf '%s\n' "$INVOKE_LOG"
     return 0
 }
 
