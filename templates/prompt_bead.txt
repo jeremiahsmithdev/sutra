@@ -30,10 +30,14 @@ Before implementing, orient yourself to what the previous bead left behind:
 7. Do NOT manually edit `.beads/` JSONL files — use `br` commands only. Do NOT run `br sync`. When you commit your bead work (rule 5), include the `.beads/` updates from `br claim`/`br close` in the same commit as your code changes — do not leave them dirty.
 8. Prefer Read, Grep, and Glob tools for file operations. Only spawn Agent sub-tasks when exploring unfamiliar parts of the codebase that are not described in this task or the project context. Direct tool use is faster and cheaper.
 {{FILE_MAP}}
-## Handoff
-Your final assistant message becomes the next agent's `## Prior Task Context`. Treat it as a deliberate handoff, not a status report.
+## Closing Out
 
-The next playlist item is:
+Your final assistant message becomes the next agent's `## Prior Task Context` and is also what a human reviewer skims in the session log. Give it two clearly-labeled parts:
+
+**Summary** — 2–4 lines on what you did. The diff carries the details; this is the orientation line the orchestrator and reviewer read first.
+
+**Handoff** — Brief the next agent like a capable colleague picking up where you left off. The next playlist item is:
+
 {{NEXT_TASK_HINT}}
 
-Prioritise context the next agent CANNOT recover from `git log` / `git diff` / `br show`: architecture or invariants you discovered through file exploration (with file:line pointers), decisions you made on ambiguous points and why, surprises (code that doesn't behave as its name suggests, hidden coupling, dead branches), and tentative suggestions for the next task based on what you now know — flag concerns, shortcuts, or pitfalls. Skip restating what you changed; the diff shows that.
+Transmit what you now know that you didn't when you started — the architecture you understand, the invariants you trust, the judgment calls you made. Use file:line pointers where they help. Be generous with what genuinely helps the next task, ruthless about what doesn't.
