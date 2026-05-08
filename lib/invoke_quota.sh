@@ -3,34 +3,65 @@
 # After an invocation fails, checks if it's due to hitting the usage limit using claude-usage.
 # If so, waits until the 5-hour usage window resets before retrying.
 # Handles no-data case (no active sessions) by proceeding anyway.
+#
+# Detects two distinct quota dimensions Anthropic exposes:
+#   * five_hour.utilization  — percentage 0-100, resets every 5h.
+#   * extra_usage            — paid overflow tier; utilization is a *fraction* 0-1
+#                              (different unit from five_hour). Exhausting this
+#                              also blocks invocation and surfaces as "You're
+#                              out of extra usage" with a five-hour reset time.
+# Either dimension being capped triggers the same wait on five_hour.resets_at,
+# since that is the next moment anything usable returns.
 
 # ── wait_for_quota ─────────────────────────────────────────────────────────────
 #
-# After a failure, check if usage limit is hit (100% used). If so, wait for reset.
-# Uses claude-usage to check availability and get reset time.
-# Returns 0 immediately if usage is available or no data is available.
+# After a failure, check if usage limit is hit. If so, wait for the 5-hour
+# window reset. Returns 0 immediately if usage is available or no data is
+# available (better to try and fail than hang).
 
 wait_for_quota() {
     while true; do
-        # Check if usage is exhausted (100% used)
-        local used_percent
-        used_percent=$(claude-usage --5-hour 2>/dev/null | jq -r '.used_percent // 0')
-
-        # If usage is not exhausted, proceed
-        if [[ "$used_percent" != "100" ]]; then
+        local raw
+        raw=$(claude-usage --raw 2>/dev/null)
+        if [[ -z "$raw" ]]; then
+            log "WARNING: Could not query usage status via claude-usage, proceeding anyway"
             return 0
         fi
 
-        # Usage is exhausted - get reset info
-        local reset_at reset_minutes
-        reset_at=$(claude-usage --5-hour 2>/dev/null | jq -r '.resets_at // empty')
-        reset_minutes=$(claude-usage --5-hour 2>/dev/null | jq -r '.resets_in_minutes // empty')
+        local five_hour_pct extra_enabled extra_util
+        five_hour_pct=$(printf '%s' "$raw" | jq -r '.five_hour.utilization // 0')
+        extra_enabled=$(printf '%s' "$raw" | jq -r '.extra_usage.is_enabled // false')
+        extra_util=$(printf '%s' "$raw" | jq -r '.extra_usage.utilization // 0')
 
-        # If we can't get usage info (no active sessions), proceed anyway
-        # Better to try and fail than hang indefinitely
-        if [[ -z "$reset_minutes" ]]; then
-            log "WARNING: Could not query usage status via claude-usage (no active sessions), proceeding anyway"
+        local capped
+        capped=$(awk \
+            -v fh="$five_hour_pct" \
+            -v ee="$extra_enabled" \
+            -v eu="$extra_util" \
+            'BEGIN { print (fh >= 100 || (ee == "true" && eu >= 1)) ? "1" : "0" }')
+
+        if [[ "$capped" != "1" ]]; then
             return 0
+        fi
+
+        # Cap hit — wait for the 5-hour reset (extra_usage has no separate reset).
+        # Pull reset_at + resets_in_minutes from --5-hour because that variant
+        # already computes the elapsed-minutes value cross-platform.
+        local five_hour_block reset_at reset_minutes
+        five_hour_block=$(claude-usage --5-hour 2>/dev/null)
+        reset_at=$(printf '%s' "$five_hour_block" | jq -r '.resets_at // empty')
+        reset_minutes=$(printf '%s' "$five_hour_block" | jq -r '.resets_in_minutes // empty')
+
+        if [[ -z "$reset_minutes" ]]; then
+            log "WARNING: Could not compute reset time, proceeding anyway"
+            return 0
+        fi
+
+        if [[ "$extra_enabled" == "true" ]] \
+            && awk -v eu="$extra_util" 'BEGIN { exit (eu >= 1) ? 0 : 1 }'; then
+            log "Quota cap: extra_usage exhausted (utilization=${extra_util})"
+        else
+            log "Quota cap: 5-hour usage at ${five_hour_pct}%"
         fi
 
         local wait_seconds=$((reset_minutes * 60))
