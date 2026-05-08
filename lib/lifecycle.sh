@@ -70,6 +70,23 @@ handle_interrupt() {
     exit 130
 }
 
+# ── exit_code_for_reason ───────────────────────────────────────────────────
+#
+# Map EXIT_REASON to a process exit code so that callers (notably the
+# queue parent) can tell "playlist finished cleanly" from "playlist
+# bailed out partway". Only the natural-completion reasons return 0;
+# everything else (cap limits, circuit OPEN, Claude retry exhaustion,
+# Ctrl+C) returns non-zero so the queue halts instead of advancing
+# past unfinished work.
+
+exit_code_for_reason() {
+    case "$EXIT_REASON" in
+        "Playlist complete"|"Dry run complete") echo 0 ;;
+        "No ready tasks"*) echo 0 ;;
+        *) echo 1 ;;
+    esac
+}
+
 cleanup() {
     local tasks="${total_tasks_completed:-0}"
     local loops="${total_loops:-0}"

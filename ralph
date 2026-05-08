@@ -51,3 +51,4 @@ else
     done
 fi
 save_state
+exit "$(exit_code_for_reason)"
