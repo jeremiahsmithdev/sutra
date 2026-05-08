@@ -235,6 +235,48 @@ playlist_report_data() {
     done
 }
 
+# ── peek_next_playlist_item ──────────────────────────────────────────────
+#
+# Description of the next actionable playlist line after the one currently
+# executing — full text, no truncation. Used by the handoff section of
+# prompt_bead.txt / prompt_raw.txt so the writer can preserve discovered
+# context oriented at what the NEXT agent will work on, not just summarise
+# what they did. Returns empty when not in playlist mode or when the current
+# line is the last actionable one (writer adapts: closing summary instead).
+
+peek_next_playlist_item() {
+    [[ -z "${PLAYLIST:-}" ]] && return
+    [[ ${#PLAYLIST_LINES[@]} -eq 0 ]] && return
+
+    local total=${#PLAYLIST_LINES[@]}
+    # _playlist_pending_line is 1-based and points just past the currently
+    # executing line; array indices to scan start there.
+    local idx="${_playlist_pending_line:-${playlist_line:-0}}"
+
+    while [[ $idx -lt $total ]]; do
+        local raw="${PLAYLIST_LINES[$idx]}"
+        idx=$((idx + 1))
+        local trimmed="${raw#"${raw%%[![:space:]]*}"}"
+        [[ -z "$trimmed" || "$trimmed" == \#* ]] && continue
+
+        if [[ "$trimmed" == ">"* ]]; then
+            local prompt_text="${trimmed#>}"
+            prompt_text="${prompt_text#"${prompt_text%%[![:space:]]*}"}"
+            printf '[prompt] %s' "$prompt_text"
+        else
+            local id="${trimmed%% @*}"
+            local title
+            title=$(get_bead_title "$id" 2>/dev/null)
+            if [[ -n "$title" ]]; then
+                printf '[bead] %s — %s' "$id" "$title"
+            else
+                printf '[bead] %s' "$id"
+            fi
+        fi
+        return
+    done
+}
+
 # ── playlist_epic_ids ─────────────────────────────────────────────────────
 #
 # Comma-separated list of unique parent epic IDs across all playlist beads.

@@ -19,9 +19,11 @@ build_prompt() {
     commit_rule=$(format_commit_rule)
     prior_task_context=$(format_prior_task_context)
 
-    local file_map playlist_progress
+    local file_map playlist_progress next_task_hint
     file_map=$(format_file_map)
     playlist_progress=$(format_playlist_progress)
+    next_task_hint=$(peek_next_playlist_item)
+    [[ -z "$next_task_hint" ]] && next_task_hint="(none — this is the last actionable line; write a closing summary for the human reviewer instead)"
 
     prompt=$(render_template "$TEMPLATES_DIR/prompt_bead.txt" \
         "TASK_ID=$task_id" \
@@ -30,7 +32,8 @@ build_prompt() {
         "BRANCH_SECTION=$branch_section" \
         "COMMIT_RULE=$commit_rule" \
         "FILE_MAP=$file_map" \
-        "PLAYLIST_PROGRESS=$playlist_progress")
+        "PLAYLIST_PROGRESS=$playlist_progress" \
+        "NEXT_TASK_HINT=$next_task_hint")
 
     clear_task_handoff
 }
@@ -48,11 +51,13 @@ build_raw_prompt() {
     recent_commits=$(git log --oneline -5 2>/dev/null || echo "(no commits)")
     prior_task_context=$(format_prior_task_context)
 
-    local file_map playlist_progress
+    local file_map playlist_progress next_task_hint
     file_map=$(format_file_map)
     # Type B (injection / @opus): drop ## In Progress; the prompt text is
     # already inline above, so the duplicate adds nothing.
     playlist_progress=$(format_playlist_progress false)
+    next_task_hint=$(peek_next_playlist_item)
+    [[ -z "$next_task_hint" ]] && next_task_hint="(none — this is the last actionable line; write a closing summary for the human reviewer instead)"
 
     prompt=$(render_template "$TEMPLATES_DIR/prompt_raw.txt" \
         "PROMPT_TEXT=$prompt_text" \
@@ -61,7 +66,8 @@ build_raw_prompt() {
         "CURRENT_BRANCH=$current_branch" \
         "RECENT_COMMITS=$recent_commits" \
         "FILE_MAP=$file_map" \
-        "PLAYLIST_PROGRESS=$playlist_progress")
+        "PLAYLIST_PROGRESS=$playlist_progress" \
+        "NEXT_TASK_HINT=$next_task_hint")
 
     clear_task_handoff
 }
