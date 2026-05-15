@@ -50,6 +50,28 @@ recount_playlist_total() {
     done
 }
 
+# ── playlist_current_position ─────────────────────────────────────────────
+#
+# Return the 1-indexed actionable-line position of the line currently
+# being executed. playlist_next() sets _playlist_pending_line to one past
+# the executing line, so we count actionables in PLAYLIST_LINES[0..pending).
+# Used by the LOOP banner so the display reflects playlist progress
+# rather than session-local invocation count, which resets on resume.
+
+playlist_current_position() {
+    local pos=0 idx=0
+    local limit="${_playlist_pending_line:-0}"
+    while (( idx < limit )); do
+        local line="${PLAYLIST_LINES[$idx]}"
+        local trimmed="${line#"${line%%[![:space:]]*}"}"
+        if [[ -n "$trimmed" && "$trimmed" != \#* ]]; then
+            pos=$((pos + 1))
+        fi
+        idx=$((idx + 1))
+    done
+    echo "$pos"
+}
+
 # ── playlist_next ──────────────────────────────────────────────────────────
 #
 # Advance past comments/blanks to the next actionable line.
@@ -162,7 +184,7 @@ playlist_execute_bead() {
     ann=$(format_annotation_display)
     log ""
     log "═══════════════════════════════════════════════════════"
-    log "  LOOP $((total_loops + 1))/$playlist_total  │  Task: $tid  │  Model: $MODEL${ann}"
+    log "  LOOP $(playlist_current_position)/$playlist_total  │  Task: $tid  │  Model: $MODEL${ann}"
     log "═══════════════════════════════════════════════════════"
     log ""
     claim_task "$tid"
@@ -191,7 +213,7 @@ playlist_execute_prompt() {
     ann=$(format_annotation_display)
     log ""
     log "═══════════════════════════════════════════════════════"
-    log "  LOOP $((total_loops + 1))/$playlist_total  │  Prompt  │  Model: $MODEL${ann}"
+    log "  LOOP $(playlist_current_position)/$playlist_total  │  Prompt  │  Model: $MODEL${ann}"
     log "═══════════════════════════════════════════════════════"
     log ""
     log "Prompt: ${C_BOLD}${playlist_current_line:0:80}${C_RESET}"
