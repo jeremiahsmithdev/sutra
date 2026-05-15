@@ -210,6 +210,7 @@ playlist_execute_prompt() {
 
     restore_line_overrides
     playlist_reload
+    capture_prompt_handoff "${playlist_line_gate_tag:-prompt}"
     total_tasks_completed=$((total_tasks_completed + 1))
     record_progress
     current_task=""

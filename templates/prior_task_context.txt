@@ -1,6 +1,6 @@
 
 ## Prior Task Context
-The previous bead ({{LAST_TASK_ID}}) closed with this summary from its own final output:
+The previous playlist item ({{LAST_TASK_ID}}) finished with this summary from its own final output:
 
 {{LAST_TASK_SUMMARY}}
 

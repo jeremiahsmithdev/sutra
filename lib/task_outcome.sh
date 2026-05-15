@@ -77,6 +77,19 @@ capture_task_handoff() {
     LAST_TASK_SUMMARY=$(extract_last_assistant_text "${INVOKE_LOG:-}")
 }
 
+# ── capture_prompt_handoff ────────────────────────────────────────────────
+#
+# Mirror of capture_task_handoff for `>` prompt and gate lines. Prompt
+# items have no bead, so we tag the handoff with a descriptive label
+# instead of an ID. The next prompt build renders it into "## Prior Task
+# Context" exactly the same way.
+
+capture_prompt_handoff() {
+    local label="${1:-prompt}"
+    LAST_TASK_ID="$label"
+    LAST_TASK_SUMMARY=$(extract_last_assistant_text "${INVOKE_LOG:-}")
+}
+
 # ── extract_last_assistant_text ───────────────────────────────────────────
 #
 # Read a stream-json log and return the last assistant text block in full.
