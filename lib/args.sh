@@ -48,6 +48,7 @@ parse_arg_flags() {
             --max-cost)    MAX_COST_USD="$2"; shift 2 ;;
             --playlist-branch) PLAYLIST_BRANCH_CLI="$2"; shift 2 ;;
             --yes|-y)      YES=true; PLAYLIST_AUTO_CONTINUE=true; shift ;;
+            --auto-reload) AUTO_RELOAD=true; shift ;;
             --monitor)     MONITOR_MODE=true; shift ;;
             --tmux|-t)     TMUX_MODE=true; shift ;;
             --init)        ACTION="init"; shift ;;

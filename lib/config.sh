@@ -112,6 +112,17 @@ PLAYLIST_BRANCH_CLI=""
 # File in the project root that persists loop state between runs.
 STATE_FILE=".ralph/state"
 
+# Re-exec the queue runner between entries when ralph's own source tree
+# moves to a new git SHA. Opt-in; off by default to avoid surprising
+# scripted runs. Set via --auto-reload. Only fires at queue boundaries
+# (not mid-playlist) — bash globals can't be safely re-sourced mid-flight.
+AUTO_RELOAD=false
+
+# Captured by the `ralph` top-level script before initialize(). Used by
+# the queue runner to detect that ralph's own source has been updated
+# since this process started.
+RALPH_START_SHA=""
+
 # Branch ralph creates its working branch from (e.g. "dev", "main").
 # Typically set per-project in .ralph/config. If unset, uses current branch.
 # WORKING_BRANCH=""

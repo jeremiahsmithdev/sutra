@@ -21,6 +21,8 @@ Usage: ralph [OPTIONS]
   --context-files LIST Comma-separated project files for prompt manifest
   --monitor            Live dashboard in a separate terminal
   --tmux, -t           Wrap execution in a detachable tmux session
+  --auto-reload        In --queue mode, re-exec ralph between entries if
+                       ralph's own source has moved to a new git SHA
   --remote [HOST], -r  Run on remote server via SSH+tmux
   --init               Create .ralph/ directory with default config
   --status             Print current state and exit

@@ -13,6 +13,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/loader.sh
 source "$SCRIPT_DIR/lib/loader.sh"
+RALPH_START_SHA="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || echo "")"
+RALPH_ARGV=("$@")
 initialize "$@"
 
 # ── Main loop ───────────────────────────────────────────────────────────────

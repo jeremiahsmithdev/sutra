@@ -101,7 +101,29 @@ run_queue_entry() {
     save_state
     if (( i < total - 1 )); then
         ensure_clean_tree "$entry" || return 1
+        maybe_reload_ralph
     fi
+}
+
+# ── maybe_reload_ralph ─────────────────────────────────────────────────────
+#
+# When --auto-reload is set, compare ralph's source SHA against the SHA
+# captured at startup. If different, exec the new ralph binary with the
+# original argv. Queue state is already persisted to disk; the fresh
+# process loads it and continues at queue_index.
+#
+# Only fires between queue entries — mid-playlist re-exec would lose the
+# child playlist's in-memory state (playlist_line is saved, but a child
+# already-running invoke_claude would be abandoned).
+
+maybe_reload_ralph() {
+    [[ "$AUTO_RELOAD" != "true" ]] && return 0
+    [[ -z "$RALPH_START_SHA" ]] && return 0
+    local current_sha
+    current_sha="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || echo "")"
+    [[ -z "$current_sha" || "$current_sha" == "$RALPH_START_SHA" ]] && return 0
+    log "Ralph source moved: ${RALPH_START_SHA:0:7} → ${current_sha:0:7}. Re-executing."
+    exec "$SCRIPT_DIR/ralph" "${RALPH_ARGV[@]}"
 }
 
 # ── run_queue ──────────────────────────────────────────────────────────────
