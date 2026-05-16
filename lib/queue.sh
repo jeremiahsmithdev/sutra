@@ -93,7 +93,11 @@ run_queue_entry() {
     local total="${#QUEUE_ENTRIES[@]}"
     log "── Queue $((i + 1))/$total: $entry"
     queue_entry_args "$entry"
-    if ! spawn_queue_child; then
+    queue_log_entry_start "$i" "$total" "$entry"
+    local child_status=0
+    spawn_queue_child || child_status=$?
+    queue_log_entry_finish "$entry" "$child_status"
+    if (( child_status != 0 )); then
         log "ERROR: Child ralph failed on entry: $entry"
         return 1
     fi
@@ -150,11 +154,14 @@ run_queue() {
     else
         log "=== Queue: $QUEUE_FILE ($total entries) ==="
     fi
+    queue_log_init
     local i
     for ((i = start; i < total; i++)); do
         run_queue_entry "$i" || return 1
     done
     queue_index=0
     save_state
+    queue_log_finish
     log "=== Queue complete: $total entries ==="
+    log "Queue log: $QUEUE_LOG"
 }

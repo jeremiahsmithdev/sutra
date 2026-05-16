@@ -188,7 +188,7 @@ save_state() {
     # progress. When we ARE the queue parent, fresh state is written below.
     local preserved_queue=""
     if [[ -z "${QUEUE_FILE:-}" && -f "$STATE_FILE" ]]; then
-        preserved_queue=$(grep -E '^(queue_file|queue_index)=' "$STATE_FILE" 2>/dev/null || true)
+        preserved_queue=$(grep -E '^(queue_file|queue_index|queue_log)=' "$STATE_FILE" 2>/dev/null || true)
     fi
 
     # Preserve playlist state if we're not in playlist mode (e.g. queue
@@ -242,7 +242,8 @@ save_state() {
         local queue_state
         queue_state=$(render_template "$TEMPLATES_DIR/state_queue.txt" \
             "QUEUE_FILE=${QUEUE_FILE}" \
-            "QUEUE_INDEX=${queue_index:-0}")
+            "QUEUE_INDEX=${queue_index:-0}" \
+            "QUEUE_LOG=${QUEUE_LOG:-}")
         printf '%s\n' "$queue_state" >> "$STATE_FILE"
     elif [[ -n "$preserved_queue" ]]; then
         printf '%s\n' "$preserved_queue" >> "$STATE_FILE"

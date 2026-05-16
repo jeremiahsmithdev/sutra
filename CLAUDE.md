@@ -274,6 +274,9 @@ On close, ralph adds the `verified:needs-review` label. Humans review with `bnr`
 Everything is captured to `.ralph/logs/`:
 - `sessions/<project>-<branch>-<timestamp>.log` — full stdout+stderr via `tee`.
 - `stream/<session>-<NNN>.jsonl` — raw `stream-json` per invocation, for diagnosis and replay.
+- `queue-<timestamp>.log` — `--queue` runs only: one high-level roll-up of all
+  playlists (branch, status, beads closed, commits, report path, cost).
+  Written by the parent process (`queue_log.sh`), which has no session log.
 
 Playlist progress snapshot: `.ralph/playlist-progress.md`.
 
