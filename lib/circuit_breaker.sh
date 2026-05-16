@@ -26,7 +26,7 @@ check_exit_conditions() {
     fi
 
     if cost_limit_exceeded; then
-        EXIT_REASON="Cost limit reached (\$${total_cost_usd} >= \$${MAX_COST_USD})"
+        EXIT_REASON="Cost limit reached (\$$(cost_so_far) >= \$${MAX_COST_USD})"
         log "ERROR: $EXIT_REASON"
         return 1
     fi
@@ -36,9 +36,16 @@ check_exit_conditions() {
 
 # Update circuit breaker based on bead status after Claude ran.
 # "in_progress" means Claude didn't close or release — no progress.
+# Cost charged against MAX_COST_USD: this entry's spend plus any prior
+# queue entries. On a single-playlist run queue_prior_cost is 0, so this
+# equals total_cost_usd.
+cost_so_far() {
+    awk "BEGIN {printf \"%.2f\", ${total_cost_usd:-0} + $(queue_prior_cost)}"
+}
+
 cost_limit_exceeded() {
     [[ "$MAX_COST_USD" == "0" ]] && return 1
-    awk "BEGIN {exit (${total_cost_usd:-0} >= $MAX_COST_USD) ? 0 : 1}"
+    awk "BEGIN {exit ($(cost_so_far) >= $MAX_COST_USD) ? 0 : 1}"
 }
 
 update_circuit_breaker() {

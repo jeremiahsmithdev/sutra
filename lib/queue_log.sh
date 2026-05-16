@@ -95,6 +95,21 @@ _queue_log_cost() {
     printf '  cost:    $%s\n' "$cost"
 }
 
+# ── queue_prior_cost ───────────────────────────────────────────────────────
+#
+# Cost already spent by queue entries that finished before the current
+# child. A child ralph re-execs with a zeroed total_cost_usd, so the
+# circuit breaker's cost cap would otherwise see only this entry's spend.
+# Summing the `  cost:` lines already in the queue log restores a
+# queue-wide figure. Returns 0 when there is no queue log — a
+# single-playlist run then behaves exactly as before.
+
+queue_prior_cost() {
+    local log="${queue_log:-$QUEUE_LOG}"
+    [[ -z "$log" || ! -f "$log" ]] && { echo 0; return; }
+    awk -F'$' '/^  cost:/ {s += $2} END {printf "%.2f", s + 0}' "$log"
+}
+
 # ── queue_log_finish ───────────────────────────────────────────────────────
 
 queue_log_finish() {
