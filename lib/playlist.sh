@@ -162,6 +162,7 @@ playlist_handle_dry_run() {
 playlist_execute() {
     if [[ "$playlist_line_type" == "bead" ]]; then
         if bead_already_closed "$playlist_current_line"; then
+            log "Skipped $playlist_current_line (already closed)"
             playlist_advance
             return 0
         fi
