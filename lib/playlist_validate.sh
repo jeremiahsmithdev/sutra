@@ -137,6 +137,7 @@ validate_prompt_dry_run() {
 # Print the final summary after dry-run walks the whole playlist.
 
 playlist_dry_run_summary() {
+    check_trailing_beads
     log ""
     log "PLAYLIST: $PLAYLIST ($_dry_run_count items: $_dry_run_beads beads + $_dry_run_prompts prompts)"
 
@@ -149,66 +150,6 @@ playlist_dry_run_summary() {
         done
     fi
 
-    # Gate analysis
+    # Gate analysis (report_gate_analysis lives in playlist_validate_gates.sh)
     report_gate_analysis
-}
-
-# ── report_gate_analysis ───────────────────────────────────────────────────
-#
-# Print gate density analysis from gate_check_playlist() and gate_minimum_rules().
-
-report_gate_analysis() {
-    local report
-    report=$(gate_check_playlist)
-
-    local beads gates
-    local -a tag_pairs
-    parse_gate_report "$report" beads gates tag_pairs
-
-    log ""
-    log "GATE ANALYSIS:"
-    if [[ $beads -gt 0 || $gates -gt 0 ]]; then
-        local ratio
-        if [[ $gates -gt 0 ]]; then
-            ratio=$((beads / gates))
-        else
-            ratio=0
-        fi
-        log "  Beads: $beads  |  Gates: $gates  |  Density: $ratio:1"
-    fi
-
-    # Show per-template counts if gates exist
-    if [[ ${#tag_pairs[@]} -gt 0 ]]; then
-        local tags_display=""
-        local tag_pair
-        for tag_pair in "${tag_pairs[@]}"; do
-            local tag="${tag_pair%%=*}" count="${tag_pair#*=}"
-            tags_display+="  #${tag}: $count"
-            [[ "$tag_pair" != "${tag_pairs[-1]}" ]] && tags_display+=" | "
-        done
-        [[ -n "$tags_display" ]] && log "$tags_display"
-    fi
-
-    # Check for violations
-    local violations
-    violations=$(gate_minimum_rules "$beads" "$gates" "${tag_pairs[@]}" 2>&1)
-
-    if [[ -n "$violations" ]]; then
-        local has_error=false
-        while IFS= read -r vline; do
-            if [[ "$vline" == ERROR:* ]]; then
-                has_error=true
-                log "  ${C_BOLD_RED}$vline${C_RESET}"
-            elif [[ "$vline" == WARNING:* ]]; then
-                log "  ${C_BOLD_YELLOW}$vline${C_RESET}"
-            fi
-        done <<< "$violations"
-
-        if [[ "$has_error" != true ]] && [[ -n "$violations" ]]; then
-            log "  ${C_BOLD_YELLOW}RECOMMENDATIONS:${C_RESET}"
-            log "    * Run 'ralph playlist init $PLAYLIST' to add quality gates"
-        fi
-    else
-        [[ $beads -gt 0 ]] && log "  ${C_GREEN}✓ Gate density OK${C_RESET}"
-    fi
 }

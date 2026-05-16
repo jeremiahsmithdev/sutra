@@ -45,6 +45,8 @@ source "$LIB_DIR/playlist.sh"
 source "$LIB_DIR/playlist_reload.sh"
 # shellcheck source=lib/playlist_validate.sh
 source "$LIB_DIR/playlist_validate.sh"
+# shellcheck source=lib/playlist_validate_gates.sh
+source "$LIB_DIR/playlist_validate_gates.sh"
 # shellcheck source=lib/playlist_init.sh
 source "$LIB_DIR/playlist_init.sh"
 # shellcheck source=lib/playlist_semantic.sh
