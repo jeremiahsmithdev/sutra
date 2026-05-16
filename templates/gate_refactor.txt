@@ -30,7 +30,13 @@ Adopt the perspective of a skeptical senior developer reviewing code from a juni
    - Duplicated code (DRY violations - Rule of Three)
    - Dead code from iteration pivots
    - Unclear naming from rapid development
-7. Critical code review — scrutinize for real issues:
+7. Check the parent epic for pre-flagged cleanup:
+   - Identify the epic owning this session's beads, then run `br show <epic-id> --json`
+   - Read its `notes` field — operators record known cleanup there
+   - Any dead code, symbol, or item the notes explicitly flag for refactor/cleanup
+     is **mandatory scope**: treat it exactly as if it appeared in the git diff,
+     even if this session never touched it
+8. Critical code review — scrutinize for real issues:
    - Reinventing the wheel: new code duplicating existing codebase functionality
    - Logic errors: off-by-one, wrong conditions, incorrect operators
    - Edge cases: null/empty handling, boundary conditions, error paths
