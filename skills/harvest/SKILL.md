@@ -288,7 +288,19 @@ For each finding, use AskUserQuestion to confirm classification:
 
 ### Step 5 — Generate harvest report
 
-Create report at `.ralph/harvests/<timestamp>-methodology.md`:
+**Write to the methodology codebase, not the execution project.** A methodology
+harvest analyses ralph's orchestration — its findings and beads concern the
+ralph codebase itself. The report and the self-improvement beads therefore
+belong in the **ralph repo** (the methodology codebase), NOT in the execution
+project whose `.ralph/queue` produced the run. Only the *code* harvest writes
+into the execution project.
+
+Resolve the ralph repo root (e.g. the directory containing `lib/loader.sh` and
+`ralph`) and create the report at `<ralph-repo>/.ralph/harvests/<timestamp>-methodology.md`.
+Create the epic and beads in the ralph repo's `.beads/` (run `br` from that
+directory). The run's completion report under the execution project's
+`.ralph/reports/` is still stamped in place (Step 7) — only the harvest
+artefacts move.
 
 ```markdown
 # Harvest <timestamp> — <playlist-name-or-session-id>
