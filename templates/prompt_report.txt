@@ -98,8 +98,8 @@ patterns across the run.]
    The verdict must be grounded in something you actually looked at.
 3. Be opinionated. Ralph already shows you the run timeline; what's
    missing from prior reports is judgment. That's your contribution.
-4. Commit the report:
-   `git add {{REPORT_DIR}} && git commit -m 'docs(ralph): playlist completion report'`
+4. Do NOT commit the report. Leave it on disk at `{{REPORT_FILE}}` as a session
+   artifact — the user decides whether to archive it.
 5. Do NOT modify any files other than the report. Do NOT run br write commands
    (no `br update`, `br create`, `br close` — read-only `br show` only).
 6. When done, just exit.
