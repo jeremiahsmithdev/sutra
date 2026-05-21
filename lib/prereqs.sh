@@ -82,13 +82,13 @@ detect_worktree() {
 
     log "Worktree mode: ${C_BOLD_CYAN}$worktree_path${C_RESET}"
     log "Main repo:     ${C_DIM}$main_path${C_RESET}"
-    log "Note: ${C_BOLD_YELLOW}.beads/ and .ralph/ are per-worktree${C_RESET} — bead state will not sync to other worktrees until \`.beads/issues.jsonl\` is committed and pulled."
+    log "Note: ${C_BOLD_YELLOW}.beads/ and .sutra/ are per-worktree${C_RESET} — bead state will not sync to other worktrees until \`.beads/issues.jsonl\` is committed and pulled."
 }
 
 # ── ensure_ralph_branch ───────────────────────────────────────────────────
 #
 # Ensure the dedicated "ralph" working branch exists and is checked out.
-# Creates it from WORKING_BRANCH (set in .ralph/config) or the current branch.
+# Creates it from WORKING_BRANCH (set in .sutra/config) or the current branch.
 
 ensure_correct_branch() {
     if [[ -n "$PLAYLIST_BRANCH" ]]; then

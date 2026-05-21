@@ -25,11 +25,11 @@ render_dashboard() {
 
 # ── read_dashboard_state ──────────────────────────────────────────────────
 #
-# Source .ralph/state and detect whether ralph is currently running.
+# Source .sutra/state and detect whether ralph is currently running.
 # Sets module-scoped globals consumed by the render_*_section functions.
 
 read_dashboard_state() {
-    local state_file="${STATE_FILE:-.ralph/state}"
+    local state_file="${STATE_FILE:-.sutra/state}"
     DB_circuit="—"; DB_loops="0"; DB_max="—"; DB_tasks="0"
     DB_cur=""; DB_start=""; DB_mdl="—"
 

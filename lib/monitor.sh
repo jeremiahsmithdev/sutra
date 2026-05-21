@@ -1,25 +1,25 @@
 # monitor.sh — Live dashboard entry point and run loop.
 #
-# Polls .ralph/state and beads every second via render_dashboard()
+# Polls .sutra/state and beads every second via render_dashboard()
 # (defined in monitor_render.sh). Launched via `ralph --monitor` in a
 # separate terminal.
 
 run_remote_monitor() {
     # shellcheck source=/dev/null
-    source .ralph_remote
+    source .sutra_remote
 
     if [[ -z "$REMOTE_HOST" || -z "$REMOTE_DIR" ]]; then
-        log "ERROR: Invalid .ralph_remote file"
+        log "ERROR: Invalid .sutra_remote file"
         return 1
     fi
 
     sync_ralph
     log "Monitoring remote ralph on ${C_BOLD_CYAN}${REMOTE_HOST}:${REMOTE_DIR}${C_RESET}"
-    ssh -t "$REMOTE_HOST" "cd '$REMOTE_DIR' && ~/.ralph/ralph --monitor"
+    ssh -t "$REMOTE_HOST" "cd '$REMOTE_DIR' && ~/.sutra/ralph --monitor"
 }
 
 run_monitor() {
-    if [[ -f ".ralph_remote" ]]; then
+    if [[ -f ".sutra_remote" ]]; then
         run_remote_monitor
         return $?
     fi

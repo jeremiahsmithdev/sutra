@@ -98,7 +98,7 @@ build_report_prompt() {
         "PLAYLIST_NAME=$(basename "$PLAYLIST")" \
         "TIMESTAMP=$(date '+%Y-%m-%d %H:%M')" \
         "MODEL=$MODEL" \
-        "RALPH_VERSION=$(ralph_version_string)" \
+        "SUTRA_VERSION=$(sutra_version_string)" \
         "EXIT_REASON=$EXIT_REASON" \
         "CIRCUIT=${circuit:-CLOSED}" \
         "TASKS_COMPLETED=$total_tasks_completed" \

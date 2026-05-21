@@ -77,7 +77,7 @@ show_prompt() {
 
 # ── State persistence ─────────────────────────────────────────────────────
 #
-# Ralph tracks its progress in a plain-text key=value file (.ralph/state).
+# Ralph tracks its progress in a plain-text key=value file (.sutra/state).
 # This lets it survive restarts and lets --status and --reset inspect or
 # clear state without running the loop.
 #
@@ -89,10 +89,10 @@ show_prompt() {
 # so Claude always starts with a clean tree.
 
 migrate_state_file() {
-    if [[ -f ".ralph_state" && ! -f ".ralph/state" ]]; then
-        mkdir -p .ralph
-        mv .ralph_state .ralph/state
-        log "Migrated .ralph_state → .ralph/state"
+    if [[ -f ".sutra_state" && ! -f ".sutra/state" ]]; then
+        mkdir -p .sutra
+        mv .sutra_state .sutra/state
+        log "Migrated .sutra_state → .sutra/state"
     fi
 }
 
@@ -102,7 +102,7 @@ migrate_state_file() {
 # whether a finding from an old run is already fixed in current ralph.
 # `--dirty` flags uncommitted edits — the recorded hash lies otherwise.
 
-ralph_version_string() {
+sutra_version_string() {
     local repo
     repo="$(dirname "$LIB_DIR")"
     git -C "$repo" describe --tags --always --dirty 2>/dev/null \
@@ -115,11 +115,11 @@ ralph_provenance_block() {
     branch="$(git -C "$repo" branch --show-current 2>/dev/null || echo "?")"
     cat <<EOF
 # === ralph session ===
-# ralph:    $(ralph_version_string) (branch: $branch)
-# invoked:  ralph ${RALPH_INVOKED_AS:-}
+# ralph:    $(sutra_version_string) (branch: $branch)
+# invoked:  ralph ${SUTRA_INVOKED_AS:-}
 # model:    ${MODEL:-haiku}
 # playlist: ${PLAYLIST:-(none)}
-# dev port: ${RALPH_DEV_PORT:-(unset)}
+# dev port: ${SUTRA_DEV_PORT:-(unset)}
 # started:  $(date -u +%Y-%m-%dT%H:%M:%SZ)
 # =====================
 EOF

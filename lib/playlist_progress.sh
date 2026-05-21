@@ -4,7 +4,7 @@
 # playlist_report_data(): text summary for the completion report prompt.
 # playlist_processed(): count of actionable lines processed so far.
 
-PROGRESS_FILE=".ralph/playlist-progress.md"
+PROGRESS_FILE=".sutra/playlist-progress.md"
 
 # ── playlist_write_progress ───────────────────────────────────────────────
 

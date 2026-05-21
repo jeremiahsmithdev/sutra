@@ -64,7 +64,7 @@ REMOTE_DIR=""
 
 # Comma-separated list of project files to include as a manifest in prompts.
 # Each file's first comment/docstring line is extracted as a purpose summary.
-# Set per-project in .ralph/config. Override with --context-files.
+# Set per-project in .sutra/config. Override with --context-files.
 CONTEXT_FILES=""
 
 # Minimum bead-to-gate ratio for playlist density warnings.
@@ -95,7 +95,7 @@ INJECTION_RATIO=0.25
 
 # When true, a playlist missing the ✓ VALIDATED: marker will proceed in
 # non-interactive mode (tmux, CI, remote) with a warning instead of halting.
-# Set in .ralph/config for CI/CD environments that self-validate externally.
+# Set in .sutra/config for CI/CD environments that self-validate externally.
 # Override with --yes on the CLI.
 PLAYLIST_AUTO_CONTINUE=false
 
@@ -110,7 +110,7 @@ PLAYLIST_BRANCH=""
 PLAYLIST_BRANCH_CLI=""
 
 # File in the project root that persists loop state between runs.
-STATE_FILE=".ralph/state"
+STATE_FILE=".sutra/state"
 
 # Re-exec the queue runner between entries when ralph's own source tree
 # moves to a new git SHA. Opt-in; off by default to avoid surprising
@@ -121,10 +121,10 @@ AUTO_RELOAD=false
 # Captured by the `ralph` top-level script before initialize(). Used by
 # the queue runner to detect that ralph's own source has been updated
 # since this process started.
-RALPH_START_SHA=""
+SUTRA_START_SHA=""
 
 # Branch ralph creates its working branch from (e.g. "dev", "main").
-# Typically set per-project in .ralph/config. If unset, uses current branch.
+# Typically set per-project in .sutra/config. If unset, uses current branch.
 # WORKING_BRANCH=""
 
 # Suppress neovim hook in non-interactive claude -p mode.
@@ -134,7 +134,7 @@ export OPEN_NVIM=false
 EXIT_REASON="unknown"
 
 # ── Per-project overrides ─────────────────────────────────────────────────
-# A .ralph/config in the project root can override any of the above defaults.
+# A .sutra/config in the project root can override any of the above defaults.
 # CLI args (see args.sh) override both defaults and project config.
 # shellcheck source=/dev/null
-if [[ -f ".ralph/config" ]]; then source ".ralph/config"; fi
+if [[ -f ".sutra/config" ]]; then source ".sutra/config"; fi

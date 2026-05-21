@@ -48,7 +48,7 @@ init_playlist_checksum() {
 # ── backup_playlist ───────────────────────────────────────────────────────
 
 backup_playlist() {
-    local backup=".ralph/playlist-backup-$(date +%s)"
+    local backup=".sutra/playlist-backup-$(date +%s)"
     cp "$PLAYLIST" "$backup"
     _playlist_backup_path="$backup"
 }

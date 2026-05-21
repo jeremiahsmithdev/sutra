@@ -39,11 +39,11 @@ init_invoke() {
     fi
 
     # Per-invocation stream-json logs (diagnosis + replay)
-    STREAM_LOG_DIR=".ralph/logs/stream"
+    STREAM_LOG_DIR=".sutra/logs/stream"
     mkdir -p "$STREAM_LOG_DIR"
 
     # Session log: full stdout+stderr capture (ANSI codes stripped for plain text)
-    SESSION_LOG_DIR=".ralph/logs/sessions"
+    SESSION_LOG_DIR=".sutra/logs/sessions"
     mkdir -p "$SESSION_LOG_DIR"
     SESSION_LOG="$SESSION_LOG_DIR/${SESSION_NAME}.log"
     ralph_provenance_block > "$SESSION_LOG"
@@ -58,13 +58,13 @@ init_invoke() {
 # Pick a stable per-session dev port so smoke tests in different worktrees
 # don't curl each other's apps. Hashed from the playlist branch (or git
 # branch in standard mode) so the same playlist resumes to the same port.
-# Templates consume this via $RALPH_DEV_PORT.
+# Templates consume this via $SUTRA_DEV_PORT.
 
 init_dev_port() {
     local key
     key="${PLAYLIST_BRANCH:-$(git branch --show-current 2>/dev/null || echo default)}"
-    RALPH_DEV_PORT=$((8000 + $(printf '%s' "$key" | cksum | awk '{print $1 % 1000}')))
-    export RALPH_DEV_PORT
+    SUTRA_DEV_PORT=$((8000 + $(printf '%s' "$key" | cksum | awk '{print $1 % 1000}')))
+    export SUTRA_DEV_PORT
 }
 
 # ── invoke_claude ───────────────────────────────────────────────────────────

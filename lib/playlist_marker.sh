@@ -44,7 +44,7 @@ prompt_for_validation() {
         fi
         log "ERROR: Playlist not validated and running non-interactively."
         log "  Run 'ralph playlist init $PLAYLIST' first, or:"
-        log "    set PLAYLIST_AUTO_CONTINUE=true in .ralph/config, or"
+        log "    set PLAYLIST_AUTO_CONTINUE=true in .sutra/config, or"
         log "    pass --yes to ralph on the CLI."
         exit 1
     fi

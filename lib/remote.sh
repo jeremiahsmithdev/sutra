@@ -6,21 +6,21 @@
 #
 # The --remote flow passes CLONE_URL, REMOTE_DIR, WORKING_BRANCH as
 # env vars to the remote, avoiding the chicken-and-egg problem of
-# needing .ralph/config before the repo is cloned.
+# needing .sutra/config before the repo is cloned.
 
 # ── sync_ralph ────────────────────────────────────────────────────────────
 #
 # Install or update ralph on the remote server by rsyncing the local
-# script directory to ~/.ralph/. Fast for repeat runs (unchanged files
+# script directory to ~/.sutra/. Fast for repeat runs (unchanged files
 # are skipped). Excludes .git and local state.
 
 sync_ralph() {
-    log "Syncing ralph to $REMOTE_HOST:~/.ralph/..."
+    log "Syncing ralph to $REMOTE_HOST:~/.sutra/..."
     rsync -az --delete \
         "$SCRIPT_DIR/" \
-        "$REMOTE_HOST:~/.ralph/" \
+        "$REMOTE_HOST:~/.sutra/" \
         --exclude '.git' \
-        --exclude '.ralph/state'
+        --exclude '.sutra/state'
 }
 
 # ── build_forward_args ────────────────────────────────────────────────────
@@ -101,9 +101,9 @@ run_remote() {
     fi
 
     # Save remote config locally so --monitor can find it
-    printf 'REMOTE_HOST=%s\nREMOTE_DIR=%s\n' "$REMOTE_HOST" "$REMOTE_DIR" > .ralph_remote
+    printf 'REMOTE_HOST=%s\nREMOTE_DIR=%s\n' "$REMOTE_HOST" "$REMOTE_DIR" > .sutra_remote
 
-    local ralph_cmd="~/.ralph/ralph ${args[*]}"
+    local ralph_cmd="~/.sutra/ralph ${args[*]}"
     local working_branch="${WORKING_BRANCH:-$current_branch}"
 
     log "Starting ralph on ${C_BOLD_CYAN}$REMOTE_HOST${C_RESET}..."

@@ -6,7 +6,7 @@
 # per playlist: branch, child exit status, beads closed, commits, and the
 # report file path. Per-loop detail stays in the child session logs.
 
-# QUEUE_LOG — path to the roll-up file. Persisted in .ralph/state so a
+# QUEUE_LOG — path to the roll-up file. Persisted in .sutra/state so a
 # resumed queue appends to the same file instead of starting a new one.
 QUEUE_LOG="${QUEUE_LOG:-}"
 
@@ -30,8 +30,8 @@ queue_log_init() {
     fi
 
     _queue_log_total_cost=0
-    mkdir -p ".ralph/logs"
-    QUEUE_LOG=".ralph/logs/queue-$(date +%Y%m%d-%H%M%S).log"
+    mkdir -p ".sutra/logs"
+    QUEUE_LOG=".sutra/logs/queue-$(date +%Y%m%d-%H%M%S).log"
     {
         printf 'Ralph queue run\n'
         printf 'Started:  %s\n' "$(date '+%Y-%m-%d %H:%M:%S')"
@@ -83,12 +83,12 @@ queue_log_entry_finish() {
 # ── _queue_log_cost ────────────────────────────────────────────────────────
 #
 # Report the child's cumulative cost and fold it into the queue total. The
-# child's total_cost_usd sits in .ralph/state until the parent's next
+# child's total_cost_usd sits in .sutra/state until the parent's next
 # save_state zeroes it — this runs inside that window.
 
 _queue_log_cost() {
     local cost
-    cost=$(grep -E '^total_cost_usd=' "${STATE_FILE:-.ralph/state}" 2>/dev/null \
+    cost=$(grep -E '^total_cost_usd=' "${STATE_FILE:-.sutra/state}" 2>/dev/null \
         | cut -d= -f2)
     cost="${cost:-0}"
     _queue_log_total_cost=$(awk "BEGIN {printf \"%.2f\", ${_queue_log_total_cost:-0} + $cost}")
@@ -198,7 +198,7 @@ _queue_log_branch_for() {
 _queue_log_latest_report() {
     local base
     base=$(basename "$1")
-    { ls -t ".ralph/reports/${base%.*}"-*.md 2>/dev/null | head -1; } || true
+    { ls -t ".sutra/reports/${base%.*}"-*.md 2>/dev/null | head -1; } || true
 }
 
 # ── _queue_log_duration ────────────────────────────────────────────────────

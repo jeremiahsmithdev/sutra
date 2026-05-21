@@ -19,17 +19,17 @@ init_for_early_claude() {
 }
 
 init_project() {
-    if [[ -f ".ralph/config" ]]; then
-        log "WARNING: .ralph/config already exists. Skipping."
+    if [[ -f ".sutra/config" ]]; then
+        log "WARNING: .sutra/config already exists. Skipping."
         exit 0
     fi
-    mkdir -p .ralph
-    cat "$TEMPLATES_DIR/config.template" > .ralph/config
-    log "Created .ralph/config"
+    mkdir -p .sutra
+    cat "$TEMPLATES_DIR/config.template" > .sutra/config
+    log "Created .sutra/config"
 }
 
 initialize() {
-    RALPH_INVOKED_AS="$*"
+    SUTRA_INVOKED_AS="$*"
     parse_args "$@"
     show_splash
     if [[ "$REMOTE_MODE" == "true" ]]; then run_remote; exit $?; fi
@@ -139,7 +139,7 @@ circuit_color() {
 # Called from cleanup() when playlist mode had at least 1 task processed.
 
 generate_playlist_report() {
-    local report_dir=".ralph/reports"
+    local report_dir=".sutra/reports"
     local playlist_basename
     playlist_basename=$(basename "$PLAYLIST" | sed 's/\.[^.]*$//')
     local timestamp

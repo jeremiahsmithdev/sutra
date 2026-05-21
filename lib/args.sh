@@ -35,7 +35,7 @@ parse_arg_flags() {
                 if [[ $# -gt 1 && ! "$2" =~ ^- ]]; then
                     QUEUE_FILE="$2"; shift 2
                 else
-                    QUEUE_FILE=".ralph/queue"; shift
+                    QUEUE_FILE=".sutra/queue"; shift
                 fi
                 ;;
             --resume|resume)
@@ -317,7 +317,7 @@ reset_state() {
     total_loops=0
     current_task=""
     queue_index=0
-    rm -f "$STATE_FILE" .ralph_remote
+    rm -f "$STATE_FILE" .sutra_remote
     save_state
     log "State reset."
 }

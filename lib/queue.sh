@@ -9,7 +9,7 @@
 FORWARDED_QUEUE_ARGS=()
 
 # queue_index — index of the next queue entry to run. Persisted in
-# .ralph/state alongside playlist progress so an interrupted queue
+# .sutra/state alongside playlist progress so an interrupted queue
 # resumes where it stopped instead of restarting at entry 0.
 queue_index=0
 
@@ -122,19 +122,19 @@ run_queue_entry() {
 
 maybe_reload_ralph() {
     [[ "$AUTO_RELOAD" != "true" ]] && return 0
-    [[ -z "$RALPH_START_SHA" ]] && return 0
+    [[ -z "$SUTRA_START_SHA" ]] && return 0
     local current_sha
     current_sha="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || echo "")"
-    [[ -z "$current_sha" || "$current_sha" == "$RALPH_START_SHA" ]] && return 0
-    log "Ralph source moved: ${RALPH_START_SHA:0:7} → ${current_sha:0:7}. Re-executing."
-    exec "$SCRIPT_DIR/ralph" "${RALPH_ARGV[@]}"
+    [[ -z "$current_sha" || "$current_sha" == "$SUTRA_START_SHA" ]] && return 0
+    log "Ralph source moved: ${SUTRA_START_SHA:0:7} → ${current_sha:0:7}. Re-executing."
+    exec "$SCRIPT_DIR/ralph" "${SUTRA_ARGV[@]}"
 }
 
 # ── run_queue ──────────────────────────────────────────────────────────────
 #
 # Walk QUEUE_ENTRIES, spawning one child ralph per entry. Halt on any
 # non-zero child exit or any dirty tree between entries. Resumes from
-# queue_index in .ralph/state when --queue points at the same file as
+# queue_index in .sutra/state when --queue points at the same file as
 # the previous run.
 
 run_queue() {
