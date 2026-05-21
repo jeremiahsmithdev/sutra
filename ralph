@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# ralph — deprecated alias for `sutra`. The project was renamed ralph -> sutra.
+#
+# This thin wrapper exists for one release cycle so existing scripts, cron
+# jobs, and muscle memory keep working. It emits a deprecation notice, sets
+# ALIAS_RALPH=1 (which makes `sutra` adopt a pre-rename .ralph/ state
+# directory and legacy RALPH_* env vars), then execs `sutra`.
+#
+# Removal target: dropped after the next release cycle. Update callers to
+# invoke `sutra` directly.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+printf '[deprecation] `ralph` was renamed to `sutra`. This alias is removed after one release cycle — update your scripts to call `sutra`.\n' >&2
+
+export ALIAS_RALPH=1
+exec "$SCRIPT_DIR/sutra" "$@"
