@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# ralph — Autonomous task executor. Loops Claude Code over beads issues.
+# sutra — Autonomous task executor. Loops Claude Code over beads issues.
 #
 # Deterministic outer loop. All intelligence lives in Claude Code (inner loop).
 # See PHILOSOPHY.md for why this is a bash script and not a framework.
 #
-# Usage: ralph [--dry-run] [--max-tasks N] [--max-loops N] [--timeout M]
+# Usage: sutra [--dry-run] [--max-tasks N] [--max-loops N] [--timeout M]
 #              [--model MODEL] [--scope PATTERN] [--playlist FILE]
 #              [--sandbox] [--monitor] [--tmux] [--remote [HOST]]
 #              [--status] [--reset] [-h|--help]

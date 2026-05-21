@@ -2,7 +2,7 @@
 #
 #   CLOSED    → normal operation
 #   HALF_OPEN → warning: 2 consecutive no-progress loops
-#   OPEN      → halted: 3 consecutive no-progress loops (ralph stops)
+#   OPEN      → halted: 3 consecutive no-progress loops (sutra stops)
 #
 # Progress = bead status changed (closed or open). No progress = still in_progress.
 

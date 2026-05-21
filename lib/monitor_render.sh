@@ -25,7 +25,7 @@ render_dashboard() {
 
 # ── read_dashboard_state ──────────────────────────────────────────────────
 #
-# Source .sutra/state and detect whether ralph is currently running.
+# Source .sutra/state and detect whether sutra is currently running.
 # Sets module-scoped globals consumed by the render_*_section functions.
 
 read_dashboard_state() {
@@ -47,14 +47,14 @@ read_dashboard_state() {
 
     DB_pl_file="${playlist_file:-}"
     DB_pl_line="${playlist_line:-0}"
-    DB_status=$(detect_ralph_status "$state_file")
+    DB_status=$(detect_sutra_status "$state_file")
 }
 
-# Determine whether ralph is running, stopped, or has no session.
-detect_ralph_status() {
+# Determine whether sutra is running, stopped, or has no session.
+detect_sutra_status() {
     local state_file="$1"
-    if pgrep -f "ralph.*--dangerously-skip-permissions" &>/dev/null \
-        || pgrep -f "^bash.*ralph$" &>/dev/null; then
+    if pgrep -f "sutra.*--dangerously-skip-permissions" &>/dev/null \
+        || pgrep -f "^bash.*sutra$" &>/dev/null; then
         echo "${C_BOLD_GREEN}RUNNING${C_RESET}"
     elif [[ -f "$state_file" ]]; then
         echo "${C_DIM}STOPPED${C_RESET}"
@@ -92,7 +92,7 @@ render_header_section() {
     local cb_display
     cb_display=$(format_circuit_breaker_display "$DB_circuit")
 
-    printf '%s╔══ RALPH MONITOR ═══════════════════════════════════════╗%s\n' "$C_BOLD_CYAN" "$C_RESET"
+    printf '%s╔══ SUTRA MONITOR ═══════════════════════════════════════╗%s\n' "$C_BOLD_CYAN" "$C_RESET"
     printf '%s║%s  Status:     %-43b%s║%s\n' "$C_CYAN" "$C_RESET" "$DB_status" "$C_CYAN" "$C_RESET"
     if [[ -n "$DB_pl_file" ]]; then
         local pl_basename="${DB_pl_file##*/}"

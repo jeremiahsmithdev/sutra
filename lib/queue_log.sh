@@ -1,6 +1,6 @@
 # queue_log.sh — High-level roll-up log for a --queue run.
 #
-# The queue parent process never sets up a SESSION_LOG (only child ralphs
+# The queue parent process never sets up a SESSION_LOG (only child sutras
 # do, in invoke.sh), so without this its progress vanishes with the
 # terminal. This module writes one durable file per queue run recording,
 # per playlist: branch, child exit status, beads closed, commits, and the
@@ -33,7 +33,7 @@ queue_log_init() {
     mkdir -p ".sutra/logs"
     QUEUE_LOG=".sutra/logs/queue-$(date +%Y%m%d-%H%M%S).log"
     {
-        printf 'Ralph queue run\n'
+        printf 'Sutra queue run\n'
         printf 'Started:  %s\n' "$(date '+%Y-%m-%d %H:%M:%S')"
         printf 'Queue:    %s (%d entries)\n\n' "$QUEUE_FILE" "${#QUEUE_ENTRIES[@]}"
     } > "$QUEUE_LOG"
@@ -98,7 +98,7 @@ _queue_log_cost() {
 # ── queue_prior_cost ───────────────────────────────────────────────────────
 #
 # Cost already spent by queue entries that finished before the current
-# child. A child ralph re-execs with a zeroed total_cost_usd, so the
+# child. A child sutra re-execs with a zeroed total_cost_usd, so the
 # circuit breaker's cost cap would otherwise see only this entry's spend.
 # Summing the `  cost:` lines already in the queue log restores a
 # queue-wide figure. Returns 0 when there is no queue log — a

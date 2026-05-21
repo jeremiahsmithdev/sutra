@@ -87,7 +87,7 @@ wait_for_quota() {
                 sleep $progress_interval
                 elapsed=$((elapsed + progress_interval))
                 local remaining_mins=$(((wait_seconds - elapsed) / 60))
-                printf '%s %s %s %s\n' "${C_DIM}[ralph $(date +%H:%M:%S)]" "${C_YELLOW}" "Still waiting... ${remaining_mins} minutes until usage window resets" "${C_RESET}"
+                printf '%s %s %s %s\n' "${C_DIM}[sutra $(date +%H:%M:%S)]" "${C_YELLOW}" "Still waiting... ${remaining_mins} minutes until usage window resets" "${C_RESET}"
             else
                 sleep $sleep_time
                 elapsed=$wait_seconds

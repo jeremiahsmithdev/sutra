@@ -1,4 +1,4 @@
-# splash.sh — ASCII art splash screen for ralph.
+# splash.sh — ASCII art splash screen for sutra.
 #
 # The character runs inside the hamster wheel. Art lives in
 # templates/splash.txt so it can be edited without touching shell code.

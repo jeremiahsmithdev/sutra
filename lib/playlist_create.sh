@@ -1,12 +1,12 @@
 # playlist_create.sh — Generate playlists via Claude and verify them.
 #
 # Entry point: run_playlist_create(), dispatched from args.sh when
-# `ralph playlist create` is invoked. Gathers beads, invokes Claude
+# `sutra playlist create` is invoked. Gathers beads, invokes Claude
 # to generate and write the playlist file, then pipes through run_playlist_init.
 
 # ── run_playlist_create ────────────────────────────────────────────────────
 #
-# Entry point for `ralph playlist create [ids...] [--epic epic-id] -o file`.
+# Entry point for `sutra playlist create [ids...] [--epic epic-id] -o file`.
 # Gathers beads, invokes Claude to generate and write the playlist,
 # then pipes through init for verification.
 

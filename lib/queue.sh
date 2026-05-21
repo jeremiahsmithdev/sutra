@@ -1,7 +1,7 @@
 # queue.sh — Sequential playlist execution from a queue file.
 #
 # read_queue_file parses lines into QUEUE_ENTRIES[]; run_queue spawns a
-# child ralph for each entry. Each child gets a clean session, branch,
+# child sutra for each entry. Each child gets a clean session, branch,
 # log dir, and completion report.
 
 # Initialise so callers under `set -u` can expand the array safely
@@ -17,7 +17,7 @@ queue_index=0
 #
 # Read QUEUE_FILE into QUEUE_ENTRIES[]. Comments and blank lines are
 # skipped. Lines beginning with "--" are kept verbatim (forwarded raw
-# as ralph args); other lines are treated as playlist paths.
+# as sutra args); other lines are treated as playlist paths.
 
 read_queue_file() {
     QUEUE_ENTRIES=()
@@ -43,7 +43,7 @@ require_queue_nonempty() {
 
 # ── queue_entry_args ───────────────────────────────────────────────────────
 #
-# Resolve a queue entry to argv for a child ralph invocation.
+# Resolve a queue entry to argv for a child sutra invocation.
 # "--"-prefixed lines split into raw args; bare paths become
 # "--playlist <path>".
 
@@ -60,7 +60,7 @@ queue_entry_args() {
 # ── spawn_queue_child ──────────────────────────────────────────────────────
 
 spawn_queue_child() {
-    "$SCRIPT_DIR/ralph" "${QUEUE_CHILD_ARGS[@]}" "${FORWARDED_QUEUE_ARGS[@]}"
+    "$SCRIPT_DIR/sutra" "${QUEUE_CHILD_ARGS[@]}" "${FORWARDED_QUEUE_ARGS[@]}"
 }
 
 # ── ensure_clean_tree ──────────────────────────────────────────────────────
@@ -98,21 +98,21 @@ run_queue_entry() {
     spawn_queue_child || child_status=$?
     queue_log_entry_finish "$entry" "$child_status"
     if (( child_status != 0 )); then
-        log "ERROR: Child ralph failed on entry: $entry"
+        log "ERROR: Child sutra failed on entry: $entry"
         return 1
     fi
     queue_index=$((i + 1))
     save_state
     if (( i < total - 1 )); then
         ensure_clean_tree "$entry" || return 1
-        maybe_reload_ralph
+        maybe_reload_sutra
     fi
 }
 
-# ── maybe_reload_ralph ─────────────────────────────────────────────────────
+# ── maybe_reload_sutra ─────────────────────────────────────────────────────
 #
-# When --auto-reload is set, compare ralph's source SHA against the SHA
-# captured at startup. If different, exec the new ralph binary with the
+# When --auto-reload is set, compare sutra's source SHA against the SHA
+# captured at startup. If different, exec the new sutra binary with the
 # original argv. Queue state is already persisted to disk; the fresh
 # process loads it and continues at queue_index.
 #
@@ -120,19 +120,19 @@ run_queue_entry() {
 # child playlist's in-memory state (playlist_line is saved, but a child
 # already-running invoke_claude would be abandoned).
 
-maybe_reload_ralph() {
+maybe_reload_sutra() {
     [[ "$AUTO_RELOAD" != "true" ]] && return 0
     [[ -z "$SUTRA_START_SHA" ]] && return 0
     local current_sha
     current_sha="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || echo "")"
     [[ -z "$current_sha" || "$current_sha" == "$SUTRA_START_SHA" ]] && return 0
-    log "Ralph source moved: ${SUTRA_START_SHA:0:7} → ${current_sha:0:7}. Re-executing."
-    exec "$SCRIPT_DIR/ralph" "${SUTRA_ARGV[@]}"
+    log "Sutra source moved: ${SUTRA_START_SHA:0:7} → ${current_sha:0:7}. Re-executing."
+    exec "$SCRIPT_DIR/sutra" "${SUTRA_ARGV[@]}"
 }
 
 # ── run_queue ──────────────────────────────────────────────────────────────
 #
-# Walk QUEUE_ENTRIES, spawning one child ralph per entry. Halt on any
+# Walk QUEUE_ENTRIES, spawning one child sutra per entry. Halt on any
 # non-zero child exit or any dirty tree between entries. Resumes from
 # queue_index in .sutra/state when --queue points at the same file as
 # the previous run.

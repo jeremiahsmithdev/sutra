@@ -1,21 +1,21 @@
 # remote.sh — Remote execution and tmux session management.
 #
 # Two entry points:
-#   ralph --remote HOST  → push, sync tool, SSH once to run ralph --tmux
-#   ralph --tmux         → ensure repo, wrap execution in tmux session
+#   sutra --remote HOST  → push, sync tool, SSH once to run sutra --tmux
+#   sutra --tmux         → ensure repo, wrap execution in tmux session
 #
 # The --remote flow passes CLONE_URL, REMOTE_DIR, WORKING_BRANCH as
 # env vars to the remote, avoiding the chicken-and-egg problem of
 # needing .sutra/config before the repo is cloned.
 
-# ── sync_ralph ────────────────────────────────────────────────────────────
+# ── sync_sutra ────────────────────────────────────────────────────────────
 #
-# Install or update ralph on the remote server by rsyncing the local
+# Install or update sutra on the remote server by rsyncing the local
 # script directory to ~/.sutra/. Fast for repeat runs (unchanged files
 # are skipped). Excludes .git and local state.
 
-sync_ralph() {
-    log "Syncing ralph to $REMOTE_HOST:~/.sutra/..."
+sync_sutra() {
+    log "Syncing sutra to $REMOTE_HOST:~/.sutra/..."
     rsync -az --delete \
         "$SCRIPT_DIR/" \
         "$REMOTE_HOST:~/.sutra/" \
@@ -43,8 +43,8 @@ build_forward_args() {
 #
 # Entry point for --remote mode:
 #   1. Push current branch to origin
-#   2. Sync ralph tool to remote server
-#   3. Single SSH call with env vars to run ralph --tmux
+#   2. Sync sutra tool to remote server
+#   3. Single SSH call with env vars to run sutra --tmux
 
 run_remote() {
     if [[ -z "$REMOTE_HOST" ]]; then
@@ -88,8 +88,8 @@ run_remote() {
         exit 1
     }
 
-    # Step 2: Sync ralph tool to remote
-    sync_ralph
+    # Step 2: Sync sutra tool to remote
+    sync_sutra
 
     # Step 3: Build args and SSH once
     build_forward_args
@@ -103,15 +103,15 @@ run_remote() {
     # Save remote config locally so --monitor can find it
     printf 'REMOTE_HOST=%s\nREMOTE_DIR=%s\n' "$REMOTE_HOST" "$REMOTE_DIR" > .sutra_remote
 
-    local ralph_cmd="~/.sutra/ralph ${args[*]}"
+    local sutra_cmd="~/.sutra/sutra ${args[*]}"
     local working_branch="${WORKING_BRANCH:-$current_branch}"
 
-    log "Starting ralph on ${C_BOLD_CYAN}$REMOTE_HOST${C_RESET}..."
+    log "Starting sutra on ${C_BOLD_CYAN}$REMOTE_HOST${C_RESET}..."
     ssh -t "$REMOTE_HOST" "\
         export CLONE_URL='$clone_url' \
                REMOTE_DIR='$REMOTE_DIR' \
                WORKING_BRANCH='$working_branch'; \
-        $ralph_cmd"
+        $sutra_cmd"
 }
 
 # ── ensure_remote_repo ────────────────────────────────────────────────────
@@ -149,7 +149,7 @@ ensure_remote_repo() {
 #   1. Triggered by --remote: CLONE_URL is set → clone/fetch repo first
 #   2. Manual SSH: user is already in project dir → skip repo setup
 #
-# Creates a tmux session named "ralph" and runs the loop inside it.
+# Creates a tmux session named "sutra" and runs the loop inside it.
 
 run_tmux() {
     if ! command -v tmux &>/dev/null; then
@@ -163,17 +163,17 @@ run_tmux() {
     fi
 
     # Check for existing tmux session
-    if tmux has-session -t ralph 2>/dev/null; then
-        log "ERROR: Ralph is already running in tmux session 'ralph'"
-        log "  Attach:  tmux attach -t ralph"
-        log "  Kill:    tmux kill-session -t ralph"
+    if tmux has-session -t sutra 2>/dev/null; then
+        log "ERROR: Sutra is already running in tmux session 'sutra'"
+        log "  Attach:  tmux attach -t sutra"
+        log "  Kill:    tmux kill-session -t sutra"
         exit 1
     fi
 
-    # Build the inner ralph command (without --tmux or --remote)
+    # Build the inner sutra command (without --tmux or --remote)
     build_forward_args
-    local ralph_path="$SCRIPT_DIR/ralph"
-    local ralph_cmd="'$ralph_path' ${FORWARD_ARGS[*]}"
+    local sutra_path="$SCRIPT_DIR/sutra"
+    local sutra_cmd="'$sutra_path' ${FORWARD_ARGS[*]}"
 
     # cd to REMOTE_DIR if set (remote case), otherwise stay in CWD
     local cd_cmd=""
@@ -182,10 +182,10 @@ run_tmux() {
         cd_cmd="cd '$expanded_dir' && "
     fi
 
-    log "Creating tmux session ${C_BOLD_CYAN}ralph${C_RESET}..."
-    tmux new-session -d -s ralph
-    tmux send-keys -t ralph "${cd_cmd}${ralph_cmd}" Enter
+    log "Creating tmux session ${C_BOLD_CYAN}sutra${C_RESET}..."
+    tmux new-session -d -s sutra
+    tmux send-keys -t sutra "${cd_cmd}${sutra_cmd}" Enter
 
     log "Attaching — detach with ${C_BOLD}Ctrl+B, D${C_RESET}"
-    tmux attach -t ralph
+    tmux attach -t sutra
 }

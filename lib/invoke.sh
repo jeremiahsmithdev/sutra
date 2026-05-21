@@ -46,7 +46,7 @@ init_invoke() {
     SESSION_LOG_DIR=".sutra/logs/sessions"
     mkdir -p "$SESSION_LOG_DIR"
     SESSION_LOG="$SESSION_LOG_DIR/${SESSION_NAME}.log"
-    ralph_provenance_block > "$SESSION_LOG"
+    sutra_provenance_block > "$SESSION_LOG"
     printf '\n' >> "$SESSION_LOG"
     # Output to terminal with colors, log file with ANSI codes stripped
     # tee writes to both the terminal (colored) and a pipe that strips codes for the log

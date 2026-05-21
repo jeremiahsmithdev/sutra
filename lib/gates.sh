@@ -1,7 +1,7 @@
 # gates.sh — Quality gate template system for playlist prompts.
 #
 # Gate tags (#SMOKE_TEST, #COMPLETENESS_SCAN, #REVIEW) are shorthand in
-# playlist files that ralph expands at runtime, same as @opus resolves
+# playlist files that sutra expands at runtime, same as @opus resolves
 # the model. The playlist file is never modified by expansion.
 
 declare -A GATE_TEMPLATES

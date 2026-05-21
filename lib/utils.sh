@@ -29,7 +29,7 @@ C_BOLD_MAGENTA=$'\033[1;35m'
 # Print a timestamped message to stdout with automatic coloring.
 # ERROR: → red, WARNING: → yellow, success keywords → green.
 log() {
-    local ts="${C_DIM}[ralph $(date +%H:%M:%S)]${C_RESET}"
+    local ts="${C_DIM}[sutra $(date +%H:%M:%S)]${C_RESET}"
     local msg="$*"
 
     case "$msg" in
@@ -77,7 +77,7 @@ show_prompt() {
 
 # ── State persistence ─────────────────────────────────────────────────────
 #
-# Ralph tracks its progress in a plain-text key=value file (.sutra/state).
+# Sutra tracks its progress in a plain-text key=value file (.sutra/state).
 # This lets it survive restarts and lets --status and --reset inspect or
 # clear state without running the loop.
 #
@@ -96,10 +96,10 @@ migrate_state_file() {
     fi
 }
 
-# ── ralph self-provenance ─────────────────────────────────────────────────
+# ── sutra self-provenance ─────────────────────────────────────────────────
 #
-# Record which ralph commit produced this session, so harvest can tell
-# whether a finding from an old run is already fixed in current ralph.
+# Record which sutra commit produced this session, so harvest can tell
+# whether a finding from an old run is already fixed in current sutra.
 # `--dirty` flags uncommitted edits — the recorded hash lies otherwise.
 
 sutra_version_string() {
@@ -109,14 +109,14 @@ sutra_version_string() {
         || echo "unknown"
 }
 
-ralph_provenance_block() {
+sutra_provenance_block() {
     local repo branch
     repo="$(dirname "$LIB_DIR")"
     branch="$(git -C "$repo" branch --show-current 2>/dev/null || echo "?")"
     cat <<EOF
-# === ralph session ===
-# ralph:    $(sutra_version_string) (branch: $branch)
-# invoked:  ralph ${SUTRA_INVOKED_AS:-}
+# === sutra session ===
+# sutra:    $(sutra_version_string) (branch: $branch)
+# invoked:  sutra ${SUTRA_INVOKED_AS:-}
 # model:    ${MODEL:-haiku}
 # playlist: ${PLAYLIST:-(none)}
 # dev port: ${SUTRA_DEV_PORT:-(unset)}
@@ -130,7 +130,7 @@ commit_beads_if_dirty() {
         return   # nothing dirty
     fi
     git add .beads/ 2>/dev/null
-    git commit --no-verify -m "chore(ralph): sync beads state" .beads/ 2>/dev/null || true
+    git commit --no-verify -m "chore(sutra): sync beads state" .beads/ 2>/dev/null || true
 }
 
 # Read state from disk, or initialise defaults if no state file exists.
@@ -167,7 +167,7 @@ load_state() {
         fi
     fi
 
-    # Always reset session counters — each `ralph` invocation is a new session.
+    # Always reset session counters — each `sutra` invocation is a new session.
     # Use local time with RFC3339 offset to match beads' closed_at format.
     # BSD date gives +0530; sed inserts the colon for RFC3339 (+05:30).
     session_start=$(date +%Y-%m-%dT%H:%M:%S%z | sed 's/\(..\)$/:\1/')

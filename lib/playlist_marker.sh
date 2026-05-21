@@ -43,14 +43,14 @@ prompt_for_validation() {
             return
         fi
         log "ERROR: Playlist not validated and running non-interactively."
-        log "  Run 'ralph playlist init $PLAYLIST' first, or:"
+        log "  Run 'sutra playlist init $PLAYLIST' first, or:"
         log "    set PLAYLIST_AUTO_CONTINUE=true in .sutra/config, or"
-        log "    pass --yes to ralph on the CLI."
+        log "    pass --yes to sutra on the CLI."
         exit 1
     fi
 
     log "WARNING: Playlist not validated."
-    printf '%s\n' "  Run 'ralph playlist init $PLAYLIST' to validate and add quality gates."
+    printf '%s\n' "  Run 'sutra playlist init $PLAYLIST' to validate and add quality gates."
     printf '%s' "  Continue anyway? [y/N] "
 
     local answer
@@ -98,7 +98,7 @@ add_validation_marker() {
 
     local timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    local marker="# ✓ VALIDATED: $timestamp by ralph playlist init"
+    local marker="# ✓ VALIDATED: $timestamp by sutra playlist init"
 
     # Create temp file with marker inserted
     local temp_file

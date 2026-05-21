@@ -1,4 +1,4 @@
-# config.sh — Default configuration values for ralph.
+# config.sh — Default configuration values for sutra.
 #
 # These globals are the starting state before argument parsing overrides them.
 # Every variable here can be changed via CLI flags (see args.sh).
@@ -20,7 +20,7 @@ MAX_TURNS=100
 SCOPE=""
 
 # Path to a playlist file for ordered task execution.
-# When set, ralph executes tasks in file order instead of using br ready.
+# When set, sutra executes tasks in file order instead of using br ready.
 # Mutually exclusive with --scope.
 PLAYLIST=""
 
@@ -30,7 +30,7 @@ PLAYLIST=""
 # The outer loop does not commit on Claude's behalf in playlist mode.
 AUTO_COMMIT=true
 
-# When true, ralph shows the next task and exits without invoking Claude.
+# When true, sutra shows the next task and exits without invoking Claude.
 DRY_RUN=false
 
 # Claude model to use for inner loop invocations.
@@ -43,10 +43,10 @@ SANDBOX_MODE=false
 # When true, show live monitoring dashboard instead of running the loop.
 MONITOR_MODE=false
 
-# When true, run ralph on a remote server via SSH+tmux.
+# When true, run sutra on a remote server via SSH+tmux.
 REMOTE_MODE=false
 
-# When true, wrap ralph execution in a detachable tmux session.
+# When true, wrap sutra execution in a detachable tmux session.
 # Used standalone (manual SSH) or triggered by --remote.
 TMUX_MODE=false
 
@@ -112,14 +112,14 @@ PLAYLIST_BRANCH_CLI=""
 # File in the project root that persists loop state between runs.
 STATE_FILE=".sutra/state"
 
-# Re-exec the queue runner between entries when ralph's own source tree
+# Re-exec the queue runner between entries when sutra's own source tree
 # moves to a new git SHA. Opt-in; off by default to avoid surprising
 # scripted runs. Set via --auto-reload. Only fires at queue boundaries
 # (not mid-playlist) — bash globals can't be safely re-sourced mid-flight.
 AUTO_RELOAD=false
 
-# Captured by the `ralph` top-level script before initialize(). Used by
-# the queue runner to detect that ralph's own source has been updated
+# Captured by the `sutra` top-level script before initialize(). Used by
+# the queue runner to detect that sutra's own source has been updated
 # since this process started.
 SUTRA_START_SHA=""
 

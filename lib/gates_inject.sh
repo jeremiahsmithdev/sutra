@@ -1,6 +1,6 @@
 # gates_inject.sh — Inject missing gate lines into playlist files.
 #
-# Called by playlist authoring tools (ralph playlist init, playlist create).
+# Called by playlist authoring tools (sutra playlist init, playlist create).
 # Inserts tactical gates (SMOKE_TEST, COMPLETENESS_SCAN, REVIEW) at
 # density-based intervals and tail gates (REFACTOR, DOCUMENT) at the end.
 

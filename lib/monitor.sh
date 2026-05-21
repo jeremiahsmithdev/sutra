@@ -1,7 +1,7 @@
 # monitor.sh — Live dashboard entry point and run loop.
 #
 # Polls .sutra/state and beads every second via render_dashboard()
-# (defined in monitor_render.sh). Launched via `ralph --monitor` in a
+# (defined in monitor_render.sh). Launched via `sutra --monitor` in a
 # separate terminal.
 
 run_remote_monitor() {
@@ -13,9 +13,9 @@ run_remote_monitor() {
         return 1
     fi
 
-    sync_ralph
-    log "Monitoring remote ralph on ${C_BOLD_CYAN}${REMOTE_HOST}:${REMOTE_DIR}${C_RESET}"
-    ssh -t "$REMOTE_HOST" "cd '$REMOTE_DIR' && ~/.sutra/ralph --monitor"
+    sync_sutra
+    log "Monitoring remote sutra on ${C_BOLD_CYAN}${REMOTE_HOST}:${REMOTE_DIR}${C_RESET}"
+    ssh -t "$REMOTE_HOST" "cd '$REMOTE_DIR' && ~/.sutra/sutra --monitor"
 }
 
 run_monitor() {

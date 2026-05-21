@@ -92,7 +92,7 @@ report_gate_analysis() {
 
         if [[ "$has_error" != true ]] && [[ -n "$violations" ]]; then
             log "  ${C_BOLD_YELLOW}RECOMMENDATIONS:${C_RESET}"
-            log "    * Run 'ralph playlist init $PLAYLIST' to add quality gates"
+            log "    * Run 'sutra playlist init $PLAYLIST' to add quality gates"
         fi
     else
         [[ $beads -gt 0 ]] && log "  ${C_GREEN}✓ Gate density OK${C_RESET}"

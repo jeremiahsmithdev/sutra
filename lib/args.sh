@@ -71,7 +71,7 @@ parse_arg_flags() {
                             PLAYLIST="$3"
                             shift 3
                         else
-                            log "ERROR: Usage: ralph playlist init <file>"
+                            log "ERROR: Usage: sutra playlist init <file>"
                             exit 1
                         fi
                         ;;
@@ -82,7 +82,7 @@ parse_arg_flags() {
                         return
                         ;;
                     *)
-                        log "ERROR: Usage: ralph playlist {init|create}"
+                        log "ERROR: Usage: sutra playlist {init|create}"
                         exit 1
                         ;;
                 esac
@@ -97,7 +97,7 @@ parse_arg_flags() {
 
 # ── parse_playlist_create_args ─────────────────────────────────────────────
 #
-# Parse arguments for "ralph playlist create <ids...> --epic <epic-id> -o <file>".
+# Parse arguments for "sutra playlist create <ids...> --epic <epic-id> -o <file>".
 # Sets globals: PLAYLIST_CREATE_BEADS[], PLAYLIST_CREATE_EPICS[], OUTPUT_FILE
 
 parse_playlist_create_args() {
@@ -151,7 +151,7 @@ parse_playlist_create_args() {
 
 # ── resolve_resume_action ──────────────────────────────────────────────────
 #
-# `ralph resume` / `ralph --resume` — figure out what was running last
+# `sutra resume` / `sutra --resume` — figure out what was running last
 # and dispatch to the right mode. Queue takes precedence over playlist
 # because a queue parent's state coexists with the last child's playlist
 # state; resuming the queue restarts the right child, which then reads
@@ -190,8 +190,8 @@ resolve_resume_action() {
     fi
 
     log "ERROR: No queue_file or playlist_file in $STATE_FILE — nothing to resume."
-    log "  Start a queue with: ralph --queue <file>"
-    log "  Start a playlist with: ralph --playlist <file>"
+    log "  Start a queue with: sutra --queue <file>"
+    log "  Start a playlist with: sutra --playlist <file>"
     exit 1
 }
 
@@ -266,7 +266,7 @@ dispatch_early_exit_action() {
 #
 # Build FORWARDED_QUEUE_ARGS by stripping --queue (and its optional
 # value) from the parent's argv. Everything else (--max-cost, --model,
-# --remote, …) propagates to each child ralph invocation.
+# --remote, …) propagates to each child sutra invocation.
 
 build_forwarded_queue_args() {
     FORWARDED_QUEUE_ARGS=()
@@ -304,7 +304,7 @@ show_status() {
         log "Current state:"
         cat "$STATE_FILE"
     else
-        log "No state file. Ralph has not run here."
+        log "No state file. Sutra has not run here."
     fi
 }
 

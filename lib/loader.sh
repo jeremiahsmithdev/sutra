@@ -1,7 +1,7 @@
-# loader.sh — Source all ralph components.
+# loader.sh — Source all sutra components.
 #
 # Centralises the source directives and shellcheck hints so the
-# main ralph file stays clean. Order matters: config and utils
+# main sutra file stays clean. Order matters: config and utils
 # must load before anything that calls log() or reads config vars.
 
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,4 +1,4 @@
-# playlist_init.sh — ralph playlist init: syntax + gate + semantic validation.
+# playlist_init.sh — sutra playlist init: syntax + gate + semantic validation.
 #
 # Phase 1: deterministic checks (line syntax + gate density).
 # Phase 2: Claude-assisted semantic validation and gate injection.
