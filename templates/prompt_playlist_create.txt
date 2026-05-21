@@ -1,4 +1,4 @@
-Generate a ralph playlist file and write it to: {{OUTPUT_FILE}}
+Generate a sutra playlist file and write it to: {{OUTPUT_FILE}}
 
 ORDER the beads by dependency — foundational work before dependent work.
 

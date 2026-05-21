@@ -1,4 +1,4 @@
-You are executing a single task from a beads issue tracker as part of an automated ralph loop.
+You are executing a single task from a beads issue tracker as part of an automated sutra loop.
 
 ## Your Task
 ID: {{TASK_ID}}
@@ -21,7 +21,7 @@ Before implementing, orient yourself to what the previous bead left behind:
 {{BRANCH_SECTION}}
 
 ## Rules
-1. **Use `$RALPH_DEV_PORT` for every dev server, listener, and curl.** Bind to and target `localhost:$RALPH_DEV_PORT` (env var, set by ralph for this session). Never hardcode `:5000`, `:8080`, `:3000`, etc. — another worktree's app may be on the default port and silent cross-contamination is the failure mode this prevents. The literal string `:8080` (or `:5000`, `:3000`) MUST NOT appear in any command you run when `$RALPH_DEV_PORT` is set.
+1. **Use `$SUTRA_DEV_PORT` for every dev server, listener, and curl.** Bind to and target `localhost:$SUTRA_DEV_PORT` (env var, set by sutra for this session). Never hardcode `:5000`, `:8080`, `:3000`, etc. — another worktree's app may be on the default port and silent cross-contamination is the failure mode this prevents. The literal string `:8080` (or `:5000`, `:3000`) MUST NOT appear in any command you run when `$SUTRA_DEV_PORT` is set.
 2. Implement this ONE task completely. Do not work on other tasks.
 3. Search the codebase before assuming anything about structure.
 4. Run tests or manual verification after implementation.

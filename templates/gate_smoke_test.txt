@@ -16,7 +16,7 @@ to the Checks section.
    and the main checkout is also serving on the default port. Procedure:
    * Run `git worktree list` — if more than one entry exists, treat the
      default port as potentially taken.
-   * If `RALPH_DEV_PORT` is set in the environment, use it.
+   * If `SUTRA_DEV_PORT` is set in the environment, use it.
    * Otherwise probe with `lsof -i :<default-port>` (or `nc -z localhost <port>`)
      and pick the first free port at or above the default. Pass it via
      the framework's standard env var or flag (`PORT=<n>`, `--port <n>`,
@@ -49,13 +49,13 @@ to the Checks section.
 br create --type=bug --title "SMOKE: preconditions failed — <which step>"
 ```
 Append the bead ID to the playlist file as a **bare ID on its own line** —
-ralph's parser only recognises that form. Then stop. Do NOT attempt any checks.
+sutra's parser only recognises that form. Then stop. Do NOT attempt any checks.
 
 ```
-# Correct — ralph will pick this up on the next loop:
+# Correct — sutra will pick this up on the next loop:
 chippie-ow6k
 
-# Wrong — ralph treats the whole bullet as the task identifier and the
+# Wrong — sutra treats the whole bullet as the task identifier and the
 # claim returns status 'unknown':
 * [bead] chippie-ow6k — SMOKE precondition failure: missing module
 ```
@@ -100,7 +100,7 @@ If ANY check failed:
 * create beads (type=bug only) with `br create`, one per distinct root cause
 * append each bead ID to the playlist file **as a bare ID on its own line**
   (one line per bead, no `* [bead]` prefix, no title suffix — see the
-  precondition-failure example above for the exact format ralph parses)
+  precondition-failure example above for the exact format sutra parses)
 
 ## Teardown
 

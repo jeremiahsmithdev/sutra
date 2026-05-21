@@ -131,7 +131,7 @@ format_branch_instructions() {
         epic:*:sutra)
             local epic_branch="${branch_ctx#epic:}"
             epic_branch="${epic_branch%:sutra}"
-            render_template "$TEMPLATES_DIR/branch_epic_ralph.txt" \
+            render_template "$TEMPLATES_DIR/branch_epic_sutra.txt" \
                 "EPIC_BRANCH=$epic_branch"
             ;;
         epic:*:*)

@@ -1,4 +1,4 @@
-You are generating a completion report for a ralph playlist run. Your job
+You are generating a completion report for a sutra playlist run. Your job
 is not to log what happened — that's already captured below. Your job is
 to render an OPINIONATED VERDICT on whether the implementation is sound,
 based on first-hand inspection of the playlist intent and the resulting code.
@@ -48,8 +48,8 @@ application/services/integrations/xero/" beats "consider deduplicating".
 Write the report file using exactly this structure:
 
 ```
-# Ralph Playlist Report: {{PLAYLIST_NAME}}
-**Date:** {{TIMESTAMP}} **Model:** {{MODEL}} **Ralph:** `{{RALPH_VERSION}}`
+# Sutra Playlist Report: {{PLAYLIST_NAME}}
+**Date:** {{TIMESTAMP}} **Model:** {{MODEL}} **Sutra:** `{{SUTRA_VERSION}}`
 **Exit reason:** {{EXIT_REASON}} **Circuit breaker:** {{CIRCUIT}}
 
 ## Executive Summary
@@ -85,7 +85,7 @@ behind the verdict.]
 {{GIT_LOG}}
 
 ## Notes
-[Optional: anything else worth flagging — odd status, ralph-side anomalies,
+[Optional: anything else worth flagging — odd status, sutra-side anomalies,
 patterns across the run.]
 ```
 
@@ -96,7 +96,7 @@ patterns across the run.]
    because tools failed, say so explicitly and choose INCOMPLETE.
 2. Use Read and Bash to inspect sources first, write the report second.
    The verdict must be grounded in something you actually looked at.
-3. Be opinionated. Ralph already shows you the run timeline; what's
+3. Be opinionated. Sutra already shows you the run timeline; what's
    missing from prior reports is judgment. That's your contribution.
 4. Do NOT commit the report. Leave it on disk at `{{REPORT_FILE}}` as a session
    artifact — the user decides whether to archive it.

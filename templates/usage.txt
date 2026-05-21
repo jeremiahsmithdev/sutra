@@ -1,15 +1,15 @@
-ralph — Autonomous task executor. Loops Claude Code over beads issues.
+sutra — Autonomous task executor. Loops Claude Code over beads issues.
 
-Usage: ralph [OPTIONS]
+Usage: sutra [OPTIONS]
   --dry-run            Show next task without executing
   --max-tasks N        Stop after N tasks completed (default: unlimited)
   --max-loops N        Stop after N Claude invocations (default: 50)
   --timeout N          Minutes per Claude invocation (default: 10)
   --scope PATTERN      Only work issues matching regex pattern
   --playlist FILE      Execute tasks from playlist file (mutually exclusive with --scope)
-  --queue [FILE]       Run multiple playlists in sequence; one child ralph per
-                       entry (default: .ralph/queue)
-  resume, --resume     Resume whatever was running last from .ralph/state.
+  --queue [FILE]       Run multiple playlists in sequence; one child sutra per
+                       entry (default: .sutra/queue)
+  resume, --resume     Resume whatever was running last from .sutra/state.
                        If queue_file is set, resumes the queue at queue_index.
                        Else if playlist_file is set, resumes at playlist_line.
   --no-commit          Tell Claude not to commit per-task (playlist default)
@@ -21,10 +21,10 @@ Usage: ralph [OPTIONS]
   --context-files LIST Comma-separated project files for prompt manifest
   --monitor            Live dashboard in a separate terminal
   --tmux, -t           Wrap execution in a detachable tmux session
-  --auto-reload        In --queue mode, re-exec ralph between entries if
-                       ralph's own source has moved to a new git SHA
+  --auto-reload        In --queue mode, re-exec sutra between entries if
+                       sutra's own source has moved to a new git SHA
   --remote [HOST], -r  Run on remote server via SSH+tmux
-  --init               Create .ralph/ directory with default config
+  --init               Create .sutra/ directory with default config
   --status             Print current state and exit
   --reset              Clear circuit breaker and loop state
   -h, --help           Show this help

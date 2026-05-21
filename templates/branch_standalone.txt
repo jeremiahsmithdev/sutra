@@ -1,4 +1,4 @@
-Work on the `ralph` branch.
+Work on the `sutra` branch.
 Ensure you are on it before starting:
-  git checkout ralph
-Do NOT create feature branches for standalone tasks. Commit directly to `ralph`.
+  git checkout sutra
+Do NOT create feature branches for standalone tasks. Commit directly to `sutra`.

@@ -1,4 +1,4 @@
-# ralph project config — per-project overrides for config.sh defaults.
+# sutra project config — per-project overrides for config.sh defaults.
 # Uncomment and modify as needed. CLI flags override these values.
 
 # Claude model for inner loop invocations.
@@ -13,8 +13,8 @@
 # Maximum tool-use turns per Claude invocation (inner loop).
 # MAX_TURNS=500
 
-# Branch ralph creates its working branch from.
-# If unset, uses the current branch when ralph first runs.
+# Branch sutra creates its working branch from.
+# If unset, uses the current branch when sutra first runs.
 # WORKING_BRANCH="main"
 
 # SSH target for --remote execution.
