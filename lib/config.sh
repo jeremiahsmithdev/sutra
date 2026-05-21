@@ -123,7 +123,7 @@ AUTO_RELOAD=false
 # since this process started.
 SUTRA_START_SHA=""
 
-# Branch ralph creates its working branch from (e.g. "dev", "main").
+# Branch sutra creates its working branch from (e.g. "dev", "main").
 # Typically set per-project in .sutra/config. If unset, uses current branch.
 # WORKING_BRANCH=""
 

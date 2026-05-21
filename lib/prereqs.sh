@@ -23,7 +23,7 @@ check_prereqs() {
         missing=1
     fi
 
-    # Ralph only works inside a beads-tracked project
+    # Sutra only works inside a beads-tracked project
     if [[ ! -d ".beads" ]]; then
         log "ERROR: No .beads/ in $(pwd)"
         missing=1
@@ -55,7 +55,7 @@ check_prereqs() {
 
 # ── detect_worktree ───────────────────────────────────────────────────────
 #
-# If ralph was started inside a linked git worktree (not the main clone),
+# If sutra was started inside a linked git worktree (not the main clone),
 # announce it loudly and warn about per-worktree state isolation. Sets
 # IS_WORKTREE=true and WORKTREE_NAME globals for downstream consumers
 # (e.g. playlist_branch.sh suffixing default branch names).
@@ -85,21 +85,21 @@ detect_worktree() {
     log "Note: ${C_BOLD_YELLOW}.beads/ and .sutra/ are per-worktree${C_RESET} — bead state will not sync to other worktrees until \`.beads/issues.jsonl\` is committed and pulled."
 }
 
-# ── ensure_ralph_branch ───────────────────────────────────────────────────
+# ── ensure_sutra_branch ───────────────────────────────────────────────────
 #
-# Ensure the dedicated "ralph" working branch exists and is checked out.
+# Ensure the dedicated "sutra" working branch exists and is checked out.
 # Creates it from WORKING_BRANCH (set in .sutra/config) or the current branch.
 
 ensure_correct_branch() {
     if [[ -n "$PLAYLIST_BRANCH" ]]; then
         ensure_playlist_branch
     else
-        ensure_ralph_branch
+        ensure_sutra_branch
     fi
 }
 
-ensure_ralph_branch() {
-    checkout_or_create_branch "ralph"
+ensure_sutra_branch() {
+    checkout_or_create_branch "sutra"
 }
 
 ensure_playlist_branch() {
@@ -110,7 +110,7 @@ checkout_or_create_branch() {
     local branch="$1"
 
     # Skip the checkout entirely if we're already on the target branch.
-    # Avoids a redundant "fatal: already checked out" error when ralph
+    # Avoids a redundant "fatal: already checked out" error when sutra
     # is started inside a worktree whose HEAD already matches.
     local current
     current=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
@@ -126,7 +126,7 @@ checkout_or_create_branch() {
         other_worktree=$(branch_checked_out_elsewhere "$branch")
         if [[ -n "$other_worktree" ]]; then
             log "ERROR: branch ${C_BOLD_CYAN}$branch${C_RESET} is already checked out at ${C_BOLD_YELLOW}$other_worktree${C_RESET}"
-            log "       Run ralph from that worktree, or pass --playlist-branch to choose a different branch."
+            log "       Run sutra from that worktree, or pass --playlist-branch to choose a different branch."
             exit 1
         fi
         git checkout "$branch" 2>/dev/null || {
@@ -148,7 +148,7 @@ checkout_or_create_branch() {
 #
 # If $1 is checked out in any other worktree, echo that worktree's path.
 # Otherwise echo nothing. Uses `git worktree list --porcelain` so it
-# works even when ralph is itself running inside a worktree.
+# works even when sutra is itself running inside a worktree.
 
 branch_checked_out_elsewhere() {
     local branch="$1"

@@ -128,9 +128,9 @@ format_branch_instructions() {
         standalone)
             cat "$TEMPLATES_DIR/branch_standalone.txt"
             ;;
-        epic:*:ralph)
+        epic:*:sutra)
             local epic_branch="${branch_ctx#epic:}"
-            epic_branch="${epic_branch%:ralph}"
+            epic_branch="${epic_branch%:sutra}"
             render_template "$TEMPLATES_DIR/branch_epic_ralph.txt" \
                 "EPIC_BRANCH=$epic_branch"
             ;;

@@ -159,9 +159,9 @@ get_task_details() {
 # Uses br show --json to check parent epic and epic dependencies.
 #
 # Output (one line):
-#   "standalone"                         — work on ralph branch
-#   "epic:<branch>:ralph"                — epic, branch from ralph
-#   "epic:<branch>:ralph/<dep-slug>"     — epic, branch from dependency epic
+#   "standalone"                         — work on sutra branch
+#   "epic:<branch>:sutra"                — epic, branch from sutra
+#   "epic:<branch>:sutra/<dep-slug>"     — epic, branch from dependency epic
 
 get_branch_context() {
     local task_id="$1"
@@ -201,11 +201,11 @@ get_branch_context() {
     dep_epic_id=$(extract_epic_blocker "$epic_json")
 
     if [[ -z "$dep_epic_id" ]]; then
-        echo "epic:ralph-$epic_slug:ralph"
+        echo "epic:sutra-$epic_slug:sutra"
     else
         dep_epic_title=$(get_epic_dependency_title "$epic_json" "$dep_epic_id")
         dep_epic_slug=$(slugify "$dep_epic_title")
-        echo "epic:ralph-$epic_slug:ralph-$dep_epic_slug"
+        echo "epic:sutra-$epic_slug:sutra-$dep_epic_slug"
     fi
 }
 
