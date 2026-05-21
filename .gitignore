@@ -17,11 +17,11 @@ tags
 .env
 .env.*
 
-# Ralph runtime state (session-local, not source of truth)
-.ralph/logs/
-.ralph/state
-.ralph_state
-.ralph_remote
+# Sutra runtime state (session-local, not source of truth)
+.sutra/logs/
+.sutra/state
+.sutra_state
+.sutra_remote
 
 # Generated artifacts
 output/
