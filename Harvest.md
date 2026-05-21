@@ -8,17 +8,17 @@ See also: [[PHILOSOPHY.md]] | [[metrics.md]]
 
 ## The Cycle
 
-Ralph runs overnight. You sleep. Code gets written, tests get run, beads get closed, quality gates get created. By morning there is a pile of work sitting in your repository that no human has looked at.
+Sutra runs overnight. You sleep. Code gets written, tests get run, beads get closed, quality gates get created. By morning there is a pile of work sitting in your repository that no human has looked at.
 
 The harvest is how you process that pile.
 
-It is not optional. Autonomous execution without human review is how you wake up to a codebase you no longer understand. The ralph loop is fast and tireless but it has no taste. It cannot tell you whether the feature it built is the right feature. It cannot tell you whether the fix it shipped is the fix your users actually need. It completed the bead. Whether the bead was worth completing is your job.
+It is not optional. Autonomous execution without human review is how you wake up to a codebase you no longer understand. The sutra loop is fast and tireless but it has no taste. It cannot tell you whether the feature it built is the right feature. It cannot tell you whether the fix it shipped is the fix your users actually need. It completed the bead. Whether the bead was worth completing is your job.
 
 ## What the Harvest Produces
 
 **Verified work.** Issues that passed human verification get marked `verified=yes`. This creates an audit trail showing who verified what and when. Good implementations get merged to main. Clean commits, passing tests, sensible changes. These are the wins — work that would have taken you a day, done while you slept.
 
-**Reverted work.** Bad implementations get thrown away. No sentiment. The loop will try again tonight with better guidance. A reverted ralph run costs you nothing but tokens. A merged bad ralph run costs you debugging time for days.
+**Reverted work.** Bad implementations get thrown away. No sentiment. The loop will try again tonight with better guidance. A reverted sutra run costs you nothing but tokens. A merged bad sutra run costs you debugging time for days.
 
 **Calibrated scouts.** The scout predicted difficulty and entry points before the run. The inner loop produced actual results. Comparing the two tells you whether your scouting is accurate. If the scout said "easy, 2 iterations" and the loop took 15, that is signal. If the scout said "entry point at auth.py:45" and the loop worked in a completely different file, that is signal. Over time this tightens your scoring.
 
@@ -32,7 +32,7 @@ This is a checklist, not a ceremony. It should take 15-30 minutes for a typical 
 
 **1. Read the log.** What ran, what completed, what failed, what timed out. Get the shape of the night before looking at any code.
 
-**2. Review verification queue.** Ralph marks every closed issue `verified=needs-review` with test instructions:
+**2. Review verification queue.** Sutra marks every closed issue `verified=needs-review` with test instructions:
 ```bash
 bnr                    # List issues awaiting verification
 ```
@@ -46,18 +46,18 @@ For each issue in the queue:
 Then decide:
 - **Verified:** `bV` (opens picker, select issue, marks `verified=yes`)
 - **Broken:** `breopen <id>` — reopen for another attempt tonight
-- **Needs rework:** Add a comment, update the bead description, let Ralph try again
+- **Needs rework:** Add a comment, update the bead description, let sutra try again
 
 Do not "fix it up" — either it is good enough or the loop tries again.
 
-**3. Check quality gates.** The loop created review and test beads as follow-ups. Some of these the loop may have already processed. Check whether the quality gate work is substantive or superficial. A review bead that just says "looks good" is not a review.
+**3. Check quality gates.** Sutra created review and test beads as follow-ups. Some of these the loop may have already processed. Check whether the quality gate work is substantive or superficial. A review bead that just says "looks good" is not a review.
 
 **4. Calibrate the workflow.** Use [[metrics.md]] data to surface anomalies, then analyse qualitatively:
 
 *Data-driven (deterministic):*
 ```bash
 # Issues where time predictions were way off
-sqlite3 .ralph/metrics.db "
+sqlite3 .sutra/metrics.db "
 SELECT issue_id, estimated_minutes, actual_minutes, time_ratio
 FROM task_metrics WHERE time_ratio > 3.0 OR time_ratio < 0.3;"
 ```
@@ -72,7 +72,7 @@ For flagged issues, review scout reports and git diffs. Identify:
 **5. Groom the backlog.** Based on what you saw:
 - Mark verified beads with `bV` after testing.
 - Reopen beads where the implementation missed the point (`breopen <id>`).
-- Break down beads that the loop struggled with.
+- Break down beads that sutra struggled with.
 - Add new beads for issues you spotted in the diffs.
 - Update bead descriptions that were ambiguous.
 - Check unverified closed issues: `buv` shows issues closed without verification state — decide whether to mark for review or trust them.
@@ -82,12 +82,13 @@ For flagged issues, review scout reports and git diffs. Identify:
 - Update your AGENTS.md with new conventions.
 - Adjust scout configuration if scoring was off.
 - Tweak quality gate descriptions if reviews were shallow.
+- Adjust sutra config to prevent recurrence.
 
 ## What the Harvest Is Not
 
 It is not a full code review. You are not reading every line. You are reading diffs, checking intent, and making merge/revert decisions. The quality gates exist to catch detail-level issues. Your job is strategic judgment.
 
-It is not debugging. If the loop produced broken code, revert it. Write a better bead. Let the loop try again tonight. Your time is more valuable than the loop's time. Never spend an hour fixing what the loop can redo in ten minutes.
+It is not debugging. If the loop produced broken code, revert it. Write a better bead. Let sutra try again tonight. Your time is more valuable than the loop's time. Never spend an hour fixing what sutra can redo in ten minutes.
 
 It is not planning. Planning happens during the day when you create beads, write descriptions, set priorities. The harvest looks backward at what was produced. It does not look forward at what to produce next. Keep the phases separate.
 
@@ -96,10 +97,10 @@ It is not planning. Planning happens during the day when you create beads, write
 The harvest is where the system improves. Not the model — the model improves on its own schedule. The system around the model: your prompts, your bead descriptions, your scout configuration, your quality gates, your conventions.
 
 ```
-Night: Loop executes → produces work
+Night: Sutra executes → produces work
 Morning: Harvest reviews → produces insights
 Day: You apply insights → produces better beads, prompts, config
-Night: Loop executes with better input → produces better work
+Night: Sutra executes with better input → produces better work
 ```
 
 Each cycle tightens the system. Beads get more precise. Scouts get more calibrated. Prompts catch more edge cases. Quality gates get more specific. The loop itself does not change. Everything around it does.
@@ -110,7 +111,7 @@ This is the human role in an automated system. Not directing execution — shapi
 
 Harvest every morning. Do not skip it. Do not let two nights of unharvested work accumulate. An unharvested run is unreviewed code in your repository, which is technical debt you chose to take on.
 
-Revert freely. The loop does not have feelings. It does not remember that you threw away its work. Tomorrow it will try again with no grudge and no hesitation. Reverting is cheap. Merging bad work is expensive.
+Revert freely. Sutra does not have feelings. It does not remember that you threw away its work. Tomorrow it will try again with no grudge and no hesitation. Reverting is cheap. Merging bad work is expensive.
 
 Timebox it. If the harvest is taking more than 30 minutes, the overnight run attempted too much. Reduce the number of beads in scope. Smaller batches, more frequent harvests.
 

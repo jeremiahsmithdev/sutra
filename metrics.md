@@ -1,6 +1,6 @@
 # Workflow Metrics
 
-Data-driven calibration for the ralph system. Store everything deterministically; analyse qualitatively in the morning.
+Data-driven calibration for the sutra system. Store everything deterministically; analyse qualitatively in the morning.
 
 See also: [[PHILOSOPHY.md]] | [[Harvest.md]] | [[AI-TRIAGE.md]]
 
@@ -51,13 +51,13 @@ The data collection is deterministic — no AI needed. The qualitative analysis 
 | `started_at` | timestamp | When inner loop began |
 | `completed_at` | timestamp | When task closed |
 | `duration_seconds` | derived | Time from start to completion |
-| `actual_iterations` | ralph logs | Inner loop turns (secondary metric) |
+| `actual_iterations` | sutra logs | Inner loop turns (secondary metric) |
 | `files_modified` | git diff | Files changed during implementation |
 | `lines_changed` | git diff | Lines added + removed |
 | `tests_added` | git diff | New test files/functions |
 | `tests_passed` | test runner | Boolean |
 | `entry_point_hit` | comparison | Did implementation touch predicted entry points? |
-| `exit_reason` | ralph | complete/blocked/timeout/circuit_breaker |
+| `exit_reason` | sutra | complete/blocked/timeout/circuit_breaker |
 | `quality_gate_result` | follow-up beads | pass/fail/pending |
 
 ### At Harvest (morning review)
@@ -74,7 +74,7 @@ The data collection is deterministic — no AI needed. The qualitative analysis 
 ## SQLite Schema
 
 ```sql
--- .ralph/metrics.db
+-- .sutra/metrics.db
 
 CREATE TABLE IF NOT EXISTS task_selection (
     issue_id TEXT PRIMARY KEY,
@@ -160,7 +160,7 @@ LEFT JOIN harvest_review h ON s.issue_id = h.issue_id;
 
 ```bash
 # After selecting next task, before marking in_progress
-sqlite3 .ralph/metrics.db "
+sqlite3 .sutra/metrics.db "
 INSERT OR REPLACE INTO task_selection
 VALUES (
     '$ISSUE_ID',
@@ -177,7 +177,7 @@ VALUES (
 ```bash
 # After scout prime completes, extract from the report
 REPORT=$(cat .beads/scout/${ISSUE_ID}.json)
-sqlite3 .ralph/metrics.db "
+sqlite3 .sutra/metrics.db "
 INSERT OR REPLACE INTO scout_priming
 VALUES (
     '$ISSUE_ID',
@@ -211,13 +211,13 @@ DURATION_SECONDS=$((END_EPOCH - START_EPOCH))
 
 MODIFIED_FILES=$(git diff --name-only HEAD~1 | wc -l)
 LINES_CHANGED=$(git diff --stat HEAD~1 | tail -1 | grep -oE '[0-9]+' | paste -sd+ | bc)
-PREDICTED_ENTRIES=$(sqlite3 .ralph/metrics.db "SELECT entry_points FROM scout_priming WHERE issue_id='$ISSUE_ID'")
+PREDICTED_ENTRIES=$(sqlite3 .sutra/metrics.db "SELECT entry_points FROM scout_priming WHERE issue_id='$ISSUE_ID'")
 ENTRY_HIT=0
 for entry in $(echo "$PREDICTED_ENTRIES" | jq -r '.[]' | cut -d: -f1); do
     git diff --name-only HEAD~1 | grep -q "$entry" && ENTRY_HIT=1 && break
 done
 
-sqlite3 .ralph/metrics.db "
+sqlite3 .sutra/metrics.db "
 INSERT OR REPLACE INTO task_completion
 VALUES (
     '$ISSUE_ID',
@@ -239,7 +239,7 @@ VALUES (
 
 ```bash
 # Manual or via slash command
-sqlite3 .ralph/metrics.db "
+sqlite3 .sutra/metrics.db "
 INSERT OR REPLACE INTO harvest_review
 VALUES (
     '$ISSUE_ID',
@@ -357,7 +357,7 @@ The morning [[Harvest.md|harvest]] uses this data in two phases:
 
 ```bash
 # Quick anomaly check — issues where time predictions were way off
-sqlite3 .ralph/metrics.db "
+sqlite3 .sutra/metrics.db "
 SELECT issue_id, difficulty, estimated_minutes, actual_minutes, time_ratio
 FROM task_metrics
 WHERE time_ratio > 3.0 OR time_ratio < 0.3
@@ -382,14 +382,14 @@ Claude then identifies:
 ## File Location
 
 ```
-.ralph/
+.sutra/
 ├── metrics.db          # SQLite database
 ├── metrics-schema.sql  # Schema for reference
 └── logs/
-    └── ralph.log
+    └── sutra.log
 ```
 
-The database lives in `.ralph/` alongside other ralph state. It's gitignored (local to the machine running ralph) but can be exported for analysis.
+The database lives in `.sutra/` alongside other sutra state. It's gitignored (local to the machine running sutra) but can be exported for analysis.
 
 ---
 

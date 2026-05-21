@@ -99,12 +99,12 @@ EOF
 )"
 ```
 
-### Example: Autonomous/Ralph Session
+### Example: Autonomous/Sutra Session
 
-During ralph loops or autonomous sessions, **all closed issues** should be marked:
+During sutra loops or autonomous sessions, **all closed issues** should be marked:
 
 ```bash
-# In ralph prompt or agent instructions:
+# In sutra prompt or agent instructions:
 "When closing any issue, always run:
 bd set-state <id> verified=needs-review --reason 'VERIFICATION INSTRUCTIONS:\n1. ...\n2. ...\n\nNOTES: ...'"
 ```
@@ -200,11 +200,11 @@ bnr                    # See the queue
 
 ---
 
-## Integration with Ralph/Autonomous Systems
+## Integration with Sutra/Autonomous Systems
 
-### Ralph Loop Instructions
+### Sutra Loop Instructions
 
-Add to your ralph prompt or agent configuration:
+Add to your sutra prompt or agent configuration:
 
 ```
 ISSUE CLOSURE PROTOCOL:

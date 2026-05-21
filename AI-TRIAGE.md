@@ -216,7 +216,7 @@ Output ONLY this JSON:
 
 ### Approach C: Batch Pre-Scan Agent
 
-Run nightly before ralph execution:
+Run nightly before sutra execution:
 
 ```bash
 #!/bin/bash
@@ -236,14 +236,14 @@ echo "Scanned $(wc -l < "$OUTPUT_FILE") issues"
 
 ---
 
-## Integration with Ralph
+## Integration with Sutra
 
 ### Modified Task Selection
 
 Instead of pure triage_score, use combined:
 
 ```bash
-# In PROMPT.md or ralph's task selection:
+# In PROMPT.md or sutra's task selection:
 
 # Get actionability data
 ACTIONABILITY=$(cat .beads/actionability.jsonl 2>/dev/null || echo "{}")
@@ -287,10 +287,10 @@ bd comment "$id" "AI Investigation ($(date)):
 
 ## Workflow Integration
 
-### Pre-Ralph Scan
+### Pre-Sutra Scan
 
 ```bash
-# Before starting ralph overnight:
+# Before starting sutra overnight:
 
 # 1. Run AI triage scan
 ./ai-triage-scan.sh
@@ -301,8 +301,8 @@ cat .beads/actionability.jsonl | jq 'select(.scan.actionability_score < 0.5)'
 # 3. Fix or defer problematic issues
 bd update bd-xyz --status deferred --comment "Needs clarification"
 
-# 4. Start ralph with clean actionable set
-ralph --monitor
+# 4. Start sutra with clean actionable set
+sutra --monitor
 ```
 
 ### Continuous Scanning
@@ -380,4 +380,4 @@ done
 2. **Test** on 10-20 issues manually
 3. **Measure** how often actionability catches stale issues
 4. **Iterate** on scoring weights based on results
-5. **Integrate** into pre-ralph workflow
+5. **Integrate** into pre-sutra workflow

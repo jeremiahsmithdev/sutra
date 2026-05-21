@@ -1,31 +1,31 @@
-# Ralph System Documentation
+# Sutra System Documentation
 
-Master documentation for autonomous AI coding with beads, beads_viewer, and ralph-claude-code.
+Master documentation for autonomous AI coding with beads, beads_viewer, and sutra.
 
 ## Documents
 
 | File | Description |
 |------|-------------|
 | [GUIDE.md](./GUIDE.md) | Complete operational guide for the integrated system |
-| [TOOLS.md](./TOOLS.md) | Catalog of all tools with recommendations |
+| [TOOLS.md](./TOOLS.md) | Catalog of tools and ecosystem context |
 | [AI-TRIAGE.md](./AI-TRIAGE.md) | AI-enhanced actionability scoring concept |
 
 ## Quick Start
 
 ```bash
 # 1. Setup project
-ralph-setup my-project && cd my-project
-bd init
+sutra --init && cd my-project
+br init
 
 # 2. Create and organize issues
-bd create --title "..." --priority 2
+br create --title "..." --priority 2
 bv --robot-triage | jq '.recommendations[:5]'
 
 # 3. Run overnight
-ralph --monitor
+sutra --monitor
 
 # 4. Morning review
-bd list --status closed --since 24h
+br list --status closed --since 24h
 ```
 
 ## The Stack
@@ -39,7 +39,7 @@ bd list --status closed --since 24h
                               ↑ optional
 ┌──────────────────────────────────────────────────────────────────┐
 │                      EXECUTION                                   │
-│  ralph-claude-code   Autonomous loop with safety gates ⭐        │
+│  sutra               Autonomous loop with safety gates ⭐        │
 └──────────────────────────────────────────────────────────────────┘
                               ↑ uses
 ┌──────────────────────────────────────────────────────────────────┐
@@ -49,17 +49,17 @@ bd list --status closed --since 24h
                               ↑ analyzes
 ┌──────────────────────────────────────────────────────────────────┐
 │                      FOUNDATION                                  │
-│  beads (bd)          Git-backed issue tracking + dependencies   │
+│  beads (br)          Git-backed issue tracking + dependencies   │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-**Recommended stack:** beads + bv + ralph-claude-code (see [TOOLS.md](./TOOLS.md))
+**Recommended stack:** beads + bv + sutra (see [TOOLS.md](./TOOLS.md))
 
 ## Source Repos
 
 - beads: `/Users/admin/dev/beads`
 - beads_viewer: `/Users/admin/dev/beads_viewer`
-- ralph-claude-code: `/Users/admin/dev/ralph-claude-code`
+- sutra: `/Users/admin/dev/ralph`
 
 ## Key Insight
 

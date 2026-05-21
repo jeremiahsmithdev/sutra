@@ -1,6 +1,6 @@
-# ralph-with-scout.sh — Outer Loop with Scout Priming
+# sutra-with-scout.sh — Outer Loop with Scout Priming
 
-Example overnight ralph outer loop that integrates the scout for pre-execution intelligence.
+Example overnight sutra outer loop that integrates the scout for pre-execution intelligence.
 
 ## Flow
 
@@ -34,10 +34,10 @@ Example overnight ralph outer loop that integrates the scout for pre-execution i
 ```bash
 #!/usr/bin/env bash
 # ===========================================================================
-# ralph-with-scout.sh — Outer loop with scout priming
+# sutra-with-scout.sh — Outer loop with scout priming
 # ===========================================================================
 #
-# This is an example overnight ralph outer loop that:
+# This is an example overnight sutra outer loop that:
 #   1. Primes any unprimed issues using the scout
 #   2. Selects the next task using BV triage + scout actionability
 #   3. Delegates to Claude Code (inner loop) with the scout briefing
@@ -45,8 +45,8 @@ Example overnight ralph outer loop that integrates the scout for pre-execution i
 #   5. Repeats
 #
 # Usage:
-#   ./ralph-with-scout.sh              # Run the loop
-#   ./ralph-with-scout.sh --dry-run    # Show what would run, don't execute
+#   ./sutra-with-scout.sh              # Run the loop
+#   ./sutra-with-scout.sh --dry-run    # Show what would run, don't execute
 #
 # Prerequisites:
 #   - bd (beads CLI)
@@ -60,8 +60,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DRY_RUN="${1:-}"
-SLEEP_INTERVAL="${RALPH_SLEEP:-20}"
-MAX_INNER_TURNS="${RALPH_MAX_TURNS:-50}"
+SLEEP_INTERVAL="${SUTRA_SLEEP:-20}"
+MAX_INNER_TURNS="${SUTRA_MAX_TURNS:-50}"
 SCOUT_BIN="${SCOUT_BIN:-$SCRIPT_DIR/scout}"
 
 # Weights for combining triage + actionability scores
@@ -190,13 +190,13 @@ inject_quality_gates() {
     bd create \
         --title "Review: $title" \
         --description "Review implementation of parent task. Check: code quality, edge cases, error handling, adherence to requirements." \
-        --label ralph-review \
+        --label sutra-review \
         2>/dev/null || true
 
     bd create \
         --title "Test: $title" \
         --description "Verify test coverage for parent task. Check: unit tests, integration tests, coverage >80%, regression tests." \
-        --label ralph-test \
+        --label sutra-test \
         2>/dev/null || true
 }
 
@@ -205,7 +205,7 @@ inject_quality_gates() {
 # ---------------------------------------------------------------------------
 
 main() {
-    log "🚀 Ralph outer loop starting (scout-enhanced)"
+    log "🚀 Sutra outer loop starting (scout-enhanced)"
     log "   Model: Claude Code inner loop"
     log "   Scout: $SCOUT_BIN"
     log "   Weights: triage=${W_TRIAGE}, actionability=${W_ACTION}"
@@ -261,21 +261,21 @@ main "$@"
 
 ```bash
 # Overnight run
-./ralph-with-scout.sh
+./sutra-with-scout.sh
 
 # Preview what would happen
-./ralph-with-scout.sh --dry-run
+./sutra-with-scout.sh --dry-run
 
 # Customise via environment
-RALPH_MAX_TURNS=30 W_TRIAGE=0.7 W_ACTION=0.3 ./ralph-with-scout.sh
+SUTRA_MAX_TURNS=30 W_TRIAGE=0.7 W_ACTION=0.3 ./sutra-with-scout.sh
 ```
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
-| `RALPH_SLEEP` | `20` | Seconds to sleep when no tasks available |
-| `RALPH_MAX_TURNS` | `50` | Max Claude Code turns per task |
+| `SUTRA_SLEEP` | `20` | Seconds to sleep when no tasks available |
+| `SUTRA_MAX_TURNS` | `50` | Max Claude Code turns per task |
 | `SCOUT_BIN` | `./scout` | Path to the scout executable |
 | `W_TRIAGE` | `0.6` | Weight for BV structural score |
 | `W_ACTION` | `0.4` | Weight for scout actionability score |

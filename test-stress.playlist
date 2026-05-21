@@ -27,7 +27,7 @@ ralph-dtg.5
 ralph-FAKE-999
 
 # --- Edge case: raw prompt referencing work done above ---
-> Read output/stats.txt and output/hello.txt. Summarize what ralph accomplished. Do not modify any files.
+> Read output/stats.txt and output/hello.txt. Summarize what sutra accomplished. Do not modify any files.
 
 
 # --- Edge case: blank lines and trailing comments ---

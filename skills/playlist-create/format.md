@@ -1,6 +1,6 @@
 # Playlist Format Reference
 
-Full syntax reference for ralph playlist files. Load this file when you
+Full syntax reference for sutra playlist files. Load this file when you
 need to verify a specific syntax detail while generating a playlist.
 
 ---
@@ -21,7 +21,7 @@ Rules:
 - Blank lines are skipped at runtime but avoid them for readability
 - Comments (`#`) are skipped at runtime
 - The branch directive (`# branch:`) must appear in the first 5 lines
-- Bead IDs must exist in the `br` database (`ralph playlist init` checks this)
+- Bead IDs must exist in the `br` database (`sutra playlist init` checks this)
 - Prompt lines begin with `>` followed by a space (or immediately `@` for
   the bare model shorthand form `>@opus`)
 
@@ -55,7 +55,7 @@ prompt text (for prompt lines) or after the bead ID (for bead lines).
 
 ## Gate tags
 
-Gates are prompt lines with a `#TAG` in them. Ralph expands the tag into
+Gates are prompt lines with a `#TAG` in them. Sutra expands the tag into
 a detailed audit prompt at runtime using the template in
 `templates/gate_*.txt`. The context you provide after the tag is appended
 to that expanded prompt.
@@ -114,14 +114,14 @@ if bead_count > 5:
 
 ## Branch directive
 
-The branch directive tells ralph which branch to use for the entire
+The branch directive tells sutra which branch to use for the entire
 playlist session. It must appear in the first 5 lines.
 
 ```
 # branch: feature/auth-v2
 ```
 
-When `ralph playlist create` is used with a single `--epic`, the branch
+When `sutra playlist create` is used with a single `--epic`, the branch
 directive is automatically injected as `# branch: <epic-slug>.playlist`
 where `<epic-slug>` is the epic title slugified. When generating
 interactively, include it if you know the target branch name.

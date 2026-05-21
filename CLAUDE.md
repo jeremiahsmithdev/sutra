@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Ralph is an autonomous AI coding system — a bash outer loop that feeds tasks to Claude Code one at a time. ~4,200 lines of bash across ~35 library files in `lib/`. Two execution modes share one main loop:
+Sutra is an autonomous AI coding system — a bash outer loop that feeds tasks to Claude Code one at a time. ~4,200 lines of bash across ~35 library files in `lib/`. Two execution modes share one main loop:
 
 - **Playlist mode** (`--playlist FILE`, now the primary mode) — execute a hand-authored or Claude-authored list of beads + free-form prompts + quality gates in order.
 - **Standard `br ready` mode** — pull the next unblocked bead and work it. Kept for ad-hoc use.
@@ -13,11 +13,11 @@ Read [[PHILOSOPHY.md]] first. The bitter lesson: simple deterministic orchestrat
 
 ## Coding Style: Functional Decomposition
 
-**Prefer linear sequences of descriptive function calls over nested logic, inline code, or deep conditionals.** Every function does one thing; the caller reads like prose. See the main script (`ralph`) and `lifecycle.sh` for the pattern.
+**Prefer linear sequences of descriptive function calls over nested logic, inline code, or deep conditionals.** Every function does one thing; the caller reads like prose. See the main script (`sutra`) and `lifecycle.sh` for the pattern.
 
 ### Rules
 
-1. **Name functions as verb phrases** (`pick_next_task`, `playlist_next`, `ensure_ralph_branch`). The name IS the documentation.
+1. **Name functions as verb phrases** (`pick_next_task`, `playlist_next`, `ensure_sutra_branch`). The name IS the documentation.
 2. **Keep callers linear** — a function body is a sequence of function calls, not a tree of conditionals. Extract branches.
 3. **One level of abstraction per function** — don't mix orchestration with `jq -r '.status'`.
 4. **Guard clauses over nesting** — return/exit early; keep the happy path unindented.
@@ -44,7 +44,7 @@ prompt=$(render_template "$TEMPLATES_DIR/prompt_bead.txt" \
 
 File extensions:
 - `.txt` — content rendered to stdout/captured (prompts, help, ASCII art).
-- `.template` — scaffolds copied verbatim (e.g. `config.template` → `.ralph/config`).
+- `.template` — scaffolds copied verbatim (e.g. `config.template` → `.sutra/config`).
 - `.jq` — filter files loaded with `jq -f` when the filter exceeds ~3 lines.
 
 `TEMPLATES_DIR` lives in `loader.sh` alongside `LIB_DIR` — top-level constants every module needs belong there.
@@ -62,36 +62,36 @@ Bash has no modules, so prefix module-local globals visibly: `DB_*` (dashboard s
 
 ### Don't write tracker IDs in source
 
-Never put bead IDs (`ralph-0h1.11`, `br-xxx`), JIRA, or GitHub issue numbers into code — comments, docstrings, logs, or names. Only commit subjects and PR descriptions.
+Never put bead IDs (`ralph-0h1.11`, `br-xxx`), JIRA, or GitHub issue numbers into code — comments, docstrings, logs, or names. Only commit subjects and PR descriptions. (Note: `ralph-` prefix in bead IDs is a database identifier — immutable, do not rename.)
 
-## Running Ralph
+## Running Sutra
 
 ```bash
-./ralph                          # Standard mode: pull from br ready
-./ralph --playlist plan.playlist # Playlist mode (primary)
-./ralph --dry-run [--playlist F] # Validate without executing
-./ralph --max-tasks N            # Stop after N completed
-./ralph --max-loops N            # Stop after N invocations (default 50)
-./ralph --max-turns N            # Per-invocation turn cap (default 100)
-./ralph --timeout M              # Per-invocation minutes (default 10)
-./ralph --max-cost USD           # Halt if cumulative cost exceeds (0 = unlimited)
-./ralph --model {haiku|sonnet|opus|glm-...}  # Inner-loop model (default haiku)
-./ralph --scope REGEX            # Filter beads by title regex (standard mode)
-./ralph --no-commit / --commit   # Override per-task commit default
-./ralph --context-files a,b,c    # File manifest injected into prompts
-./ralph --playlist-branch NAME   # Override one-branch-per-session name
-./ralph --sandbox                # Bubblewrap isolation (Linux)
-./ralph --monitor                # Live dashboard (separate terminal)
-./ralph --tmux / -t              # Wrap in detachable tmux session
-./ralph --remote [HOST] / -r     # Rsync + SSH + tmux to remote
-./ralph --status                 # Print .ralph/state
-./ralph --reset                  # Clear circuit breaker / counters
-./ralph --init                   # Scaffold .ralph/config from template
-./ralph playlist init  FILE      # Two-phase validation (syntax + Claude semantic)
-./ralph playlist create [IDS...] [--epic EID] [-o FILE]   # Claude-authored playlist
+./sutra                          # Standard mode: pull from br ready
+./sutra --playlist plan.playlist # Playlist mode (primary)
+./sutra --dry-run [--playlist F] # Validate without executing
+./sutra --max-tasks N            # Stop after N completed
+./sutra --max-loops N            # Stop after N invocations (default 50)
+./sutra --max-turns N            # Per-invocation turn cap (default 100)
+./sutra --timeout M              # Per-invocation minutes (default 10)
+./sutra --max-cost USD           # Halt if cumulative cost exceeds (0 = unlimited)
+./sutra --model {haiku|sonnet|opus|glm-...}  # Inner-loop model (default haiku)
+./sutra --scope REGEX            # Filter beads by title regex (standard mode)
+./sutra --no-commit / --commit   # Override per-task commit default
+./sutra --context-files a,b,c    # File manifest injected into prompts
+./sutra --playlist-branch NAME   # Override one-branch-per-session name
+./sutra --sandbox                # Bubblewrap isolation (Linux)
+./sutra --monitor                # Live dashboard (separate terminal)
+./sutra --tmux / -t              # Wrap in detachable tmux session
+./sutra --remote [HOST] / -r     # Rsync + SSH + tmux to remote
+./sutra --status                 # Print .sutra/state
+./sutra --reset                  # Clear circuit breaker / counters
+./sutra --init                   # Scaffold .sutra/config from template
+./sutra playlist init  FILE      # Two-phase validation (syntax + Claude semantic)
+./sutra playlist create [IDS...] [--epic EID] [-o FILE]   # Claude-authored playlist
 ```
 
-Per-project defaults: `.ralph/config` (sourced by `config.sh`). CLI flags override both defaults and project config.
+Per-project defaults: `.sutra/config` (sourced by `config.sh`). CLI flags override both defaults and project config.
 
 ## Prerequisites
 
@@ -99,7 +99,7 @@ Per-project defaults: `.ralph/config` (sourced by `config.sh`). CLI flags overri
 
 ## Architecture
 
-### Main Loop (`ralph`)
+### Main Loop (`sutra`)
 
 Top-level script sources `lib/loader.sh`, calls `initialize "$@"`, then runs one of two loops:
 
@@ -132,16 +132,16 @@ while true:
 ### Library Layout (load order in `loader.sh` matters)
 
 Config / core:
-- `config.sh` — defaults (MAX_LOOPS=50, MODEL=haiku, GATE_DENSITY_RATIO=7, INJECTION_RATIO=0.25, …). Sources `.ralph/config` at the bottom.
+- `config.sh` — defaults (MAX_LOOPS=50, MODEL=haiku, GATE_DENSITY_RATIO=7, INJECTION_RATIO=0.25, …). Sources `.sutra/config` at the bottom.
 - `utils.sh` — `log`, `save_state`/`load_state`, ANSI colors, `render_template`, `commit_beads_if_dirty`.
 - `utils_beads.sh` — shared `br` query helpers (`get_*` spawning / `extract_*` pure).
 - `glm.sh` — GLM z.ai model provider integration (alternate Anthropic-compatible endpoint).
 - `args.sh` — CLI parsing into globals; handles early-exit actions (`--status`, `--reset`, `--init`, `playlist init`, `playlist create`, `--help`).
-- `prereqs.sh` — dependency checks, `ensure_ralph_branch`.
+- `prereqs.sh` — dependency checks, `ensure_sutra_branch`.
 - `sandbox.sh`, `remote.sh` — isolation / remote execution wrappers.
 
 Monitoring:
-- `monitor.sh` + `monitor_render.sh` — live dashboard, double-buffered, reads `.ralph/state` + `br`.
+- `monitor.sh` + `monitor_render.sh` — live dashboard, double-buffered, reads `.sutra/state` + `br`.
 
 Task selection (standard mode):
 - `tasks.sh` — `pick_next_task`, `claim_task`, `get_task_details`, `get_branch_context`, `slugify`.
@@ -153,14 +153,14 @@ Quality gates:
 Playlist (the big surface area):
 - `playlist.sh` — parse, navigate, execute (`playlist_next`, `playlist_execute`, `read_playlist_file`).
 - `playlist_annotations.sh` — `@model=…`, `@turns=…`, `@timeout=…`, and gate tag parsing.
-- `playlist_branch.sh` — one-branch-per-session resolution (`ralph-<playlist-slug>`).
+- `playlist_branch.sh` — one-branch-per-session resolution (`sutra-<playlist-slug>`).
 - `playlist_reload.sh` — reload playlist after a `>` prompt modifies it (checksum-based).
 - `playlist_validate.sh` — Phase 1 dry-run: syntax, bead existence/status, dependency ordering, density warnings.
-- `playlist_init.sh` — `ralph playlist init FILE`: Phase 1 + Phase 2 semantic validation driver.
+- `playlist_init.sh` — `sutra playlist init FILE`: Phase 1 + Phase 2 semantic validation driver.
 - `playlist_semantic.sh` — Phase 2: auto-inject gates, spawn Claude for semantic audit, stamp marker.
-- `playlist_create.sh` — `ralph playlist create`: spawn Claude to author a playlist from bead/epic IDs.
+- `playlist_create.sh` — `sutra playlist create`: spawn Claude to author a playlist from bead/epic IDs.
 - `playlist_marker.sh` — `✓ VALIDATED:` marker check/insertion in playlist header.
-- `playlist_progress.sh` — writes `.ralph/playlist-progress.md` snapshot; feeds completion report.
+- `playlist_progress.sh` — writes `.sutra/playlist-progress.md` snapshot; feeds completion report.
 
 Prompt assembly:
 - `prompt_context.sh` — per-project file manifest (from `CONTEXT_FILES`), cross-task handoff notes.
@@ -195,9 +195,9 @@ def456 @model=sonnet @timeout=15
 ✓ VALIDATED: 2026-04-15           # marker (first 5 lines) — inserted by `playlist init`
 ```
 
-Playlist state is crash-safe: `playlist_line` in `.ralph/state` only advances **after** successful execution, so a crash mid-task resumes at the same line. `playlist_reload.sh` re-reads the file after each `>` prompt so Claude can edit the playlist mid-run.
+Playlist state is crash-safe: `playlist_line` in `.sutra/state` only advances **after** successful execution, so a crash mid-task resumes at the same line. `playlist_reload.sh` re-reads the file after each `>` prompt so Claude can edit the playlist mid-run.
 
-Gate tags are shorthand — ralph expands them at runtime from `templates/gate_*.txt`. The playlist file is **never modified** by expansion. `gates_inject.sh` *can* edit the file, but only during authoring (`playlist init` / `playlist create`).
+Gate tags are shorthand — sutra expands them at runtime from `templates/gate_*.txt`. The playlist file is **never modified** by expansion. `gates_inject.sh` *can* edit the file, but only during authoring (`playlist init` / `playlist create`).
 
 ### Epic description conventions
 
@@ -222,17 +222,17 @@ Branch: xero-integration.playlist — cherry-picked from xero@65021d1 in task .1
 - **What the epic description SHOULD contain:** 3–5 line summary + path to spec file + branch/provenance notes.
 - **What bead descriptions SHOULD contain:** task-specific scope only — no re-pasting of epic context.
 
-`ralph playlist init` warns when an epic in the playlist has a description exceeding `EPIC_DESC_LINE_WARN` lines (default 40). The Phase 2 semantic audit also flags ≥20-line blocks that appear verbatim across multiple children.
+`sutra playlist init` warns when an epic in the playlist has a description exceeding `EPIC_DESC_LINE_WARN` lines (default 40). The Phase 2 semantic audit also flags ≥20-line blocks that appear verbatim across multiple children.
 
 ### The Two-Phase `playlist init` Workflow
 
-`ralph playlist init FILE`:
+`sutra playlist init FILE`:
 1. **Phase 1** — pure-bash: syntax check, bead existence (`br show`), status, dependency ordering, gate-density warnings.
 2. **Phase 2** — Claude-assisted: `playlist_inject_gates` inserts missing `#SMOKE_TEST`/`#COMPLETENESS_SCAN`/`#REVIEW`/`#REFACTOR`/`#DOCUMENT` lines at density-based intervals and epic boundaries, then Claude audits descriptions and adds the `✓ VALIDATED:` marker.
 
-Startup (`playlist_init.sh` → `check_validation_marker`) checks for the marker. If absent in non-interactive mode (tmux, CI, SSH, detached agents), ralph **halts with an error** rather than proceeding silently. To override:
+Startup (`playlist_init.sh` → `check_validation_marker`) checks for the marker. If absent in non-interactive mode (tmux, CI, SSH, detached agents), sutra **halts with an error** rather than proceeding silently. To override:
 
-- Set `PLAYLIST_AUTO_CONTINUE=true` in `.ralph/config` (for CI environments that validate externally).
+- Set `PLAYLIST_AUTO_CONTINUE=true` in `.sutra/config` (for CI environments that validate externally).
 - Pass `--yes` (or `-y`) on the CLI for a one-shot override.
 
 Interactive runs still prompt `[y/N]` as before.
@@ -248,9 +248,9 @@ Gate templates contain "create beads (type=bug only) …" self-healing instructi
 ### Branch Strategy
 
 `get_branch_context()` in `tasks.sh`:
-- Standalone task → `ralph` branch.
-- Task in epic → `ralph-<epic-slug>` (from `ralph`).
-- Task in epic blocked by another epic → `ralph-<epic-slug>` from `ralph-<dep-epic-slug>`.
+- Standalone task → `sutra` branch.
+- Task in epic → `sutra-<epic-slug>` (from `sutra`).
+- Task in epic blocked by another epic → `sutra-<epic-slug>` from `sutra-<dep-epic-slug>`.
 - Playlist mode → one branch per playlist session (`playlist_branch.sh`), resolved from playlist filename or `--playlist-branch`.
 
 ### Circuit Breaker
@@ -263,30 +263,30 @@ CLOSED ──[2 no-progress]──► HALF_OPEN ──[3 no-progress]──► O
   └─────────────────────────────┘
 ```
 
-Only `ralph --reset` clears OPEN. Also trips on `MAX_COST_USD`.
+Only `sutra --reset` clears OPEN. Also trips on `MAX_COST_USD`.
 
 ### Verification Workflow
 
-On close, ralph adds the `verified:needs-review` label. Humans review with `bnr` (needing review) and `bV` (mark verified). Epic auto-closes when all children are closed.
+On close, sutra adds the `verified:needs-review` label. Humans review with `bnr` (needing review) and `bV` (mark verified). Epic auto-closes when all children are closed.
 
 ### Logging
 
-Everything is captured to `.ralph/logs/`:
+Everything is captured to `.sutra/logs/`:
 - `sessions/<project>-<branch>-<timestamp>.log` — full stdout+stderr via `tee`.
 - `stream/<session>-<NNN>.jsonl` — raw `stream-json` per invocation, for diagnosis and replay.
 - `queue-<timestamp>.log` — `--queue` runs only: one high-level roll-up of all
   playlists (branch, status, beads closed, commits, report path, cost).
   Written by the parent process (`queue_log.sh`), which has no session log.
 
-Playlist progress snapshot: `.ralph/playlist-progress.md`.
+Playlist progress snapshot: `.sutra/playlist-progress.md`.
 
 ## Reference Projects
 
-Under `reference-projects/` — read for context, don't modify: `beads/` (bd, legacy), `beads_viewer/` (bv graph scoring), `ralph-claude-code/`, `gastown/`, `choo-choo-ralph/`.
+Under `reference-projects/` — read for context, don't modify: `beads/` (bd, legacy), `beads_viewer/` (bv graph scoring), `ralph-claude-code/`, `gastown/`, `choo-choo-ralph/`. (These names are external project names — not renamed.)
 
 ## Key Tool Commands
 
-**beads_rust (br):** `br ready`, `br show <id> --json`, `br update <id> --status in_progress`, `br close <id> --reason "…"`, `br dep add <child> <parent>`. Ralph itself calls these from `utils_beads.sh` / `tasks.sh` / `task_outcome.sh`.
+**beads_rust (br):** `br ready`, `br show <id> --json`, `br update <id> --status in_progress`, `br close <id> --reason "…"`, `br dep add <child> <parent>`. Sutra itself calls these from `utils_beads.sh` / `tasks.sh` / `task_outcome.sh`.
 
 **beads_viewer (bv):** Always use robot flags. **Never run bare `bv`** — it launches a TUI that hangs agents.
 ```bash
@@ -297,7 +297,7 @@ bv --robot-insights  # Graph analysis
 
 ## Not Yet Implemented
 
-From [[PLAN.md]]: BV integration for task selection, `.ralph/metrics.db` instrumentation ([[metrics.md]]), scout system ([[scout/]]), harvest tooling ([[Harvest.md]]).
+From [[PLAN.md]]: BV integration for task selection, `.sutra/metrics.db` instrumentation ([[metrics.md]]), scout system ([[scout/]]), harvest tooling ([[Harvest.md]]).
 
 ## Document Map
 

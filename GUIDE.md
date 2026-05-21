@@ -1,4 +1,4 @@
-# The Ralph System: Autonomous AI Coding with Beads & BV
+# The Sutra System: Autonomous AI Coding with Beads & BV
 
 A practical guide for human-AI collaborative development using the day/night workflow pattern.
 
@@ -9,13 +9,13 @@ A practical guide for human-AI collaborative development using the day/night wor
 > "Express constraints, not sequences. You're not following a plan; you're executing a constraint graph."
 > — Steve Yegge, creator of beads
 
-The Ralph System combines three Unix-philosophy tools that compose beautifully:
+The Sutra System combines three Unix-philosophy tools that compose beautifully:
 
 | Tool | Purpose | Operates On |
 |------|---------|-------------|
-| **beads (bd)** | Git-backed issue tracking with dependencies | Constraint graphs |
+| **beads (br)** | Git-backed issue tracking with dependencies | Constraint graphs |
 | **beads_viewer (bv)** | Graph-theoretic triage and prioritization | Issue analysis |
-| **ralph-claude-code** | Autonomous execution loops with safety gates | Claude Code sessions |
+| **sutra** | Autonomous execution loops with safety gates | Claude Code sessions |
 
 Together they solve the "50 First Dates" problem—AI agents losing memory between sessions—through structured, queryable task graphs that persist across context compaction.
 
@@ -36,25 +36,25 @@ Together they solve the "50 First Dates" problem—AI agents losing memory betwe
 └─────────────────────────────────────────────────────────────────┘
                               ↓ sunset
 ┌─────────────────────────────────────────────────────────────────┐
-│                        NIGHTTIME (Ralph)                        │
+│                        NIGHTTIME (Sutra)                        │
 │                                                                 │
-│  ralph --monitor                                                │
+│  sutra --monitor                                                │
 │                                                                 │
 │  Loop:                                                          │
 │    1. bv --robot-triage → pick highest actionable issue        │
-│    2. bd update <id> --status in_progress                      │
+│    2. br update <id> --status in_progress                      │
 │    3. Execute implementation                                    │
 │    4. Run tests, verify                                         │
-│    5. bd close <id> + bd set-state <id> verified=needs-review  │
+│    5. br close <id> + br label add <id> verified:needs-review  │
 │    6. Check exit conditions → continue or complete             │
 │                                                                 │
-│  Safety: Circuit breakers, rate limits, dual-gate exit         │
+│  Safety: Circuit breakers, cost limits, dual-gate exit         │
 └─────────────────────────────────────────────────────────────────┘
                               ↓ sunrise
 ┌─────────────────────────────────────────────────────────────────┐
 │                      MORNING (Human Review)                     │
 │                                                                 │
-│  1. Check ralph logs: tail .ralph/logs/ralph.log               │
+│  1. Check sutra logs: tail .sutra/logs/sutra.log               │
 │  2. Verify closed work: bnr → test → bV                        │
 │  3. Harvest learnings → update CLAUDE.md                       │
 │  4. Plan next night's work                                     │
@@ -236,24 +236,24 @@ bv --robot-insights | jq '.top_what_ifs[:5]'
 
 ---
 
-## Part 3: Ralph — The Autonomous Loop
+## Part 3: Sutra — The Autonomous Loop
 
 ### Core Architecture
 
-Ralph is a bash loop that repeatedly invokes Claude Code with safety gates:
+Sutra is a bash loop that repeatedly invokes Claude Code with safety gates:
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│                     RALPH MAIN LOOP                            │
+│                     SUTRA MAIN LOOP                            │
 │                                                                │
 │  while true; do                                                │
 │    1. Check circuit breaker (is it open?)                     │
-│    2. Check rate limits (calls remaining?)                    │
-│    3. Build context (loop #, previous summary, circuit state) │
+│    2. Check cost limits                                       │
+│    3. Build context (loop #, bead details, branch context)    │
 │    4. Execute Claude Code with timeout                        │
-│    5. Analyze response for signals                            │
-│    6. Update progress tracking                                │
-│    7. Check exit conditions (dual-gate)                       │
+│    5. Check bead status                                       │
+│    6. Update circuit breaker                                  │
+│    7. Check exit conditions                                   │
 │  done                                                          │
 └────────────────────────────────────────────────────────────────┘
 ```
@@ -262,17 +262,13 @@ Ralph is a bash loop that repeatedly invokes Claude Code with safety gates:
 
 ```
 project/
-├── .ralph/
-│   ├── PROMPT.md           # Development instructions (Claude reads this)
-│   ├── @fix_plan.md        # Prioritized task checklist
-│   ├── @AGENT.md           # Build/run/test instructions
-│   ├── specs/              # Technical specifications
+├── .sutra/
+│   ├── config              # Project defaults (model, timeout, etc.)
+│   ├── state               # Loop state (circuit breaker, playlist pos)
 │   ├── logs/
-│   │   ├── ralph.log       # Execution log
-│   │   └── claude_output_*.log
-│   ├── status.json         # Current loop status
-│   ├── progress.json       # Real-time progress
-│   └── [state files]       # Session, circuit breaker, signals
+│   │   ├── sessions/       # Per-session logs
+│   │   └── stream/         # Per-invocation stream-json
+│   └── playlist-progress.md  # Progress snapshot
 ├── .beads/
 │   └── issues.jsonl        # Persistent issue tracking
 └── src/
@@ -281,76 +277,41 @@ project/
 ### Essential Commands
 
 ```bash
-# Setup (one-time global)
-./install.sh                # Installs to ~/.ralph and ~/.local/bin
-
 # Per-project setup
-ralph-setup my-project      # Creates .ralph/ structure
+sutra --init                # Creates .sutra/config from template
 cd my-project
 
 # Execution
-ralph                       # Start autonomous loop
-ralph --monitor             # Loop + live dashboard (tmux)
-ralph --calls 50            # Limit to 50 API calls/hour
-ralph --timeout 20          # 20-minute timeout per loop
+sutra                       # Start autonomous loop
+sutra --monitor             # Loop + live dashboard (tmux)
+sutra --max-cost 5.00       # Stop at $5
+sutra --timeout 20          # 20-minute timeout per loop
 
 # Monitoring
-ralph --status              # Current state
-ralph-monitor               # Live dashboard
-tail -f .ralph/logs/ralph.log
+sutra --status              # Current state
 
 # Recovery
-ralph --reset-circuit       # Clear circuit breaker
-ralph --reset-session       # Start fresh session
+sutra --reset               # Clear circuit breaker and counters
 ```
 
 ### Circuit Breaker (Safety Mechanism)
 
-Three-state machine protecting against runaway loops:
+Three-state machine protecting against stuck loops:
 
 ```
-CLOSED ──[no progress ≥3 OR errors ≥5]──> OPEN (halt)
-       └──[no progress ≥2]──> HALF_OPEN (monitoring)
+CLOSED ──[2 no-progress]──> HALF_OPEN
+       
+HALF_OPEN ──[3 no-progress]──> OPEN (halt)
+          └──[progress]──> CLOSED (recovery)
 
-HALF_OPEN ──[progress detected]──> CLOSED (recovery)
-          └──[no progress ≥3]──> OPEN (fail)
-
-OPEN ──[manual reset only]──> CLOSED
+OPEN ──[sutra --reset only]──> CLOSED
 ```
 
-**Thresholds:**
-- `CB_NO_PROGRESS_THRESHOLD=3` — Opens after 3 loops with no file changes
-- `CB_SAME_ERROR_THRESHOLD=5` — Opens after 5 identical errors
-- `CB_OUTPUT_DECLINE_THRESHOLD=70` — Opens if output drops 70%
+Progress means the bead status changed after an invocation. No-progress means Claude ran but the bead is still `in_progress`.
 
-### Dual-Gate Exit (Prevents False Exits)
+### Cost Limiting
 
-Ralph exits ONLY when BOTH conditions are met:
-
-1. **Heuristic detection:** ≥2 completion indicators (natural language patterns)
-2. **Explicit signal:** `EXIT_SIGNAL: true` in RALPH_STATUS block
-
-**Why?** Prevents exit on "feature done, moving to tests" when more work remains.
-
-### RALPH_STATUS Block (Claude Must Output)
-
-```
----RALPH_STATUS---
-STATUS: IN_PROGRESS | COMPLETE | BLOCKED
-TASKS_COMPLETED_THIS_LOOP: 2
-FILES_MODIFIED: 5
-TESTS_STATUS: PASSING | FAILING | NOT_RUN
-WORK_TYPE: IMPLEMENTATION | TESTING | DOCUMENTATION | REFACTORING
-EXIT_SIGNAL: false | true
-RECOMMENDATION: <next steps>
----END_RALPH_STATUS---
-```
-
-### Rate Limiting
-
-- Default: 100 API calls/hour
-- Automatic hourly reset with countdown
-- Configurable via `--calls NUM`
+`--max-cost USD` halts the loop when cumulative spend exceeds the limit. Cost is extracted from `stream-json` after each invocation and accumulated in `.sutra/state`.
 
 ---
 
@@ -359,40 +320,38 @@ RECOMMENDATION: <next steps>
 ### Project Initialization
 
 ```bash
-# 1. Create project with ralph structure
-ralph-setup my-project
+# 1. Initialize sutra config
+sutra --init
 cd my-project
 
-# 2. Initialize beads
-bd init
+# 2. Create initial issues
+br create --title "Core authentication system" --type epic --priority 1
+br create --title "User login endpoint" --type task --priority 1
+br create --title "Session management" --type task --priority 2
 
-# 3. Create initial issues from PRD or manual entry
-bd create --title "Core authentication system" --type epic --priority 1
-bd create --title "User login endpoint" --type task --priority 1
-bd create --title "Session management" --type task --priority 2
+# 3. Set up dependencies
+br dep add <login-id> <auth-id>      # login depends on auth epic
+br dep add <session-id> <login-id>   # session depends on login
 
-# 4. Set up dependencies
-bd dep add bd-login bd-auth      # login depends on auth epic
-bd dep add bd-session bd-login   # session depends on login
-
-# 5. Configure PROMPT.md with objectives
-edit .ralph/PROMPT.md
+# 4. Optionally create a playlist
+sutra playlist create --epic <auth-id> -o plan.playlist
+sutra playlist init plan.playlist
 ```
 
 ### Daily Human Workflow
 
 **Morning (Review overnight work):**
 ```bash
-# Check what ralph accomplished
-tail -100 .ralph/logs/ralph.log
+# Check what sutra accomplished
+tail -100 .sutra/logs/sessions/*.log
 
-# Review verification queue (issues closed by Ralph)
+# Review verification queue (issues closed by sutra)
 bnr                    # List issues needing verification
 # For each: read instructions, test, then mark verified
 bV                     # Opens picker → select → mark verified=yes
 
 # Review any blocked or failed work
-bd blocked
+br blocked
 bv --robot-insights | jq '.cycles'
 
 # Check for unverified closed issues (legacy or missed)
@@ -408,69 +367,62 @@ buv                    # Shows closed issues without verification state
 bv --robot-triage | jq '.recommendations[:10]'
 
 # Clear any blockers
-bd update bd-xyz --status open --comment "Dependency resolved"
+br update <id> --status open
 
 # Create new issues for discovered work
-bd create --title "..." --priority 2
+br create --title "..." --priority 2
 
 # Set up dependencies
-bd dep add <new-issue> <parent>
+br dep add <new-issue> <parent>
 
 # Verify graph is healthy
-bd dep cycles           # Should be empty
+br dep cycles           # Should be empty
 bv --robot-insights | jq '.project_health'
 
 # Sync before leaving
-bd sync && git push
+br sync --flush-only && git add .beads/ && git commit -m "chore: sync beads" && git push
 ```
 
-**Evening (Launch ralph):**
+**Evening (Launch sutra):**
 ```bash
-# Update PROMPT.md with tonight's focus
-edit .ralph/PROMPT.md
+# Validate tonight's playlist
+sutra playlist init plan.playlist
 
 # Start autonomous execution
-ralph --monitor
+sutra --monitor
 
 # Or for overnight: detach and leave running
-ralph --monitor
+sutra --tmux --playlist plan.playlist
 # Then: Ctrl+B, D to detach tmux
 ```
 
-### Ralph's Internal Loop (What Happens at Night)
+### Sutra's Internal Loop (What Happens at Night)
 
 ```bash
-# Each iteration:
+# Each iteration (simplified — actual implementation is in lib/):
 
-# 1. Get top actionable issue
-TOP_ISSUE=$(bv --robot-triage | jq -r '.recommendations[0].id')
+# 1. Get next ready task
+NEXT=$(br ready --json | jq -r '.[0].id')
 
 # 2. Claim the work
-bd update $TOP_ISSUE --status in_progress
+br update $NEXT --status in_progress
 
 # 3. Execute implementation (Claude Code does the work)
-# - Reads issue details: bd show $TOP_ISSUE
+# - Reads issue details: br show $NEXT
 # - Implements changes
 # - Runs tests
-# - Commits with conventional format
+# - Sutra commits with conventional format
 
 # 4. Complete the issue and mark for human verification
-bd close $TOP_ISSUE
-bd set-state $TOP_ISSUE verified=needs-review --reason "VERIFICATION INSTRUCTIONS:
-1. [Step to test]
-2. [Expected behavior]
+br close $NEXT --reason "implemented"
+br label add $NEXT verified:needs-review
 
-NOTES: [What was changed]"
-
-# 5. Check for next work or exit
-REMAINING=$(bd count --status open)
-if [ "$REMAINING" = "0" ]; then
-    # Signal completion
-    EXIT_SIGNAL=true
-fi
+# 5. Check exit conditions (cost, loops, circuit breaker)
+# update_circuit_breaker
+# check_exit_conditions
 ```
 
-**IMPORTANT:** All autonomous work must be marked `verified=needs-review` with clear test instructions. See [[BEADS_VERIFICATION_WORKFLOW.md]] for the full protocol.
+**IMPORTANT:** All autonomous work must be marked `verified:needs-review` with clear test instructions. See [[BEADS_VERIFICATION_WORKFLOW.md]] for the full protocol.
 
 ### Beads + BV Integration Patterns
 
@@ -479,9 +431,9 @@ fi
 # Get top 3 by triage score
 bv --robot-triage | jq '.recommendations[:3][] | {id, title, score: .triage_score}'
 
-# Pick highest that's ready
+# Pick highest that's ready (sutra does this automatically in standard mode)
 NEXT=$(bv --robot-triage | jq -r '.recommendations[0].id')
-bd update $NEXT --status in_progress
+br update $NEXT --status in_progress
 ```
 
 **Pattern 2: Quick Wins First**
@@ -510,16 +462,12 @@ bv --robot-triage-by-label | jq '.recommendations_by_label.auth'
 
 **"Land the plane" protocol:** End every session by:
 1. Updating beads issues with current state
-2. Syncing the tracker (`bd sync`)
+2. Syncing the tracker (`br sync --flush-only`)
 3. Cleaning git state (no uncommitted changes)
 4. Removing debugging artifacts
-5. Generating a prompt for the next session
+5. Writing handoff notes for the next session
 
-**One task, one session:** Kill the process after completing each task and start fresh. This:
-- Saves money (shorter contexts)
-- Improves model performance (no accumulated confusion)
-- Maintains clean state
-- Beads provides continuity between sessions
+**One task, one session:** Sutra handles this automatically — each bead is one task. Context is kept short by design.
 
 **File beads for any work exceeding two minutes:** If it takes longer than a quick fix, it deserves tracking. Creates audit trails and enables work discovery across sessions.
 
@@ -565,17 +513,17 @@ Before allowing autonomous execution:
 
 ### Common Issues
 
-**Ralph circuit breaker opens repeatedly:**
+**Sutra circuit breaker opens repeatedly:**
 ```bash
 # Check what's causing no progress
-tail -50 .ralph/logs/ralph.log
-cat .ralph/.circuit_breaker_history | jq '.[-5:]'
+tail -50 .sutra/logs/sessions/*.log
 
 # Common causes:
 # - Tests failing (fix the tests)
 # - Missing dependencies (install them)
-# - Permission issues (check .ralph/PROMPT.md allowed tools)
 # - Unclear task (improve issue description)
+# Reset:
+sutra --reset
 ```
 
 **Beads sync conflicts:**
@@ -595,97 +543,76 @@ bv --robot-insights | jq '.cycles'
 bd dep remove <issue-id> <blocking-dep-id>
 ```
 
-**Ralph exits too early:**
-- Ensure PROMPT.md requires RALPH_STATUS block
-- Check for false completion keywords in output
-- Increase `MAX_CONSECUTIVE_DONE_SIGNALS` if needed
+**Sutra halts unexpectedly:**
+- Check `.sutra/state` for circuit breaker status
+- Review the session log for the last invocation
+- Run `sutra --reset` to clear and retry
 
-**Ralph never exits:**
-- Verify tasks are being marked complete
-- Check for infinite test loops (test-only work)
-- Ensure EXIT_SIGNAL: true is being output
+**Tasks not closing:**
+- Verify bead descriptions are clear and actionable
+- Check that the bead has no unresolved blockers (`br show <id>`)
 
 ### Recovery Commands
 
 ```bash
-# Reset everything and start fresh
-ralph --reset-circuit
-ralph --reset-session
-bd sync
-git stash  # if needed
+# Reset and start fresh
+sutra --reset
+br sync --flush-only
+git add .beads/ && git commit -m "chore: sync beads"
 
 # Force close stuck issues
-bd update <id> --status closed --reason "abandoned"
+br update <id> --status closed
 
 # Compact old issues if performance degrades
-bd compact --days 60
+br compact --days 60
 ```
 
 ---
 
 ## Part 7: Advanced Patterns
 
-### Multi-Epic Orchestration
+### Multi-Epic Orchestration with Playlists
 
 ```bash
 # Create parent epic
-bd create --title "Q1 Auth Overhaul" --type epic --priority 1
+br create --title "Q1 Auth Overhaul" --type epic --priority 1
 
 # Create child epics
-bd create --title "OAuth Integration" --type epic --priority 1
-bd create --title "Session Management" --type epic --priority 2
+br create --title "OAuth Integration" --type epic --priority 1
+br create --title "Session Management" --type epic --priority 2
 
 # Link them
-bd dep add bd-oauth bd-q1auth
-bd dep add bd-session bd-q1auth
+br dep add <oauth-id> <q1auth-id>
+br dep add <session-id> <q1auth-id>
 
-# Work proceeds bottom-up through the graph
+# Generate and run a playlist for the whole epic
+sutra playlist create --epic <q1auth-id> -o q1-auth.playlist
+sutra playlist init q1-auth.playlist
+sutra --playlist q1-auth.playlist --monitor
 ```
 
-### Molecule Templates
-
-Beads supports reusable work templates (molecules):
-```bash
-bd mol list                    # Show catalog
-bd mol show <mol-id>          # Template details
-bd mol seed <mol-id>          # Instantiate template
-```
-
-### Overnight Batch Processing
-
-For multiple projects:
-```bash
-#!/bin/bash
-for project in /path/to/project1 /path/to/project2; do
-    cd "$project"
-    ralph --calls 50 --timeout 30
-done
-```
-
-### Monitoring Multiple Projects
+### Remote Overnight Execution
 
 ```bash
-# Check status across projects
-for project in */; do
-    if [ -f "$project/.ralph/status.json" ]; then
-        echo "=== $project ==="
-        cat "$project/.ralph/status.json" | jq '{status, loop_count}'
-    fi
-done
+# Run on a remote server
+sutra --remote opc@oracle --playlist plan.playlist
+
+# Or configure REMOTE_HOST in .sutra/config then:
+sutra -r --playlist plan.playlist
 ```
 
 ---
 
 ## Quick Reference Card
 
-### Beads (bd)
+### Beads (br)
 ```bash
-bd ready                    # Unblocked work
-bd create --title "..." --priority 2
-bd update <id> --status in_progress
-bd close <id> --reason "..."
-bd dep add <child> <parent>
-bd sync                     # ALWAYS before leaving
+br ready                    # Unblocked work
+br create --title "..." --priority 2
+br update <id> --status in_progress
+br close <id> --reason "..."
+br dep add <child> <parent>
+br sync --flush-only        # ALWAYS before leaving
 ```
 
 ### Beads Viewer (bv)
@@ -696,12 +623,14 @@ bv --robot-next             # Single top pick
 # NEVER run bare `bv` in automation
 ```
 
-### Ralph
+### Sutra
 ```bash
-ralph-setup <project>       # Init project
-ralph --monitor             # Run with dashboard
-ralph --reset-circuit       # Clear circuit breaker
-ralph --status              # Check state
+sutra --init                # Init project config
+sutra --monitor             # Run with dashboard
+sutra --reset               # Clear circuit breaker
+sutra --status              # Check state
+sutra playlist init FILE    # Validate playlist
+sutra playlist create --epic ID -o FILE  # Author playlist
 ```
 
 ### Verification (Human Review)
@@ -710,14 +639,11 @@ bnr                         # List issues needing verification
 bV                          # Mark selected issue as verified
 bmr                         # Mark issue as needs-review
 buv                         # List unverified closed issues
-bd set-state <id> verified=needs-review --reason "..."
-bd state <id> verified      # View current state and reason
 ```
 
 ### The Golden Rule
 
 > File beads for any work exceeding two minutes.
-> One task, one session.
 > Land the plane before leaving.
 > Work is NOT done until pushed.
 
@@ -726,30 +652,27 @@ bd state <id> verified      # View current state and reason
 ## Appendix: Tool Versions & Installation
 
 ### Requirements
-- Go 1.21+ (for beads)
+- beads_rust (`br`)
 - Rust (for beads_viewer)
-- Bash 4+ (for ralph)
-- Claude Code CLI 2.0.76+
+- Bash 4+ (for sutra)
+- Claude Code CLI
 - jq (for JSON parsing)
-- tmux (optional, for ralph --monitor)
+- tmux (optional, for sutra --monitor)
 
 ### Installation
 ```bash
-# Beads
-go install github.com/anthropics/beads/cmd/bd@latest
-
 # Beads Viewer
 cargo install beads_viewer
 
-# Ralph
-cd /path/to/ralph-claude-code
-./install.sh
+# Sutra
+cd /path/to/sutra
+# The binary is ./sutra
 ```
 
 ### Verification
 ```bash
-bd --version
+br --version
 bv --version
-ralph --version
+sutra --version
 claude --version
 ```

@@ -1,26 +1,26 @@
 # Harvest Skill
 
-The methodology harvest skill for ralph. Reviews completed ralph runs to find
+The methodology harvest skill for sutra. Reviews completed sutra runs to find
 orchestration and instruction gaps, scores findings against seven guardrails,
 and generates self-improvement beads.
 
 ## What it does
 
-The methodology harvest reviews **how ralph performed**, not what code it produced.
+The methodology harvest reviews **how sutra performed**, not what code it produced.
 It asks: *given the same philosophy, can the next run be simpler, better
 aligned, or less redundant?*
 
 ## Input
 
-A completed ralph run, identified by:
+A completed sutra run, identified by:
 - Specific run ID (timestamp, playlist name, branch), or
 - Auto-detected most recent run
 
 The skill reads:
-- Session logs (`.ralph/logs/sessions/*.log`)
-- Stream-json files (`.ralph/logs/stream/*.jsonl`)
+- Session logs (`.sutra/logs/sessions/*.log`)
+- Stream-json files (`.sutra/logs/stream/*.jsonl`)
 - Playlist files (if applicable)
-- Playlist progress snapshot (`.ralph/playlist-progress.md`)
+- Playlist progress snapshot (`.sutra/playlist-progress.md`)
 - Playlist completion report
 - Bead state diffs
 
@@ -28,7 +28,7 @@ The skill reads:
 
 1. **A dated epic** of self-improvement beads (tagged `self-improvement`,
    prefixed `HV:`)
-2. **A concise report** at `.ralph/harvests/<timestamp>.md`
+2. **A concise report** at `.sutra/harvests/<timestamp>.md`
 
 ## Process
 
@@ -64,22 +64,22 @@ Trigger phrases:
 - "methodology harvest"
 - "harvest findings"
 - "what went wrong in this run"
-- "review the ralph run"
+- "review the sutra run"
 
 ## When NOT to use
 
-- Code review of the work ralph produced — use the separate work harvest
+- Code review of the work sutra produced — use the separate work harvest
 - Questions about harvest syntax or methodology — answer directly
-- Running or monitoring a playlist — use `ralph --playlist`
-- Validating a playlist — use `ralph playlist init`
+- Running or monitoring a playlist — use `sutra --playlist`
+- Validating a playlist — use `sutra playlist init`
 
 ## Quick reference
 
 | Command | Purpose |
 |---------|---------|
-| `ralph --playlist playlists/harvest-methodology.playlist` | Run the full harvest playlist |
+| `sutra --playlist playlists/harvest-methodology.playlist` | Run the full harvest playlist |
 | `br list -l self-improvement` | View pending methodology findings |
-| `ls .ralph/harvests/` | Browse harvest archive |
+| `ls .sutra/harvests/` | Browse harvest archive |
 
 ## See also
 

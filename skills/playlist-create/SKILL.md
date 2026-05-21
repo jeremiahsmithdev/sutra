@@ -1,21 +1,21 @@
 ---
 name: playlist-create
 description: >
-  Generate a valid ralph playlist file from an epic or set of bead IDs.
+  Generate a valid sutra playlist file from an epic or set of bead IDs.
   Auto-activates on phrasings like "create a playlist for epic X",
   "generate a playlist for these beads", "build a .playlist file",
   "make a playlist", "write a playlist". Also invoked explicitly by
-  ralph's playlist create command via templates/prompt_playlist_create.txt.
+  sutra's playlist create command via templates/prompt_playlist_create.txt.
   Handles dependency ordering, quality gate placement, and per-line
   annotation syntax. Output is always consistent regardless of whether
-  invoked interactively or from ralph's automated pipeline.
+  invoked interactively or from sutra's automated pipeline.
 allowed-tools: "Read,Write,Bash(br:*)"
 version: "1.0.0"
 ---
 
 # Playlist Create Skill
 
-Generate a ralph playlist file — a text file where each line is a bead
+Generate a sutra playlist file — a text file where each line is a bead
 ID, a prompt, a gate shorthand, a comment, or a branch directive.
 
 ## Reference files in this skill directory
@@ -29,9 +29,9 @@ Load these on-demand, not eagerly.
   generating a non-trivial playlist (>5 beads, multiple epics, or when
   gate context specificity is uncertain).
 
-## Reference files OUTSIDE this skill (in the ralph repo)
+## Reference files OUTSIDE this skill (in the sutra repo)
 
-The gate tags you place in playlists are shorthand. At runtime ralph
+The gate tags you place in playlists are shorthand. At runtime sutra
 expands each `#TAG` into the full prompt body from the corresponding
 template file. Read these when the surrounding bead work is unusual
 enough that you need to verify the gate's prompt will actually exercise
@@ -69,7 +69,7 @@ to test ("POST /api/auth/login with bad password — verify 401"), not
 Most gate templates end with a self-healing directive: when the gate
 finds problems, Claude is told to `br create --type=bug` and **append
 the new bead ID to the playlist file on the line after the current
-gate**. Ralph's `playlist_reload.sh` re-reads the file after each `>`
+gate**. Sutra's `playlist_reload.sh` re-reads the file after each `>`
 prompt invocation, so injected beads become the next executed lines.
 
 Implications when authoring:
@@ -120,7 +120,7 @@ this prompt":
 
 ## Two operating modes
 
-### Mode A — Assisted (called from ralph)
+### Mode A — Assisted (called from sutra)
 
 The prompt contains a `BEADS:` section with pre-formatted bead data
 (`id — title (parent: X) [depends: Y, Z]`) and an `OUTPUT_FILE` path.
@@ -242,19 +242,19 @@ In both modes, write the playlist to a file using the Write tool.
 
 After generation, the playlist should be run through:
 ```bash
-ralph playlist init <file.playlist>
+sutra playlist init <file.playlist>
 ```
 
 This runs Phase 1 (syntax + gate density checks) and Phase 2 (semantic
 audit via Claude that checks dependency ordering and gate context quality).
-In the ralph `playlist create` pipeline, init is called automatically
+In the sutra `playlist create` pipeline, init is called automatically
 after generation. In interactive use, remind the user to run it.
 
 ## When this skill does NOT apply
 
 - User is asking about playlist syntax but not generating one — answer
   directly without activating this skill's generation workflow
-- User wants to run or monitor an existing playlist — that's `ralph
+- User wants to run or monitor an existing playlist — that's `sutra
   --playlist` territory, not this skill
-- User wants to validate an existing playlist — that's `ralph playlist
+- User wants to validate an existing playlist — that's `sutra playlist
   init`, not this skill

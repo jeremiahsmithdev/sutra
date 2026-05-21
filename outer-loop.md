@@ -1,6 +1,6 @@
 You're right, apologies — the context got compacted mid-research and the synthesis never made it through. I already have all the research findings though. Let me deliver the complete output now.
 
-Here's the full picture on outer loop orchestrator options for your ralph + beads setup:
+Here's the full picture on outer loop orchestrator options for your sutra + beads setup:
 
 ---
 
@@ -17,6 +17,8 @@ The key question is: should that outer loop be deterministic (bash), a lightweig
 **The overwhelming consensus from practitioners is: keep the outer loop dumb.**
 
 Chris McDowell (who runs this in production with beads) wrote a whole post titled "Your Agent Orchestrator Is Too Clever" making the case that elaborate multi-agent systems get surpassed by simpler methods with better models. His outer loop is literally a bash script that polls beads:
+
+(Note: "ralph" in the context of practitioners below refers to Geoffrey Huntley's original ralph bash-loop pattern, not this tool (now called sutra).)
 
 ```bash
 READY_COUNT=$(bd count --status open 2>/dev/null || echo "0")
@@ -150,12 +152,12 @@ Every routing decision goes through a lightweight model. The model receives a mi
 
 ## Existing Tools Worth Knowing About
 
+These are external tools in the ecosystem (not sutra):
+
 - **ralph-tui** (github.com/subsy/ralph-tui): TypeScript TUI orchestrator with native beads support (`--epic my-epic-id`), headless mode, session persistence, crash recovery, sandbox isolation. Supports Claude Code, OpenCode, Gemini CLI, Codex, Kiro CLI. This is probably the most polished outer loop implementation.
 
 - **ralph-orchestrator** (github.com/mikeyobrien/ralph-orchestrator): Hat-based system with backpressure gates (tests, lint, typecheck must pass), Telegram integration for human-in-loop, 31 presets. Multi-backend support.
 
 - **ralph-kit** (Josh Chisholm): Ready-to-use template combining ralph loops with beads specifically.
 
-- **The official ralph-wiggum plugin** in Claude Code marketplace handles the *inner* loop (stop hook + re-injection), so you'd pair that with your outer loop script.
-
-The simplest path: write ~100 lines of bash that polls beads-BV for the next task, spawns Claude Code with the ralph-wiggum plugin, waits for completion, injects quality gate beads, and loops. That's the whole thing.
+The simplest path: write ~100 lines of bash that polls beads-BV for the next task, spawns Claude Code, waits for completion, injects quality gate beads, and loops. That's the whole thing — and that's essentially what sutra is.

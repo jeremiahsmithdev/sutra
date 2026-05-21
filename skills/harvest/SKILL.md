@@ -1,10 +1,10 @@
 ---
 name: harvest
 description: >
-  HARD TRIGGER: when user messages contain "harvest" + any of ralph/run/
+  HARD TRIGGER: when user messages contain "harvest" + any of sutra/ralph/run/
   session/playlist/findings/gaps/methodology/work/code/self/review/verifications/
   morning, LOAD THIS SKILL. Also trigger on "run a harvest", "harvest this
-  run", "harvest findings", "review ralph run", "morning review". Supports
+  run", "harvest findings", "review sutra run", "morning review". Supports
   three modes: code harvest (review work produced), methodology harvest
   (analyze run itself), self-harvest (skill uses same orchestrator it evaluates).
   Handles multiple unharvested runs, marks as harvested, provides interactive
@@ -15,7 +15,7 @@ version: "1.1.0"
 
 # Harvest Skill
 
-Performs ralph harvests — reviewing completed runs to extract learnings,
+Performs sutra harvests — reviewing completed runs to extract learnings,
 improve orchestration, and groom backlog. Two main harvest types:
 
 | Harvest type | What it reviews | Output |
@@ -49,8 +49,8 @@ AskUserQuestion with these options:
 Scan for completed runs that haven't been harvested yet:
 
 ```bash
-# Check .ralph/reports/ for unharvested runs
-ls -t .ralph/reports/*.md 2>/dev/null | while read f; do
+# Check .sutra/reports/ for unharvested runs
+ls -t .sutra/reports/*.md 2>/dev/null | while read f; do
   if ! grep -q "harvested:" "$f" 2>/dev/null; then
     echo "$f"
   fi
@@ -58,9 +58,9 @@ done
 ```
 
 Also list prior harvest reports for this project — both code and methodology
-harvests are written to `.ralph/harvests/`:
+harvests are written to `.sutra/harvests/`:
 ```bash
-ls -t .ralph/harvests/*.md 2>/dev/null || echo "No prior harvests"
+ls -t .sutra/harvests/*.md 2>/dev/null || echo "No prior harvests"
 ```
 
 ### Step 2 — Multiple runs found
@@ -69,7 +69,7 @@ If more than one unharvested run exists, ask user which to harvest first:
 
 ```bash
 # List available runs with metadata
-for report in $(ls -t .ralph/reports/*.md 2>/dev/null | head -10); do
+for report in $(ls -t .sutra/reports/*.md 2>/dev/null | head -10); do
   basename "$report"
   # Extract timestamp, run type, identifier
 done
@@ -87,17 +87,17 @@ If user chooses sequential, process runs one at a time, asking after each whethe
 For the selected run, extract:
 - Run identifier: from report filename or user input
 - Run type: playlist or standard mode
-- Session log path: `.ralph/logs/sessions/<filename>`
-- Stream-json files: `.ralph/logs/stream/<session>-*.jsonl`
+- Session log path: `.sutra/logs/sessions/<filename>`
+- Stream-json files: `.sutra/logs/stream/<session>-*.jsonl`
 - Playlist file (if applicable): locate `.playlist` file
-- Playlist completion report: `.ralph/playlist-progress.md`
+- Playlist completion report: `.sutra/playlist-progress.md`
 - Bead state: `br list --json`
 
 ---
 
 ## CODE HARVEST MODE
 
-The code harvest reviews work that ralph produced overnight. It is the morning
+The code harvest reviews work that sutra produced overnight. It is the morning
 routine described in `Harvest.md`.
 
 ### Step 1 — Read the log
@@ -136,7 +136,7 @@ without testing. Check:
 
 ### Step 3 — Check quality gates
 
-Ralph creates review and test beads as follow-ups. Check whether the quality
+Sutra creates review and test beads as follow-ups. Check whether the quality
 gate work is substantive or superficial:
 - A review bead that just says "looks good" is not a review
 - Test beads should have meaningful coverage
@@ -151,8 +151,8 @@ Use metrics data to surface anomalies. Run queries to find outliers:
 
 ```bash
 # Issues where time predictions were way off
-if [ -f .ralph/metrics.db ]; then
-  sqlite3 .ralph/metrics.db "
+if [ -f .sutra/metrics.db ]; then
+  sqlite3 .sutra/metrics.db "
     SELECT issue_id, estimated_minutes, actual_minutes, time_ratio
     FROM task_metrics WHERE time_ratio > 3.0 OR time_ratio < 0.3;"
 fi
@@ -194,14 +194,14 @@ Ask user:
 ### Step 7 — Generate harvest report
 
 Write the final harvest report (see "Report Format" below) to
-`.ralph/harvests/`. This is the harvest's own output; the ralph
-completion report under `.ralph/reports/` is left untouched except
+`.sutra/harvests/`. This is the harvest's own output; the sutra
+completion report under `.sutra/reports/` is left untouched except
 for the marker stamp added in Step 8.
 
 ```bash
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-HARVEST_REPORT=".ralph/harvests/${TIMESTAMP}-code.md"
-mkdir -p .ralph/harvests
+HARVEST_REPORT=".sutra/harvests/${TIMESTAMP}-code.md"
+mkdir -p .sutra/harvests
 # Render the report using the structure documented under "Report Format"
 # below, then write it to "$HARVEST_REPORT".
 ```
@@ -209,12 +209,12 @@ mkdir -p .ralph/harvests
 ### Step 8 — Mark the run as harvested
 
 After the harvest report is written and user review is complete,
-stamp the underlying ralph completion report so future harvest runs
+stamp the underlying sutra completion report so future harvest runs
 skip it:
 
 ```bash
 # Append a marker to the run's completion report (NOT the harvest report).
-REPORT_FILE=".ralph/reports/$(basename "$REPORT_PATH")"
+REPORT_FILE=".sutra/reports/$(basename "$REPORT_PATH")"
 harvest_date=$(date +%Y-%m-%d)
 
 echo -e "\n\n---\n## Harvest\n\n**Code harvest completed:** $harvest_date\n**Mode:** code\n**Verifications reviewed:** N\n**Reopened:** M\n**New beads:** K\n**Report:** $HARVEST_REPORT\n" >> "$REPORT_FILE"
@@ -233,10 +233,10 @@ provides the workflow.
 ### Step 1 — Read run inputs
 
 Read all available inputs:
-1. Session log (`.ralph/logs/sessions/*.log`)
-2. Stream-json files (`.ralph/logs/stream/*.jsonl`) — extract turn counts, cost, model escalations, tool use patterns
+1. Session log (`.sutra/logs/sessions/*.log`)
+2. Stream-json files (`.sutra/logs/stream/*.jsonl`) — extract turn counts, cost, model escalations, tool use patterns
 3. Playlist file (if applicable) — planned order, annotations, gate tags
-4. Playlist progress snapshot (`.ralph/playlist-progress.md`)
+4. Playlist progress snapshot (`.sutra/playlist-progress.md`)
 5. Playlist completion report (generated at run end)
 6. Bead state diff — compare `br list` before/after
 
@@ -248,7 +248,7 @@ Look for failure patterns in the logs:
 |---------|--------------|------------------|
 | Retries | Stream-json retry_count, log "retrying" | Model couldn't complete task |
 | Escalation | Stream-json model changes, log "escalating" | Cheap model insufficient |
-| Circuit breaker trip | `.ralph/state` circuit_breaker field | No progress on multiple attempts |
+| Circuit breaker trip | `.sutra/state` circuit_breaker field | No progress on multiple attempts |
 | Shallow gate work | Short turn counts after gate tags | Gate produced trivial changes |
 | Stalls | Long pauses, timeout logs | Blocker not resolved |
 
@@ -289,17 +289,17 @@ For each finding, use AskUserQuestion to confirm classification:
 ### Step 5 — Generate harvest report
 
 **Write to the methodology codebase, not the execution project.** A methodology
-harvest analyses ralph's orchestration — its findings and beads concern the
-ralph codebase itself. The report and the self-improvement beads therefore
-belong in the **ralph repo** (the methodology codebase), NOT in the execution
-project whose `.ralph/queue` produced the run. Only the *code* harvest writes
+harvest analyses sutra's orchestration — its findings and beads concern the
+sutra codebase itself. The report and the self-improvement beads therefore
+belong in the **sutra repo** (the methodology codebase), NOT in the execution
+project whose `.sutra/queue` produced the run. Only the *code* harvest writes
 into the execution project.
 
-Resolve the ralph repo root (e.g. the directory containing `lib/loader.sh` and
-`ralph`) and create the report at `<ralph-repo>/.ralph/harvests/<timestamp>-methodology.md`.
-Create the epic and beads in the ralph repo's `.beads/` (run `br` from that
+Resolve the sutra repo root (e.g. the directory containing `lib/loader.sh` and
+`sutra`) and create the report at `<sutra-repo>/.sutra/harvests/<timestamp>-methodology.md`.
+Create the epic and beads in the sutra repo's `.beads/` (run `br` from that
 directory). The run's completion report under the execution project's
-`.ralph/reports/` is still stamped in place (Step 7) — only the harvest
+`.sutra/reports/` is still stamped in place (Step 7) — only the harvest
 artefacts move.
 
 ```markdown
@@ -372,7 +372,7 @@ After approval, create the epic and beads:
 ```bash
 # Create epic
 EPIC_ID=$(br create --type epic --title "Harvest $TIMESTAMP — $IDENTIFIER" \
-  --priority 2 --description "Methodology harvest for ralph run $IDENTIFIER.
+  --priority 2 --description "Methodology harvest for sutra run $IDENTIFIER.
 
 Run metadata:
 - Type: <playlist/standard>
@@ -381,7 +381,7 @@ Run metadata:
 - Timestamp: $TIMESTAMP
 
 Epic contains all findings that survived the seven guardrails.
-See .ralph/harvests/$TIMESTAMP-methodology.md for full report." | jq -r '.id')
+See .sutra/harvests/$TIMESTAMP-methodology.md for full report." | jq -r '.id')
 
 # Create beads for accepted findings
 # (use commands from report)
@@ -398,10 +398,10 @@ Mark the run as harvested in its report:
 
 ```bash
 # Add harvest metadata to the report file
-REPORT_FILE=".ralph/reports/$(basename "$REPORT_PATH")"
+REPORT_FILE=".sutra/reports/$(basename "$REPORT_PATH")"
 harvest_date=$(date +%Y-%m-%d)
 
-echo -e "\n\n---\n## Harvest\n\n**Methodology harvest completed:** $harvest_date\n**Mode:** methodology\n**Epic:** br-$EPIC_ID\n**Findings accepted:** M\n**Report:** .ralph/harvests/$TIMESTAMP-methodology.md\n" >> "$REPORT_FILE"
+echo -e "\n\n---\n## Harvest\n\n**Methodology harvest completed:** $harvest_date\n**Mode:** methodology\n**Epic:** br-$EPIC_ID\n**Findings accepted:** M\n**Report:** .sutra/harvests/$TIMESTAMP-methodology.md\n" >> "$REPORT_FILE"
 ```
 
 ---
@@ -409,7 +409,7 @@ echo -e "\n\n---\n## Harvest\n\n**Methodology harvest completed:** $harvest_date
 ## SELF HARVEST MODE
 
 The self harvest is a methodology harvest of the skill itself. The skill
-uses ralph to evaluate and improve the skill. This is the recursive property.
+uses sutra to evaluate and improve the skill. This is the recursive property.
 
 Follow the **methodology harvest** process, but with these inputs:
 - Skill file: `skills/harvest/SKILL.md`
@@ -540,8 +540,8 @@ br create --title "<title>" --description "<description>"
 ## Harvest Status
 
 **Marked as harvested:** <date>
-**Harvest report:** `.ralph/harvests/<timestamp>-{code|methodology}.md`
-**Run report (stamped):** `.ralph/reports/<filename>.md`
+**Harvest report:** `.sutra/harvests/<timestamp>-{code|methodology}.md`
+**Run report (stamped):** `.sutra/reports/<filename>.md`
 ```
 
 ---
@@ -549,8 +549,8 @@ br create --title "<title>" --description "<description>"
 ## When NOT to use this skill
 
 - User asks about **harvest syntax or methodology** — answer directly from docs
-- User wants to **run or monitor** a playlist — use `ralph --playlist`
-- User wants to **validate** a playlist — use `ralph playlist init`
+- User wants to **run or monitor** a playlist — use `sutra --playlist`
+- User wants to **validate** a playlist — use `sutra playlist init`
 - User asks about a **different tool's harvest** — different context
 
 ## Quick command reference
@@ -562,8 +562,8 @@ br create --title "<title>" --description "<description>"
 | `breopen <id>` | Reopen an issue |
 | `br create --title=...` | Create a new bead |
 | `br list -l self-improvement` | View pending methodology findings |
-| `ls .ralph/harvests/` | Browse harvest archive |
-| `ls .ralph/reports/` | Browse run reports |
+| `ls .sutra/harvests/` | Browse harvest archive |
+| `ls .sutra/reports/` | Browse run reports |
 
 See also:
 - `Harvest.md` — Code harvest methodology

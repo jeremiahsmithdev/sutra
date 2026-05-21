@@ -12,7 +12,7 @@ General methods that scale with computation beat specialised approaches that enc
 
 This lesson applies directly to agent orchestration. Do not build elaborate multi-agent systems with specialised roles, complex handoffs, and sophisticated state machines. Build a loop.
 
-## Ralph Is a Bash Loop
+## Sutra Is a Bash Loop
 
 A single process. A single repository. One task per iteration. The opposite of microservices — because non-deterministic microservices are a red hot mess.
 
@@ -74,7 +74,7 @@ Artefacts are reusable. Decisions are ephemeral. When the model improves or the 
 
 ## Everything Is Configurable, Nothing Is Required
 
-The system works with just beads and the inner loop — a bash while-loop that picks the next open bead and runs Claude. That is the minimum viable ralph.
+The system works with just beads and the inner loop — a bash while-loop that picks the next open bead and runs Claude. That is the minimum viable sutra.
 
 BV triage improves task selection. The scout improves task preparation. Quality gates improve output reliability. Each layer adds value independently. None are prerequisites for the others.
 

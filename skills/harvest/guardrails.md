@@ -42,7 +42,7 @@ Artefacts are data the model can read and reason over. Decisions are model outpu
 
 | Example | Accepted? | Why |
 |--------|-----------|-----|
-| Writing turn counts to `.ralph/metrics.db` | ✓ | Reusable data for analysis |
+| Writing turn counts to `.sutra/metrics.db` | ✓ | Reusable data for analysis |
 | Writing tool use patterns to state | ✓ | Reusable context for next invocation |
 | Caching Claude's suggested task order | ✗ | Ephemeral decision frozen |
 | Storing "this bead is blocked" heuristic | ✗ | Model's judgment, not reusable |
@@ -68,9 +68,9 @@ The outer loop must be predictable. Randomness or opaque failure modes are defec
 
 ## Guardrail 5: Configurable, Not Required
 
-**New capability must be opt-in via `.ralph/config`.**
+**New capability must be opt-in via `.sutra/config`.**
 
-Users upgrade ralph and expect their workflows to keep working. Changes to default behaviour break this.
+Users upgrade sutra and expect their workflows to keep working. Changes to default behaviour break this.
 
 | Example | Accepted? | Why |
 |--------|-----------|-----|
@@ -80,7 +80,7 @@ Users upgrade ralph and expect their workflows to keep working. Changes to defau
 | Enabling new gate by default | ✗ | Changes playlist behavior |
 | Adding `CIRCUIT_BREAKER_THRESHOLD` config | ✓ | Parameter tuning, new default is safe |
 
-**Key principle:** Existing users are paying customers. Never change what happens when they run `./ralph` unless they explicitly ask for it.
+**Key principle:** Existing users are paying customers. Never change what happens when they run `./sutra` unless they explicitly ask for it.
 
 ## Guardrail 6: Template vs Code
 
@@ -102,7 +102,7 @@ This separation keeps the system maintainable. When you need to change how somet
 
 **File ≤ 200 lines. Function ≤ 50. Case branch ≤ 10. Inline string ≤ 5.**
 
-These limits are ralph-specific coding standards. They apply because methodology harvest findings are about improving ralph's own codebase.
+These limits are sutra-specific coding standards. They apply because methodology harvest findings are about improving sutra's own codebase.
 
 | Example | Accepted? | Why |
 |--------|-----------|-----|

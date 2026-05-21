@@ -108,45 +108,43 @@ bv --robot-triage | jq '.quick_wins'
 
 ---
 
-## Ralph Implementations
+## Sutra ⭐ RECOMMENDED
 
-"Ralph" is a concept — autonomous AI execution loops — with multiple implementations.
-
-### ralph-claude-code ⭐ RECOMMENDED
-
-**Our primary choice.** Production-ready autonomous loop with comprehensive safety.
+**This tool.** Readable bash orchestrator for overnight autonomous coding.
 
 | | |
 |---|---|
 | **Purpose** | Core autonomous execution loop |
-| **GitHub** | [github.com/anthropics/ralph-claude-code](https://github.com/anthropics/ralph-claude-code) |
-| **Local** | `/Users/admin/dev/ralph-claude-code` |
+| **GitHub** | This repo |
+| **Local** | `/Users/admin/dev/ralph` |
 | **Language** | Bash |
-| **Install** | `./install.sh` → `~/.local/bin/ralph` |
+| **Install** | `./sutra` |
 
 **Key Features:**
-- **Circuit Breaker** — 3-state machine (CLOSED/HALF_OPEN/OPEN)
-  - Opens after 3 loops with no progress
-  - Opens after 5 identical errors
-  - Opens on 70% output decline
-- **Dual-Gate Exit** — requires BOTH heuristic detection AND explicit `EXIT_SIGNAL: true`
-- **Rate Limiting** — 100 calls/hour with automatic reset
-- **Session Management** — 24-hour expiry, crash recovery
-- **RALPH_STATUS Block** — structured signaling from Claude
-- **tmux Integration** — `ralph --monitor` for live dashboard
+- **Playlist Mode** — ordered task lists with bead IDs, prompts, and quality gates
+- **Circuit Breaker** — 3-state machine (CLOSED/HALF_OPEN/OPEN), halts on repeated no-progress
+- **Cost Tracking** — `--max-cost USD` halts when budget exceeded
+- **Auto-Escalation** — bumps model (haiku→sonnet→opus) on retry
+- **tmux Integration** — `sutra --monitor` for live dashboard
+- **Remote Execution** — `sutra --remote HOST` for overnight VPS runs
 
 **Core Commands:**
 ```bash
-ralph-setup my-project      # Initialize project structure
-ralph --monitor             # Run with live dashboard
-ralph --calls 50            # Limit API calls
-ralph --reset-circuit       # Clear circuit breaker
-ralph --status              # Check current state
+sutra --init                # Initialize project config
+sutra --monitor             # Run with live dashboard
+sutra --max-cost 5.00       # Stop at $5
+sutra --reset               # Clear circuit breaker
+sutra --status              # Check current state
+sutra playlist init FILE    # Validate playlist
 ```
 
-**Use When:** Overnight autonomous coding. This is the battle-tested choice.
+**Use When:** Overnight autonomous coding. This is the primary tool.
 
 ---
+
+## Related Implementations in the Ecosystem
+
+These are external tools that share the ralph pattern (named after Geoffrey Huntley's original ralph concept) — not sutra.
 
 ### choo-choo-ralph
 
@@ -165,7 +163,7 @@ ralph --status              # Check current state
   1. **Plan** (Human) — Write requirements
   2. **Spec** (Human+AI) — Generate structured task spec with `<review>` tags
   3. **Pour** (AI) — Granularize into beads (~80 tasks per feature)
-  4. **Ralph** (AI) — Execute with bearings → implement → verify → commit
+  4. **Execute** (AI) — Execute with bearings → implement → verify → commit
   5. **Harvest** (Human+AI) — Extract learnings → update CLAUDE.md, create skills
 - **Formula System** — TOML templates defining multi-step workflows
 - **Verification Loops** — Max 3 retries before marking blocked
@@ -186,7 +184,7 @@ ralph --status              # Check current state
 - Knowledge harvesting matters (team projects, long-term codebases)
 - You prefer spec-first development
 
-**vs ralph-claude-code:**
+**vs sutra:**
 - More structured (5 phases vs 1 loop)
 - Built-in learning extraction
 - Requires more upfront planning
@@ -295,7 +293,7 @@ gt doctor                           # Diagnose issues
 - Enterprise compliance requirements
 - Cross-team coordination
 
-**vs ralph-claude-code:**
+**vs sutra:**
 - Far more complex (enterprise-grade)
 - Multi-repo, multi-agent native
 - Full attribution and routing
@@ -310,7 +308,7 @@ gt doctor                           # Diagnose issues
 
 | Scenario | Recommended Stack |
 |----------|-------------------|
-| **Single project, overnight coding** | beads + bv + ralph-claude-code |
+| **Single project, overnight coding** | beads + bv + sutra |
 | **Structured feature development** | beads + bv + choo-choo-ralph |
 | **Multi-repo enterprise** | beads + bv + gastown |
 | **Learning/experimenting** | beads + ralph-kit |
@@ -321,8 +319,8 @@ gt doctor                           # Diagnose issues
 ```
 Simple ──────────────────────────────────────────────── Complex
 
-ralph-kit → ralph-claude-code → choo-choo-ralph → gastown
-(learning)    (production)       (structured)     (enterprise)
+ralph-kit → sutra → choo-choo-ralph → gastown
+(learning)  (production)  (structured)  (enterprise)
 ```
 
 ### Compatibility Matrix
@@ -331,7 +329,7 @@ ralph-kit → ralph-claude-code → choo-choo-ralph → gastown
 |------|---------------|---------|------------|
 | beads | — | No | Yes |
 | beads_viewer | Yes | — | No |
-| ralph-claude-code | Recommended | Optional | Yes |
+| sutra | Recommended | Optional | Yes |
 | choo-choo-ralph | **Required** | Optional | No |
 | ralph-tui | **Required** | Optional | No |
 | gastown | **Required** | Optional | No |
@@ -373,25 +371,22 @@ Standard code quality tool. Recommended gates for AI code:
 ### Installation Order
 
 ```bash
-# 1. Foundation
-go install github.com/anthropics/beads/cmd/bd@latest
-
-# 2. Intelligence (optional but recommended)
+# 1. Intelligence (optional but recommended)
 cargo install beads_viewer
 
-# 3. Execution (pick one)
-cd ~/dev/ralph-claude-code && ./install.sh  # Recommended
+# 2. Execution
+cd ~/dev/ralph  # sutra lives here
 
-# 4. Advanced (optional)
+# 3. Advanced (optional)
 go install github.com/anthropics/gastown/cmd/gt@latest
 ```
 
 ### Verification
 
 ```bash
-bd --version
+br --version
 bv --version
-ralph --version
+./sutra --version
 gt --version  # if installed
 ```
 
@@ -400,9 +395,9 @@ gt --version  # if installed
 For most users, this is the recommended combination:
 
 ```
-beads (bd)           → Track work
+beads (br)           → Track work
 beads_viewer (bv)    → Prioritize work
-ralph-claude-code    → Execute work
+sutra                → Execute work
 ```
 
 Simple. Composable. Battle-tested.

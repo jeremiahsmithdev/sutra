@@ -1,6 +1,6 @@
 # Plan
 
-Build order for the ralph framework.
+Build order for the sutra framework.
 
 See also: [[PHILOSOPHY.md]] | [[CLAUDE.md]]
 
@@ -23,7 +23,7 @@ Wrap Claude Code invocation with:
 - Exit detection (dual-gate: heuristic + explicit signal)
 - Basic progress tracking (files changed, tests status)
 
-Start minimal. Reference [[ralph-overnight-guide.md]] for safety patterns (Docker sandbox, worktree isolation). The inner loop does not select tasks — it receives one task and works until done or blocked.
+Start minimal. The inner loop does not select tasks — it receives one task and works until done or blocked.
 
 ## Outer Loop
 
@@ -38,13 +38,15 @@ No AI in the outer loop. Graph algorithms do the prioritisation. See [[outer-loo
 
 ## Metrics Collection
 
-Instrument the loops to write to `.ralph/metrics.db` at:
+Instrument the loops to write to `.sutra/metrics.db` at:
 - Task selection (bv scores, timestamp)
 - Task start (timestamp)
 - Task completion (duration, files modified, exit reason)
 - Harvest review (verdict)
 
 Time-based metrics are primary — most tasks complete in one iteration, so duration matters more than iteration count. See [[metrics.md]] for schema and queries.
+
+Only build after core loops work. Sutra functions without scouts.
 
 ## Scout Integration
 
@@ -66,8 +68,6 @@ Optional layer between task selection and execution. A **scout** is an LLM agent
 
 **Parallel execution**: Up to `SCOUT_MAX_PARALLEL` scouts run concurrently via `claude --model haiku -p`.
 
-Only build after core loops work. Ralph functions without scouts.
-
 ## Harvest Tooling
 
 Slash commands for the morning review:
@@ -85,12 +85,12 @@ Already implemented via beads state machine. See [[BEADS_VERIFICATION_WORKFLOW.m
 Shell aliases (`bnr`, `bV`, `bmr`, `buv`) provide the interface. Core commands:
 
 ```bash
-bd set-state <id> verified=needs-review --reason "..."  # Ralph sets on close
+bd set-state <id> verified=needs-review --reason "..."  # Sutra sets on close
 bd set-state <id> verified=yes --reason "..."           # Human sets after testing
 bd state <id> verified                                   # View state + reason
 ```
 
 The workflow ensures:
-- Ralph marks all autonomous work for review with test instructions
+- Sutra marks all autonomous work for review with test instructions
 - Humans verify using the provided instructions before trusting the work
 - An audit trail records who verified what and when (event issues)

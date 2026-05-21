@@ -69,7 +69,7 @@ Adjusts based on reconnaissance findings. Missing files add time, existing tests
 
 ## Storage
 
-In `.ralph/prediction-baselines.json`:
+In `.sutra/prediction-baselines.json`:
 
 ```json
 {
@@ -88,7 +88,7 @@ In `.ralph/prediction-baselines.json`:
 Updated at harvest from historical data:
 
 ```bash
-sqlite3 .ralph/metrics.db "
+sqlite3 .sutra/metrics.db "
 SELECT difficulty, ROUND(AVG(actual_minutes)) as base
 FROM task_metrics
 WHERE actual_minutes IS NOT NULL
@@ -159,7 +159,7 @@ ORDER BY avg_error;
 After enough data (20+ completions), review formula performance:
 
 ```bash
-sqlite3 .ralph/metrics.db "
+sqlite3 .sutra/metrics.db "
 SELECT formula, COUNT(*) as n,
        ROUND(AVG(ABS(predicted_minutes - actual_minutes)), 1) as avg_error
 FROM prediction_tracking p

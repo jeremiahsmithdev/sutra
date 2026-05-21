@@ -12,7 +12,7 @@ gate decisions.
 
 ## 1. Gate context — the most common defect
 
-### Bad — generic gates (rejected at `ralph playlist init`)
+### Bad — generic gates (rejected at `sutra playlist init`)
 
 ```
 ralph-046.1
@@ -41,7 +41,7 @@ ralph-046.14
 - `#REVIEW` with no context — reviews "the last epic" in the abstract,
   but which patterns? Which risky areas?
 
-The semantic audit in `ralph playlist init` will flag all three and
+The semantic audit in `sutra playlist init` will flag all three and
 ask you to add context.
 
 ### Good — specific gates
@@ -53,7 +53,7 @@ ralph-046.2
 ralph-046.7
 ralph-046.3
 ralph-046.9
-> @opus #SMOKE_TEST invoke ralph with --dry-run --playlist selftest.playlist; verify loop header, prompt assembly, and that no file writes occur
+> @opus #SMOKE_TEST invoke sutra with --dry-run --playlist selftest.playlist; verify loop header, prompt assembly, and that no file writes occur
 ralph-046.11
 ralph-046.12
 > #COMPLETENESS_SCAN focus on invoke.sh retry logic, lifecycle.sh dry-run guards, and any FIXMEs in the new escalation and cost-tracking code
@@ -128,7 +128,7 @@ ralph-046.1
 ralph-046.2
 ralph-046.7
 ralph-046.3
-> @opus #SMOKE_TEST invoke ralph with --dry-run --playlist selftest.playlist to verify prompt assembly, loop header display, and no accidental file writes
+> @opus #SMOKE_TEST invoke sutra with --dry-run --playlist selftest.playlist to verify prompt assembly, loop header display, and no accidental file writes
 ralph-046.9
 ralph-046.11
 ralph-046.12
@@ -165,7 +165,7 @@ ralph-046.1
 ralph-046.2
 ralph-046.3
 ralph-046.7
-> @opus #SMOKE_TEST run ralph --dry-run on selftest.playlist; verify prompt assembly and invocation pipeline
+> @opus #SMOKE_TEST run sutra --dry-run on selftest.playlist; verify prompt assembly and invocation pipeline
 > @opus #REVIEW prompt engineering epic: check --bare mode integration, template ordering, and inoculation coverage
 ralph-0h1.11
 ralph-0h1.12
@@ -211,7 +211,7 @@ ralph-046.2
 ralph-046.3
 ralph-046.7
 ralph-046.9
-> @opus #SMOKE_TEST run ralph --dry-run on selftest.playlist
+> @opus #SMOKE_TEST run sutra --dry-run on selftest.playlist
 ralph-046.11
 > #COMPLETENESS_SCAN focus on retry and cost accumulation logic
 > @opus #REVIEW check escalation chain and cost tracking end-to-end

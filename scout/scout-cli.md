@@ -2,7 +2,7 @@
 
 CLI for dispatching **scouts** — LLM agents that investigate bead issues before execution. Each scout primes one issue with reconnaissance and actionability assessment.
 
-See also: [[prediction.md]] | [[conf.md]] | [[ralph-scout.md]]
+See also: [[prediction.md]] | [[conf.md]] | [[sutra-scout.md]]
 
 ## Terminology
 
@@ -44,7 +44,7 @@ See also: [[prediction.md]] | [[conf.md]] | [[ralph-scout.md]]
 # ===========================================================================
 #
 # Primes beads issues with AI reconnaissance to assess actionability
-# before passing to a ralph loop for implementation.
+# before passing to a sutra loop for implementation.
 #
 # The scout does two things:
 #   1. Mechanical reconnaissance (grep, find, git log) - collects evidence
@@ -778,7 +778,7 @@ EXAMPLES
     # Check the board
     scout status
 
-    # In a ralph outer loop script
+    # In a sutra outer loop script
     scout prime --unprimed --quiet
     BRIEFING=$(scout briefing bd-a3f8e9)
 
